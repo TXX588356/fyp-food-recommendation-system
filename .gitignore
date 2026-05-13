@@ -11,7 +11,8 @@ coverage.out
 .DS_Store
 .idea/
 .vscode/
-
+.agents/
+skills-lock.json
 # Future frontend dependencies/build outputs
 node_modules/
 dist/

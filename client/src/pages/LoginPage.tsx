@@ -4,7 +4,6 @@
   Button,
   PasswordInput,
   Stack,
-  Text,
   TextInput,
   Title,
 } from '@mantine/core'
@@ -22,96 +21,69 @@ export default function LoginPage() {
 
     const getInputStyles = (field: string) => ({
     label: {
-      color: '#050505',
-      fontSize: 16,
-      fontWeight: 700,
-      marginBottom: 8,
+      color: '#20342b',
+      fontSize: 13,
+      fontWeight: 800,
+      letterSpacing: '0.08em',
+      marginBottom: 10,
+      textTransform: 'uppercase' as const,
     },
     input: {
-      height: 42,
-      borderRadius: 999,
-      border: focusedField === field ? '2px solid #050505' : '1px solid transparent',
-      background: '#fff',
+      height: 54,
+      borderRadius: 18,
+      border: focusedField === field ? '2px solid #0f6b43' : '1px solid rgba(32, 52, 43, 0.22)',
+      background: 'rgba(255, 251, 239, 0.92)',
+      color: '#17241e',
       paddingInline: 18,
-      borderColor: focusedField === field ? '#050505' : 'transparent',
+      boxShadow: focusedField === field ? '0 0 0 5px rgba(15, 107, 67, 0.12)' : 'none',
+      transition: 'border-color 180ms ease, box-shadow 180ms ease, background 180ms ease',
     },
   })
 
    return (
       <Box
-        style={{
-          minHeight: '100vh',
-          width: '100%',
-          background: '#fff7bc',
-          display: 'flex',
-          overflowX: 'hidden',
-          overflowY: isMobile ? 'auto' : 'hidden',
-        }}
+        className="auth-page"
+        style={{ overflowY: isMobile ? 'auto' : 'hidden' }}
        >
         <Box
           component='main'
-          style={{
-            width: '100%',
-            minHeight: '100vh',
-            display: 'grid',
-            gridTemplateColumns: isMobile ? '1fr' : '44% 55%',
-            background: '#fff7bc',
-          }}
+          className="auth-shell"
         >
           <Box
             component="section"
-            style={{
-              minHeight: 630,
-              overflow: 'hidden',
-              ...(isMobile ? { minHeight: 260 } : {}),
-            }}
+            className="auth-visual"
           >
-            <img src={thumbnailImage} alt="Thumbnail Image" style={{
-              display: 'block',
-              objectFit: 'cover',
-              width: '100%',
-              height: '100%',
-            }}
-            />
+            <img src={thumbnailImage} alt="A table with fresh food and coffee" />
+            <Box className="visual-caption">
+              <span>Food Recommendation System</span>
+              <Title order={2}>Return to the profile that knows your food rhythm.</Title>
+            </Box>
           </Box>
           <Box
             component="section"
-            style={{
-              padding: isMobile ? '40px 28px 56px' : '72px 64px 48px',
-              display: 'flex',
-            }}>
-            <Box style={{
-              width: '100%',
-            }}
-            >
-              <Text>
-                <Anchor
-                  href="/register"
-                  style={{
-                    color: '#050505',
-                    fontWeight: 700,
-                    textDecoration: 'underline',
-                  }}
-                >Create an account
-                </Anchor> or login to get started
-              </Text>
+            className="auth-content"
+          >
+            <Box className="auth-card">
+              <Box className="auth-topline">
+                <span>saved profile</span>
+                <Anchor href="/register">Create an account</Anchor>
+              </Box>
   
               <Title
                 order={1}
-                style={{
-                  margin: '0 0 28px',
-                  color: '#050505',
-                  fontWeight: 700,
-                  fontSize: 50,
-                }}
+                className="auth-heading"
               >
-                Welcome!
+                Welcome back.
               </Title>
+              <p className="auth-copy">
+                Pick up where you left off with saved preferences, previous meal choices, and better ranked recommendations.
+              </p>
   
-              <Stack gap={22}>
+              <Stack gap={22} className="auth-form">
                 <TextInput 
                 label='Name' 
                 autoComplete='name' 
+                placeholder="Your account name"
                 styles={getInputStyles('name')}
                 onFocus={() => setFocusedField('name')}
                 onBlur={() => setFocusedField(null)}
@@ -119,6 +91,7 @@ export default function LoginPage() {
                 <PasswordInput 
                   label='Password' 
                   autoComplete='new-password' 
+                  placeholder="Your password"
                   styles={getInputStyles('password')}
                   onFocus={() => setFocusedField('password')}
                   onBlur={() => setFocusedField(null)}
@@ -127,17 +100,16 @@ export default function LoginPage() {
                 <Button
                   type='submit'
                   fullWidth
-                  style={{
-                    height: 42, 
-                    marginTop: 40,
-                    borderRadius: 999,
-                    background: '#000',
-                    color: '#fff',
-                    fontSize: 18,
-                    fontWeight: 700,
-                  }}
+                  className="auth-button"
                 >Login</Button>
               </Stack>
+              <Box className="recommendation-preview">
+                <span className="preview-dot" />
+                <div>
+                  <strong>Ready today</strong>
+                  <p>Your saved taste profile can rank breakfast, lunch, and dinner ideas immediately.</p>
+                </div>
+              </Box>
             </Box>
           </Box>
         </Box>

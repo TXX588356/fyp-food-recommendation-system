@@ -1,10 +1,8 @@
- import {
+import {
   Anchor,
   Box,
   Button,
   PasswordInput,
-  Stack,
-  Text,
   TextInput,
   Title,
 } from '@mantine/core'
@@ -44,115 +42,84 @@ export default function RegisterPage() {
 
   const getInputStyles = (field: string) => ({
     label: {
-      color: '#050505',
-      fontSize: 16,
-      fontWeight: 700,
-      marginBottom: 8,
+      color: '#20342b',
+      fontSize: 13,
+      fontWeight: 800,
+      letterSpacing: '0.08em',
+      marginBottom: 10,
+      textTransform: 'uppercase' as const,
     },
     input: {
-      height: 42,
-      borderRadius: 999,
-      border: focusedField === field ? '2px solid #050505' : '1px solid transparent',
-      background: '#fff',
+      height: 54,
+      borderRadius: 18,
+      border: focusedField === field ? '2px solid #0f6b43' : '1px solid rgba(32, 52, 43, 0.22)',
+      background: 'rgba(255, 251, 239, 0.92)',
+      color: '#17241e',
       paddingInline: 18,
-      borderColor: focusedField === field ? '#050505' : 'transparent',
+      boxShadow: focusedField === field ? '0 0 0 5px rgba(15, 107, 67, 0.12)' : 'none',
+      transition: 'border-color 180ms ease, box-shadow 180ms ease, background 180ms ease',
     },
   })
 
   return (
     <Box
-      style={{
-        minHeight: '100vh',
-        width: '100%',
-        background: '#fff7bc',
-        display: 'flex',
-        overflowX: 'hidden',
-        overflowY: isMobile ? 'auto' : 'hidden',
-      }}
+      className="auth-page"
+      style={{ overflowY: isMobile ? 'auto' : 'hidden' }}
      >
       <Box
         component='main'
-        style={{
-          width: '100%',
-          minHeight: '100vh',
-          display: 'grid',
-          gridTemplateColumns: isMobile ? '1fr' : '44% 55%',
-          background: '#fff7bc',
-        }}
+        className="auth-shell"
       >
         <Box
           component="section"
-          style={{
-            minHeight: 630,
-            overflow: 'hidden',
-            ...(isMobile ? { minHeight: 260 } : {}),
-          }}
+          className="auth-visual"
         >
-          <img src={thumbnailImage} alt="Thumbnail Image" style={{
-            display: 'block',
-            objectFit: 'cover',
-            width: '100%',
-            height: '100%',
-          }}
-          />
+          <img src={thumbnailImage} alt="A table with fresh food and coffee" />
+          <Box className="visual-caption">
+            <span>Food Recommendation System</span>
+            <Title order={2}>Build a palate profile that remembers what you actually like.</Title>
+          </Box>
         </Box>
         <Box
           component="section"
-          style={{
-            padding: isMobile ? '40px 28px 56px' : '72px 64px 48px',
-            display: 'flex',
-          }}>
-          <Box style={{
-            width: '100%',
-          }}
-          >
-            <Text>
-              Create an account or {' '} 
-              <Anchor
-                href="/login"
-                style={{
-                  color: '#050505',
-                  fontWeight: 700,
-                  textDecoration: 'underline',
-                }}
-              >login
-              </Anchor>{' '} to get started
-            </Text>
+          className="auth-content"
+        >
+          <Box className="auth-card">
+            <Box className="auth-topline">
+              <span>new profile</span>
+              <Anchor href="/login">Log in</Anchor>
+            </Box>
 
             <Title
               order={1}
-              style={{
-                margin: '0 0 28px',
-                color: '#050505',
-                fontWeight: 700,
-                fontSize: 50,
-              }}
+              className="auth-heading"
             >
-              Create Account
+              Create your taste account.
             </Title>
+            <p className="auth-copy">
+              Save cravings, dietary preferences, and meal rhythms so recommendations feel less random and more like a regular order.
+            </p>
 
             <Box 
               component='form'
               onSubmit={handleSubmit}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 22,
-              }}
+              className="auth-form"
             >
               <TextInput 
-              label='Name' 
-              type='text'
-              autoComplete='name' 
-              styles={getInputStyles('name')}
-              onChange={(e) => setName(e.target.value)}
-              onFocus={() => setFocusedField('name')}
-              onBlur={() => setFocusedField(null)}
+                label='Name' 
+                type='text'
+                autoComplete='name' 
+                placeholder="e.g. John Doe"
+                styles={getInputStyles('name')}
+                onChange={(e) => setName(e.target.value)}
+                onFocus={() => setFocusedField('name')}
+                onBlur={() => setFocusedField(null)}
               />
               <TextInput 
                 label='Email' 
                 type='email' 
                 autoComplete='email' 
+                placeholder="you@example.com"
                 styles={getInputStyles('email')}
                 onChange={(e) => setEmail(e.target.value)}
                 onFocus={() => setFocusedField('email')}
@@ -161,6 +128,7 @@ export default function RegisterPage() {
               <PasswordInput 
                 label='Password' 
                 autoComplete='new-password' 
+                placeholder="At least 6 characters"
                 styles={getInputStyles('password')}
                 onChange={(e) => setPassword(e.target.value)}
                 onFocus={() => setFocusedField('password')}
@@ -170,16 +138,15 @@ export default function RegisterPage() {
               <Button
                 type='submit'
                 fullWidth
-                style={{
-                  height: 42, 
-                  marginTop: 40,
-                  borderRadius: 999,
-                  background: '#000',
-                  color: '#fff',
-                  fontSize: 18,
-                  fontWeight: 700,
-                }}
+                className="auth-button"
               >Create Account</Button>
+            </Box>
+            <Box className="recommendation-preview">
+              <span className="preview-dot" />
+              <div>
+                <strong>Next up</strong>
+                <p>Breakfast bowls ranked by protein, budget, and your saved taste notes.</p>
+              </div>
             </Box>
           </Box>
         </Box>
