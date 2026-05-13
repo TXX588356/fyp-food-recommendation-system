@@ -1,0 +1,19 @@
+.env
+
+# Go
+bin/
+*.exe
+*.test
+*.out
+coverage.out
+
+# Editor and OS files
+.DS_Store
+.idea/
+.vscode/
+
+# Future frontend dependencies/build outputs
+node_modules/
+dist/
+build/
+.next/
