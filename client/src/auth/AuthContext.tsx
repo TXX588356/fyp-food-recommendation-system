@@ -1,28 +1,52 @@
 import React, { createContext, useContext, useState } from 'react';
 
+type User = {
+    name?: string
+    email?: string
+}
 type AuthContextType = {
     isAuthenticated: boolean
-    user: { name?: string } | null
-    login: (username: string) => void
+    user: User | null
+    login: (user: User, token: string) => void
     logout: () => void
 }
 
+const safeParseUser = (): User | null => {
+    try {
+        return JSON.parse(localStorage.getItem('user') || 'null')
+    } catch {
+        localStorage.removeItem('user')
+        return null
+    }
+}
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
+
 type LayoutProps = {
   children: React.ReactNode
 }
 const AuthProvider = ({ children }: LayoutProps) => {
-    const [isAuthenticated, setIsAuthenticated] = useState(false)
-    const [user, setUser] = useState< { name?: string } | null>(null)
+    const [token, setToken] = useState(() => localStorage.getItem('token'))
+    const [user, setUser] = useState<User | null>(() => safeParseUser())
+    const isAuthenticated = Boolean(token)
 
-    const login = (username: string) => {
-        setIsAuthenticated(true)
-        setUser( { name: username })
+    // const [isAuthenticated, setIsAuthenticated] = useState(
+    //     localStorage.getItem('isAuthenticated') === 'true'
+    // )
+
+
+    const login = (user: User, token: string) => {
+        setToken(token)
+        setUser(user)
+        localStorage.setItem('token', token)
+        localStorage.setItem('user', JSON.stringify(user))
     }
 
     const logout = () => {
-        setIsAuthenticated(false)
+        setToken(null)
         setUser(null)
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
     }
 
     const value: AuthContextType = {

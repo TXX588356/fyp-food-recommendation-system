@@ -16,3 +16,8 @@ button,
 input {
   font: inherit;
 }
+
+::selection {
+background-color: #56a261bf;
+color: #000;
+}

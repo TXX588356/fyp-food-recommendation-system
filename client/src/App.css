@@ -168,6 +168,29 @@
   display: flex;
   flex-direction: column;
   gap: 22px;
+  font-family: "Avenir Next", "Gill Sans", Candara, Calibri, sans-serif;
+}
+
+.auth-form .auth-input {
+  border: 1px solid rgba(32, 52, 43, 0.22);
+  font-family: inherit;
+}
+
+.auth-form .auth-input:focus,
+.auth-form .auth-input:focus-visible,
+.auth-form .auth-input-wrapper:focus-within .auth-input {
+  border-color: #0f6b43;
+  box-shadow: 0 0 0 5px rgba(15, 107, 67, 0.12);
+  outline: none;
+}
+
+.auth-form .auth-password-inner-input {
+  font-family: inherit;
+}
+
+.auth-form .auth-input-label {
+  display: inline-block;
+  font-family: inherit;
 }
 
 .auth-button {
