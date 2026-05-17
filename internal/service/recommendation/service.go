@@ -3,8 +3,8 @@ package recommendation
 import (
 	"context"
 
-	"fyp/food-rs/internal/foodapi"
-	"fyp/food-rs/internal/llm"
+	"fyp/food-rs/internal/service/foodapi"
+	"fyp/food-rs/internal/service/llm"
 )
 
 type MealGenerator interface {

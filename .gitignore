@@ -6,7 +6,8 @@ bin/
 *.test
 *.out
 coverage.out
-
+.agents
+.codex
 # Editor and OS files
 .DS_Store
 .idea/
