@@ -11,6 +11,7 @@ import (
 type Config struct {
 	GeminiAPIKey string
 	KaloriAPIKey string
+	DatabaseURL  string
 }
 
 func Load() Config {
@@ -27,6 +28,7 @@ func Load() Config {
 	return Config{
 		GeminiAPIKey: strings.TrimSpace(viper.GetString("GEMINI_API_KEY")),
 		KaloriAPIKey: strings.TrimSpace(viper.GetString("KAL_API")),
+		DatabaseURL:  viper.GetString("DATABASE_URL"),
 	}
 }
 
