@@ -17,10 +17,14 @@ const appContextKey contextKey = "food-recommendation-system:app"
 type App struct {
 	PostgresDB  *gorm.DB
 	authService interfaces.AuthService
+	JWTSecret   string
 }
 
-func New(db *gorm.DB) *App {
-	return &App{PostgresDB: db}
+func New(db *gorm.DB, jwtSecret string) *App {
+	return &App{
+		PostgresDB: db,
+		JWTSecret:  jwtSecret,
+	}
 }
 
 // GetAuthService builds auth service from Postgres user repo
@@ -30,7 +34,7 @@ func (a *App) GetAuthService(ctx context.Context) (interfaces.AuthService, error
 	}
 
 	userRepo := postgres.NewUserPostgresRepository(a.PostgresDB)
-	a.authService = authservice.NewService(userRepo)
+	a.authService = authservice.NewService(userRepo, a.JWTSecret)
 
 	return a.authService, nil
 }

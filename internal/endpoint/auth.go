@@ -52,7 +52,20 @@ func (h *authHandler) register(c *echo.Context) error {
 }
 
 func (h *authHandler) login(c *echo.Context) error {
-	return c.String(http.StatusCreated, "created but yet to implement")
+	var input interfaces.LoginInput
+
+	if err := c.Bind(&input); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "invalid request body",
+		})
+	}
+	result, err := h.authService.Login(c.Request().Context(), input)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": err.Error(),
+		})
+	}
+	return c.JSON(http.StatusOK, result)
 
 }
 

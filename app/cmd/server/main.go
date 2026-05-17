@@ -30,14 +30,14 @@ func Run(parent context.Context) error {
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins: []string{"http://localhost:5173"},
 		AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodOptions},
-		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept},
+		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderAuthorization},
 	}))
 	e.Use(middleware.RequestLogger())
 
 	ctx, cancel := signal.NotifyContext(parent, os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
-	a := app.New(db)
+	a := app.New(db, cfg.JWTSecret)
 	ctx = app.WithApp(ctx, a) // attach App instance to the context, allowing other codes to retrieve
 	endpoint.RegisterEndpoints(ctx, e)
 
