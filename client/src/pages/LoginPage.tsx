@@ -10,7 +10,7 @@
 import '@/App.css'
 import { useMediaQuery } from '@mantine/hooks'
 import { useState } from 'react'
-import { useAuth } from '@/auth/AuthContext'
+import { useAuth } from '@/auth/useAuth'
 import axios from 'axios'
 import { useForm } from '@mantine/form'
 
@@ -50,7 +50,12 @@ export default function LoginPage() {
         const response = await axios.post(`${API_BASE_URL}/auth/login`, values)
 
         login(response.data.user, response.data.token)
-        navigate('/recommendation', { replace: true})
+
+        if (response.data.user.hasCompletedOnboarding) {
+          navigate('/recommendation', { replace: true})
+        } else {
+          navigate('/onboarding/preferences', { replace: true})
+        }
       } catch (error) {
         console.error('Login failed', error)
         setSubmitError('Login failed. Please check your email and password')

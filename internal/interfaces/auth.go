@@ -14,9 +14,10 @@ type LoginInput struct {
 }
 
 type AuthUser struct {
-	ID    string `json:"id"`
-	Name  string `json:"name"`
-	Email string `json:"email"`
+	ID                     string `json:"id"`
+	Name                   string `json:"name"`
+	Email                  string `json:"email"`
+	HasCompletedOnboarding bool   `json:"hasCompletedOnboarding"`
 }
 
 type AuthResult struct {

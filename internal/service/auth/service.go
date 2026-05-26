@@ -68,9 +68,10 @@ func (s *service) Register(ctx context.Context, input interfaces.RegisterInput) 
 	// 6. return AuthResult
 	return &interfaces.AuthResult{
 		User: interfaces.AuthUser{
-			ID:    createdUser.ID.String(),
-			Name:  createdUser.Name,
-			Email: createdUser.Email,
+			ID:                     createdUser.ID.String(),
+			Name:                   createdUser.Name,
+			Email:                  createdUser.Email,
+			HasCompletedOnboarding: createdUser.HasCompletedOnboarding,
 		},
 		Token: token,
 	}, nil
@@ -109,9 +110,10 @@ func (s *service) Login(ctx context.Context, input interfaces.LoginInput) (*inte
 	// 4. return AuthResult
 	return &interfaces.AuthResult{
 		User: interfaces.AuthUser{
-			ID:    existingUser.ID.String(),
-			Name:  existingUser.Name,
-			Email: existingUser.Email,
+			ID:                     existingUser.ID.String(),
+			Name:                   existingUser.Name,
+			Email:                  existingUser.Email,
+			HasCompletedOnboarding: existingUser.HasCompletedOnboarding,
 		},
 		Token: token,
 	}, nil

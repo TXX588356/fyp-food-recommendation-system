@@ -17,9 +17,15 @@ importers:
       '@mantine/hooks':
         specifier: ^9.1.1
         version: 9.2.1(react@19.2.6)
+      '@phosphor-icons/react':
+        specifier: github:phosphor-icons/react
+        version: https://codeload.github.com/phosphor-icons/react/tar.gz/81ac06f9bf4b4dedf9b8fead0a1ebd47c41d67ef(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       axios:
         specifier: ^1.16.0
         version: 1.16.1
+      phosphor-icons:
+        specifier: ^1.4.2
+        version: 1.4.2
       react:
         specifier: ^19.2.5
         version: 19.2.6
@@ -266,6 +272,14 @@ packages:
 
   '@oxc-project/types@0.130.0':
     resolution: {integrity: sha512-ibD2usx9JRu7f5pu2tMKMI4cpA4NgXJQoYRP4pQ7Pxmn1l6k/53qWtQWZayhYy3X4QZkt90Ot+mJEaeXouio6Q==}
+
+  '@phosphor-icons/react@https://codeload.github.com/phosphor-icons/react/tar.gz/81ac06f9bf4b4dedf9b8fead0a1ebd47c41d67ef':
+    resolution: {tarball: https://codeload.github.com/phosphor-icons/react/tar.gz/81ac06f9bf4b4dedf9b8fead0a1ebd47c41d67ef}
+    version: 2.1.10
+    engines: {node: '>=10'}
+    peerDependencies:
+      react: '>= 16.8'
+      react-dom: '>= 16.8'
 
   '@rolldown/binding-android-arm64@1.0.1':
     resolution: {integrity: sha512-fJI3I0r3C3Oj/zdBCpaCmBRZYf07xpaq4yCfDDoSFm+beWNzbIl26puW8RraUdugoJw/95zerNOn6jasAhzSmg==}
@@ -931,6 +945,9 @@ packages:
     resolution: {integrity: sha512-ojmeN0qd+y0jszEtoY48r0Peq5dwMEkIlCOu6Q5f41lfkswXuKtYrhgoTpLnyIcHm24Uhqx+5Tqm2InSwLhE6Q==}
     engines: {node: '>=8'}
 
+  phosphor-icons@1.4.2:
+    resolution: {integrity: sha512-vDyuRWLSEb87dxpoOGpP1GCjr/TFzA0Ljt0TtJcwXO7/iPdSZW0e/2m1jsANH1ML5ZyZXcjeWx6pzT0A0tgYDA==}
+
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
 
@@ -1432,6 +1449,11 @@ snapshots:
     optional: true
 
   '@oxc-project/types@0.130.0': {}
+
+  '@phosphor-icons/react@https://codeload.github.com/phosphor-icons/react/tar.gz/81ac06f9bf4b4dedf9b8fead0a1ebd47c41d67ef(react-dom@19.2.6(react@19.2.6))(react@19.2.6)':
+    dependencies:
+      react: 19.2.6
+      react-dom: 19.2.6(react@19.2.6)
 
   '@rolldown/binding-android-arm64@1.0.1':
     optional: true
@@ -2023,6 +2045,8 @@ snapshots:
   path-exists@4.0.0: {}
 
   path-key@3.1.1: {}
+
+  phosphor-icons@1.4.2: {}
 
   picocolors@1.1.1: {}
 
