@@ -47,51 +47,5 @@ func Run(parent context.Context) error {
 		GracefulTimeout: 5 * time.Second,
 	}
 
-	// if err := sc.Start(ctx, e); err != nil {
-	// 	e.Logger.Error("failed to start server", "error", err)
-	// }
-
-	// server := &http.Server{
-	// 	Addr:    ":8088",
-	// 	Handler: endpoint.NewRouter(),
-	// }
-
-	// log.Println("server running on port 8088")
-	// if err := server.ListenAndServe(); err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// ctx := context.Background()
-	// if cfg.GeminiAPIKey == "" {
-	// 	log.Fatal("GEMINI_API_KEY is not set; make sure it exists in the environment or in .env")
-	// }
-	// if cfg.KaloriAPIKey == "" {
-	// 	log.Fatal("KAL_API is not set; make sure it exists in the environment or in .env")
-	// }
-
-	// geminiClient, err := genai.NewClient(ctx, &genai.ClientConfig{
-	// 	APIKey:  cfg.GeminiAPIKey,
-	// 	Backend: genai.BackendGeminiAPI,
-	// })
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// service := recommendation.NewService(
-	// 	llm.NewClient(geminiClient),
-	// 	foodapi.NewKaloriClient(cfg.KaloriAPIKey, &http.Client{Timeout: 15 * time.Second}),
-	// )
-
-	// results, err := service.Recommend(ctx)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// encoder := json.NewEncoder(os.Stdout)
-	// for _, item := range results {
-	// 	if err := encoder.Encode(item); err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// }
 	return sc.Start(ctx, e)
 }
