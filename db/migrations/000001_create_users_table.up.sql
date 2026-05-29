@@ -7,5 +7,6 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    deleted_at TIMESTAMPTZ
-)
+    deleted_at TIMESTAMPTZ,
+    has_completed_onboarding BOOLEAN NOT NULL DEFAULT false
+);
