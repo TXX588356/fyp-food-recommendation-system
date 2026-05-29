@@ -31,6 +31,11 @@ const AuthProvider = ({ children }: LayoutProps) => {
         localStorage.setItem('user', JSON.stringify(user))
     }
 
+    const updateUser = (nextUser: User) => {
+        setUser(nextUser)
+        localStorage.setItem('user', JSON.stringify(nextUser))
+    }
+
     // Clear both in-memory auth state and persisted auth state.
     const logout = () => {
         setToken(null)
@@ -43,6 +48,7 @@ const AuthProvider = ({ children }: LayoutProps) => {
         isAuthenticated, 
         user,
         login,
+        updateUser,
         logout,
     }
 

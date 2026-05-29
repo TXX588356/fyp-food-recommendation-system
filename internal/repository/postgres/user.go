@@ -36,3 +36,14 @@ func (r *userRepository) FindByID(ctx context.Context, id uuid.UUID) (*model.Use
 	err := r.db.WithContext(ctx).Where("id = ?", id).First(&user).Error
 	return &user, err
 }
+
+func (r *userRepository) UpdateOnboardingStatus(ctx context.Context, id uuid.UUID, completed bool) error {
+	return r.db.WithContext(ctx).
+		Model(&model.User{}).
+		Where("id = ?", id).
+		Updates(map[string]any{
+			"has_completed_onboarding": completed,
+			"updated_at":               gorm.Expr("now()"),
+		}).
+		Error
+}

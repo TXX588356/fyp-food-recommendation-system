@@ -479,6 +479,16 @@
   box-shadow: 0 14px 30px rgba(32, 52, 43, 0.1);
 }
 
+.preference-option-disabled,
+.preference-option-disabled:hover {
+  transform: none;
+  border-color: rgba(32, 52, 43, 0.12);
+  background: rgba(234, 229, 216, 0.72);
+  color: rgba(32, 52, 43, 0.42);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
 .preference-option-wide {
   width: min(100%, 720px);
   padding-inline: 22px;

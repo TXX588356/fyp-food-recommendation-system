@@ -1,9 +1,10 @@
 import { Alert, Box, Button, Group, NumberInput, Progress, Select, Text, Title, UnstyledButton } from "@mantine/core"
 import { useForm } from "@mantine/form"
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import "@/App.css"
 import axios from "axios"
+import { useAuth } from "@/auth/useAuth"
 
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
@@ -52,7 +53,6 @@ const createEmptyLocation = (): LocationValue => ({
 
 const mainGoals = [
   { value: 'eat_healthier', label: 'Eat healthier'},
-  { value: 'maintain_diet_restrictions', label: 'Maintain my diet restrictions'},
   { value: 'muscle_gain', label: 'Gain muscles / high protein'},
   { value: 'quick_recommendation', label: 'Just get quick meal suggestions'},
 ]
@@ -67,6 +67,7 @@ const dietaryRestrictions = [
   { value: 'nut_free', label: 'Nut allergy'},
   { value: 'low_sugar', label: 'Low sugar'},
   { value: 'low_salt', label: 'Low salt'},
+  { value: 'low_fat', label: 'Low fat'},
 ]
 
 const healthConcerns = [
@@ -113,6 +114,15 @@ const categories = [
   { value: "vietnamese", label: "Vietnamese" },
   { value: "western", label: "Western" }
 ]
+
+// Disable the corresponding preferred meal types if its related dietary restriction is selected
+const restrictedMealCategories: Record<string, string[]> = {
+  seafood_free: ['seafood'],
+  nut_free: ['nuts', 'seeds'],
+  non_beef: ['meat'],
+  vegetarian: ['meat', 'seafood'],
+  vegan: ['meat', 'seafood', 'dairy'],
+}
 
 const stepLabels = [
   'Goal',
@@ -246,6 +256,7 @@ function LocationSelectGroup({
 
 export default function PreferencesOnboardingPage() {
   const navigate = useNavigate()
+  const { user, updateUser } = useAuth()
   const [step, setStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -264,6 +275,24 @@ export default function PreferencesOnboardingPage() {
 
   const progress = (step / 5) * 100
   const currentStepIndex = step - 1
+  const disabledMealCategories = useMemo(
+    () => new Set(
+      form.values.dietaryRestrictions.flatMap(
+        (restriction) => restrictedMealCategories[restriction] ?? [],
+      ),
+    ),
+    [form.values.dietaryRestrictions],
+  )
+
+  useEffect(() => {
+    const nextMealCategories = form.values.preferredMealCategories.filter(
+      (category) => !disabledMealCategories.has(category),
+    )
+
+    if (nextMealCategories.length !== form.values.preferredMealCategories.length) {
+      form.setFieldValue('preferredMealCategories', nextMealCategories)
+    }
+  }, [form.values.dietaryRestrictions, form.values.preferredMealCategories, disabledMealCategories])
 
   const toggleArrayValue = (
     field: 'dietaryRestrictions' | 'healthConcerns' | 'preferredMealCategories',
@@ -324,18 +353,21 @@ export default function PreferencesOnboardingPage() {
 
     const token = localStorage.getItem('token')
 
+    const formatLocation = (location: LocationValue) =>
+      `${location.district}, ${location.state}`
+
     const payload = {
-      main_goal: form.values.mainGoal,
-      dietary_restrictions: form.values.dietaryRestrictions.filter(
+      mainGoal: form.values.mainGoal,
+      dietaryRestrictions: form.values.dietaryRestrictions.filter(
         (item) => item !== 'none',
       ),
       healthConcerns: form.values.healthConcerns.filter(
         (item) => item !== 'none',
       ),
-      preferredMealCategories: form.values.preferredMealCategories,
+      preferredMealTags: form.values.preferredMealCategories,
       monthlyMealBudget: Number(form.values.monthlyMealBudget),
-      workSchoolLocation: form.values.workSchoolLocation,
-      homeLocation: form.values.homeLocation,
+      workSchoolLocation: formatLocation(form.values.workSchoolLocation),
+      homeLocation: formatLocation(form.values.homeLocation),
     }
 
     try {
@@ -345,6 +377,10 @@ export default function PreferencesOnboardingPage() {
         },
       })
 
+      updateUser({
+        ...user,
+        hasCompletedOnboarding: true,
+      })
       navigate('/recommendation', { replace: true })
     } catch (error) {
       console.error('Preference onboarding failed', error)
@@ -477,6 +513,7 @@ export default function PreferencesOnboardingPage() {
                     key={category.value}
                     label={category.label}
                     selected={form.values.preferredMealCategories.includes(category.value)}
+                    disabled={disabledMealCategories.has(category.value)}
                     onClick={() => {toggleArrayValue('preferredMealCategories', category.value)}}
                   />
                 ))}
@@ -542,11 +579,13 @@ function OptionButton({
   selected,
   onClick,
   wide = false,
+  disabled = false,
 }: {
   label: string,
   selected: boolean,
   onClick: () => void,
-  wide?: boolean
+  wide?: boolean,
+  disabled?: boolean
 }) {
   return (
      <UnstyledButton
@@ -554,7 +593,9 @@ function OptionButton({
         'preference-option',
         selected ? 'preference-option-selected' : '',
         wide ? 'preference-option-wide' : '',
+        disabled ? 'preference-option-disabled' : '',
       ].join(' ')}
+      disabled={disabled}
       onClick={onClick}
     >
       <span>{label}</span>
