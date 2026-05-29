@@ -5,124 +5,11 @@ import { useNavigate } from "react-router-dom"
 import "@/App.css"
 import axios from "axios"
 import { useAuth } from "@/auth/useAuth"
-
+import { mainGoalOptions, dietaryRestrictionOptions, healthConcernOptions, mealCategoryOptions, restrictedMealCategories, parseMalaysiaCitiesCsv, type CityRow } from "@/preferences/options"
+import { type LocationValue, type PreferencesFormValues } from "@/preferences/types"
+import { buildPreferencePayload, createEmptyLocation } from "@/preferences/helpers"
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
-
-type CityRow = {
-  name: string
-  country: string
-  subcountry: string
-  geonameid: string
-}
-
-function parseMalaysiaCitiesCsv(csv: string): CityRow[] {
-  const [, ...rows] = csv.trim().split('\n')
-
-  return rows.map((row) => {
-    const [name, country, subcountry, geonameid] = row.split(',')
-
-    return {
-      name: name.trim(),
-      country: country.trim(),
-      subcountry: subcountry.trim(),
-      geonameid: geonameid.trim(),
-    }
-  })
-}
-
-type LocationValue = {
-  state: string
-  district: string
-}
-
-type PreferencesFormValues = {
-    mainGoal: string
-    healthConcerns: string[]
-    dietaryRestrictions: string[]
-    preferredMealCategories: string[]
-    monthlyMealBudget: number | string
-    workSchoolLocation: LocationValue
-    homeLocation: LocationValue 
-}
-
-const createEmptyLocation = (): LocationValue => ({
-  state: '',
-  district: '',
-})
-
-const mainGoals = [
-  { value: 'eat_healthier', label: 'Eat healthier'},
-  { value: 'muscle_gain', label: 'Gain muscles / high protein'},
-  { value: 'quick_recommendation', label: 'Just get quick meal suggestions'},
-]
-
-const dietaryRestrictions = [
-  { value: 'none', label: 'No restrictions'},
-  { value: 'non_beef', label: 'Non-beef'},
-  { value: 'halal', label: 'Halal'},
-  { value: 'vegetarian', label: 'Vegetarian'},
-  { value: 'vegan', label: 'Vegan'},
-  { value: 'seafood_free', label: 'Seafood allergy'},
-  { value: 'nut_free', label: 'Nut allergy'},
-  { value: 'low_sugar', label: 'Low sugar'},
-  { value: 'low_salt', label: 'Low salt'},
-  { value: 'low_fat', label: 'Low fat'},
-]
-
-const healthConcerns = [
-  { value: 'none', label: 'No'},
-  { value: 'gout', label: 'Gout'},
-  { value: 'diabetes', label: 'Diabetes'},
-  { value: 'high_blood_pressure', label: 'High blood pressure'},
-]
-
-const categories = [
-  { value: "american", label: "American" },
-  { value: "basics", label: "Basics" },
-  { value: "breakfast", label: "Breakfast" },
-  { value: "chinese", label: "Chinese" },
-  { value: "condiments", label: "Condiments" },
-  { value: "desserts", label: "Desserts" },
-  { value: "drinks", label: "Drinks" },
-  { value: "french", label: "French" },
-  { value: "fruits", label: "Fruits" },
-  { value: "grains", label: "Grains" },
-  { value: "greek", label: "Greek" },
-  { value: "healthy", label: "Healthy" },
-  { value: "indian", label: "Indian" },
-  { value: "italian", label: "Italian" },
-  { value: "japanese", label: "Japanese" },
-  { value: "korean", label: "Korean" },
-  { value: "kuih", label: "Kuih" },
-  { value: "legumes", label: "Legumes" },
-  { value: "meat", label: "Meat" },
-  { value: "mexican", label: "Mexican" },
-  { value: "middle_eastern", label: "Middle Eastern" },
-  { value: "noodles", label: "Noodles" },
-  { value: "nuts", label: "Nuts" },
-  { value: "proteins", label: "Proteins" },
-  { value: "rice", label: "Rice" },
-  { value: "roti", label: "Roti" },
-  { value: "seafood", label: "Seafood" },
-  { value: "seeds", label: "Seeds" },
-  { value: "snacks", label: "Snacks" },
-  { value: "soups", label: "Soups" },
-  { value: "spanish", label: "Spanish" },
-  { value: "thai", label: "Thai" },
-  { value: "vegetables", label: "Vegetables" },
-  { value: "vietnamese", label: "Vietnamese" },
-  { value: "western", label: "Western" }
-]
-
-// Disable the corresponding preferred meal types if its related dietary restriction is selected
-const restrictedMealCategories: Record<string, string[]> = {
-  seafood_free: ['seafood'],
-  nut_free: ['nuts', 'seeds'],
-  non_beef: ['meat'],
-  vegetarian: ['meat', 'seafood'],
-  vegan: ['meat', 'seafood', 'dairy'],
-}
 
 const stepLabels = [
   'Goal',
@@ -153,7 +40,6 @@ function LocationSelectGroup({
 }) {
   const [cities, setCities] = useState<CityRow[]>([])
   const [state, setState] = useState<{ value: string, label: string }[]>([])
-  const [districts, setDistricts] = useState<{ value: string; label: string }[]>([])
 
   useEffect(() => {
     fetch('/malaysia_cities.csv')
@@ -180,13 +66,10 @@ function LocationSelectGroup({
       })
   }, [])
 
-  useEffect(() => {
-    if (!value.state) {
-      setDistricts([])
-      return
-    }
+  const districts = useMemo(() => {
+    if (!value.state) return []
 
-    const nextDistricts = cities
+    return cities
       .filter((city) => city.subcountry === value.state)
       .map((city) => city.name)
       .sort()
@@ -194,9 +77,6 @@ function LocationSelectGroup({
         value: city,
         label: city,
       }))
-
-    setDistricts(nextDistricts)
-    
   }, [value.state, cities])
 
   return (
@@ -248,8 +128,6 @@ function LocationSelectGroup({
           }}
         />
       </Group>
-
-
     </Box>
   )
 }
@@ -275,6 +153,7 @@ export default function PreferencesOnboardingPage() {
 
   const progress = (step / 5) * 100
   const currentStepIndex = step - 1
+  const preferredMealCategories = form.values.preferredMealCategories
   const disabledMealCategories = useMemo(
     () => new Set(
       form.values.dietaryRestrictions.flatMap(
@@ -285,14 +164,14 @@ export default function PreferencesOnboardingPage() {
   )
 
   useEffect(() => {
-    const nextMealCategories = form.values.preferredMealCategories.filter(
+    const nextMealCategories = preferredMealCategories.filter(
       (category) => !disabledMealCategories.has(category),
     )
 
-    if (nextMealCategories.length !== form.values.preferredMealCategories.length) {
+    if (nextMealCategories.length !== preferredMealCategories.length) {
       form.setFieldValue('preferredMealCategories', nextMealCategories)
     }
-  }, [form.values.dietaryRestrictions, form.values.preferredMealCategories, disabledMealCategories])
+  }, [preferredMealCategories, disabledMealCategories, form])
 
   const toggleArrayValue = (
     field: 'dietaryRestrictions' | 'healthConcerns' | 'preferredMealCategories',
@@ -353,25 +232,10 @@ export default function PreferencesOnboardingPage() {
 
     const token = localStorage.getItem('token')
 
-    const formatLocation = (location: LocationValue) =>
-      `${location.district}, ${location.state}`
-
-    const payload = {
-      mainGoal: form.values.mainGoal,
-      dietaryRestrictions: form.values.dietaryRestrictions.filter(
-        (item) => item !== 'none',
-      ),
-      healthConcerns: form.values.healthConcerns.filter(
-        (item) => item !== 'none',
-      ),
-      preferredMealTags: form.values.preferredMealCategories,
-      monthlyMealBudget: Number(form.values.monthlyMealBudget),
-      workSchoolLocation: formatLocation(form.values.workSchoolLocation),
-      homeLocation: formatLocation(form.values.homeLocation),
-    }
-
     try {
-      await axios.post(`${API_BASE_URL}/preferences`, payload, {
+      const preferencePayload = buildPreferencePayload(form.values)
+
+      await axios.post(`${API_BASE_URL}/preferences`, preferencePayload, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -384,7 +248,7 @@ export default function PreferencesOnboardingPage() {
       navigate('/recommendation', { replace: true })
     } catch (error) {
       console.error('Preference onboarding failed', error)
-      setSubmitError('Could not save your prefereces. Please try again.')
+      setSubmitError('Could not save your preferences. Please try again.')
     } finally {
       setIsSubmitting(false)
     }
@@ -429,7 +293,7 @@ export default function PreferencesOnboardingPage() {
           {step === 1 && (
             <QuestionBlock title="What is your main goal?">
               <Box className="preference-stack">
-                {mainGoals.map((goal) => (
+                {mainGoalOptions.map((goal) => (
                   <OptionButton 
                     key={goal.value}
                     label={goal.label}
@@ -444,7 +308,7 @@ export default function PreferencesOnboardingPage() {
           {step === 2 && (
             <QuestionBlock title="Do you have any dietary restrictions?">
               <Box className="preference-chip-grid">
-                {dietaryRestrictions.map((restriction) => (
+                {dietaryRestrictionOptions.map((restriction) => (
                   <OptionButton 
                     key={restriction.value}
                     label={restriction.label}
@@ -459,7 +323,7 @@ export default function PreferencesOnboardingPage() {
           {step === 3 && (
             <QuestionBlock title="Do you want recommendations based on any condition or health concern?">
               <Box className="preference-stack preference-stack-compact">
-                {healthConcerns.map((concern) => (
+                {healthConcernOptions.map((concern) => (
                   <OptionButton 
                     key={concern.value}
                     label={concern.label}
@@ -508,7 +372,7 @@ export default function PreferencesOnboardingPage() {
           {step === 5 && (
             <QuestionBlock title="Which meal types do you want to see more often?">
               <Box className="preference-chip-grid">
-                {categories.map((category) => (
+                {mealCategoryOptions.map((category) => (
                   <OptionButton 
                     key={category.value}
                     label={category.label}
