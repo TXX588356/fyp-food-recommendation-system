@@ -8,7 +8,6 @@
   Alert,
 } from '@mantine/core'
 import '@/App.css'
-import { useMediaQuery } from '@mantine/hooks'
 import { useState } from 'react'
 import { useAuth } from '@/auth/useAuth'
 import axios from 'axios'
@@ -20,8 +19,6 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 const thumbnailImage = 'https://images.unsplash.com/photo-1606756790138-261d2b21cd75?q=80&w=765&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
 
 export default function LoginPage() {
-    const isMobile = useMediaQuery('(max-width: 760px)')
-
     const navigate = useNavigate()
     const location = useLocation()
     // const [email, setEmail] = useState('')
@@ -65,70 +62,46 @@ export default function LoginPage() {
     }
 
     const inputClassNames = {
-      label: 'auth-input-label',
-      input: 'auth-input',
-      wrapper: 'auth-input-wrapper',
-      innerInput: 'auth-password-inner-input',
-    }
-
-    const inputStyles = {
-      label: {
-        color: '#20342b',
-        fontSize: 13,
-        fontWeight: 800,
-        letterSpacing: '0.08em',
-        marginBottom: 10,
-        textTransform: 'uppercase' as const,
-      },
-      input: {
-        height: 54,
-        borderRadius: 18,
-        background: 'rgba(255, 251, 239, 0.92)',
-        color: '#17241e',
-        fontFamily: 'inherit',
-        paddingInline: 18,
-        transition: 'border-color 180ms ease, box-shadow 180ms ease, background 180ms ease',
-      },
+      label: 'ui-input-label',
+      input: 'ui-input',
+      wrapper: 'ui-input-wrapper',
+      innerInput: 'ui-password-inner-input',
     }
 
    return (
-      <Box
-        className="auth-page"
-        
-        style={{ overflowY: isMobile ? 'auto' : 'hidden', height: '100vh'}}
-       >
+      <Box className="ui-fixed-page">
         <Box
           component='main'
-          className="auth-shell"
+          className="ui-split-shell"
         >
           <Box
             component="section"
-            className="auth-visual"
+            className="ui-visual-pane"
           >
             <img src={thumbnailImage} alt="food image" />
-            <Box className="visual-caption">
+            <Box className="ui-visual-caption">
               <span>Food Recommendation System</span>
-              <Title order={2}>Return to the profile that knows your food rhythm.</Title>
+              <Title order={2} style={{color: '#fff8e8'}}>Return to the profile that knows your food rhythm.</Title>
             </Box>
           </Box>
           <Box
             component="section"
-            className="auth-content"
+            className="ui-centered-content"
             
           >
-            <Box className="auth-card">
-              <Box className="auth-topline">
+            <Box className="ui-form-card">
+              <Box className="ui-form-topline">
                 <span>saved profile</span>
                 <Anchor href="/register">Create an account</Anchor>
               </Box>
   
               <Title
                 order={1}
-                className="auth-heading"
+                className="ui-hero-heading"
               >
                 Welcome back.
               </Title>
-              <p className="auth-copy">
+              <p className="ui-body-copy">
                 Pick up where you left off with saved preferences, previous meal choices, and better ranked recommendations.
               </p>
   
@@ -137,13 +110,12 @@ export default function LoginPage() {
               <Box 
                 component='form'
                 onSubmit={form.onSubmit(handleSubmit)}
-                className="auth-form">
+                className="ui-form">
                 <TextInput 
                 label='Email' 
                 autoComplete='email' 
                 placeholder="you@exmaple.com"
                 classNames={inputClassNames}
-                styles={inputStyles}
                 key={form.key('email')}
                 {...form.getInputProps('email')}
                 />
@@ -152,7 +124,6 @@ export default function LoginPage() {
                   autoComplete='new-password' 
                   placeholder="Your password"
                   classNames={inputClassNames}
-                  styles={inputStyles}
                   key={form.key('password')}
                 {...form.getInputProps('password')}
                 />
@@ -160,7 +131,7 @@ export default function LoginPage() {
                 <Button
                   type='submit'
                   fullWidth
-                  className="auth-button"
+                  className="ui-primary-button"
                   color='#00754A'
                   size='md'
                   loading={isSubmitting}

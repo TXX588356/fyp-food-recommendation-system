@@ -142,6 +142,10 @@ func validatePreferenceInput(input interfaces.PreferenceInput) error {
 		return err
 	}
 
+	if err := validateMealPreferencesAgainstDietaryRestrictions(input.PreferredMealTags, input.DietaryRestrictions); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -207,6 +211,13 @@ var allowedMealPreferenceTags = map[string]bool{
 	"western":        true,
 }
 
+var restrictedMealPreferenceTags = map[string]map[string]bool{
+	"seafood_free": {"seafood": true},
+	"nut_free":     {"nuts": true, "seeds": true},
+	"vegetarian":   {"meat": true, "seafood": true},
+	"vegan":        {"meat": true, "seafood": true},
+}
+
 func validateMainGoal(goal string) error {
 	goal = strings.TrimSpace(goal)
 
@@ -267,6 +278,18 @@ func validateMealPreferences(tags []string) error {
 			return fmt.Errorf("unsupported meal preference tag: %s", tag)
 		}
 	}
+	return nil
+}
+
+func validateMealPreferencesAgainstDietaryRestrictions(tags []string, restrictions []string) error {
+	for _, restriction := range restrictions {
+		for _, tag := range tags {
+			if restrictedMealPreferenceTags[restriction][tag] {
+				return fmt.Errorf("meal preference tag %s conflicts with dietary restriction %s", tag, restriction)
+			}
+		}
+	}
+
 	return nil
 }
 

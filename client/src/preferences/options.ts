@@ -88,7 +88,6 @@ export const mealCategoryOptions = [
 export const restrictedMealCategories: Record<string, string[]> = {
   seafood_free: ['seafood'],
   nut_free: ['nuts', 'seeds'],
-  non_beef: ['meat'],
   vegetarian: ['meat', 'seafood'],
   vegan: ['meat', 'seafood', 'dairy'],
 }

@@ -1,13 +1,17 @@
-import { Alert, Box, Button, Group, NumberInput, Progress, Select, Text, Title, UnstyledButton } from "@mantine/core"
+import { Alert, Box, Button, Group, Progress, Text, Title } from "@mantine/core"
 import { useForm } from "@mantine/form"
-import React, { useEffect, useMemo, useState } from "react"
+import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import "@/App.css"
 import axios from "axios"
 import { useAuth } from "@/auth/useAuth"
-import { mainGoalOptions, dietaryRestrictionOptions, healthConcernOptions, mealCategoryOptions, restrictedMealCategories, parseMalaysiaCitiesCsv, type CityRow } from "@/preferences/options"
-import { type LocationValue, type PreferencesFormValues } from "@/preferences/types"
-import { buildPreferencePayload, createEmptyLocation } from "@/preferences/helpers"
+import { type PreferencesFormValues } from "@/preferences/types"
+import { buildPreferencePayload, createEmptyLocation, filterMealTagsForDietaryRestrictions } from "@/preferences/helpers"
+import { GoalStep } from "../steps/MainGoalPage"
+import { DietaryRestrictionStep } from "../steps/DietaryRestrictionPage"
+import { HealthConcernStep } from "../steps/HealthConcernPage"
+import { BudgetLocationStep } from "../steps/BudgetLocationPage"
+import { MealPreferenceStep } from "../steps/PreferredMealPage"
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
@@ -26,111 +30,6 @@ const stepDescriptions = [
   'Set the budget and places that make recommendations practical.',
   'Pick the categories you want the system to favor more often.',
 ]
-
-function LocationSelectGroup({
-  label, 
-  description, 
-  value, 
-  onChange,
-}: {
-  label: string
-  description: string
-  value: LocationValue
-  onChange: (value: LocationValue) => void
-}) {
-  const [cities, setCities] = useState<CityRow[]>([])
-  const [state, setState] = useState<{ value: string, label: string }[]>([])
-
-  useEffect(() => {
-    fetch('/malaysia_cities.csv')
-      .then(response => response.text())
-      .then((csv) => {
-        const rows = parseMalaysiaCitiesCsv(csv)
-        setCities(rows)
-
-        const nextStates = Array.from(
-          new Set(rows.map((row) => row.subcountry))
-        )
-        .sort()
-        .map((state) => ({
-          value: state,
-          label: state,
-        }))
-
-        setState(nextStates)
-      })
-      .catch((error) => {
-        console.error('Error loading Malaysia cities CSV: ', error)
-        setState([])
-        setCities([])
-      })
-  }, [])
-
-  const districts = useMemo(() => {
-    if (!value.state) return []
-
-    return cities
-      .filter((city) => city.subcountry === value.state)
-      .map((city) => city.name)
-      .sort()
-      .map((city) => ({
-        value: city,
-        label: city,
-      }))
-  }, [value.state, cities])
-
-  return (
-    <Box className="preference-location-group">
-      <Text className="preference-location-title">{label}</Text>
-      <Text className="preference-location-copy">{description}</Text>
-
-      <Group grow align="flex-start">
-        <Select 
-          label="State"
-          placeholder="Select state"
-          data={state}
-          value={value.state || null}
-          allowDeselect={false}
-          onChange={(nextState) => {
-            if (!nextState) return
-
-            if (nextState === value.state) {
-              return
-            }
-
-            onChange({
-              state: nextState, 
-              district: '',
-            })
-
-          }}
-          classNames={{
-            label: 'preference-input-label',
-            input: 'preference-input',
-          }}
-        />
-        <Select 
-          label="District"
-          placeholder="Select district"
-          data={districts}
-          value={value.district || null}
-          allowDeselect={false}
-          disabled={!value.state || districts.length === 0}
-          onChange={(district) => 
-            onChange({
-              ...value,
-              district: district ?? '',
-            })
-          }
-          classNames={{
-            label: 'preference-input-label',
-            input: 'preference-input',
-          }}
-        />
-      </Group>
-    </Box>
-  )
-}
 
 export default function PreferencesOnboardingPage() {
   const navigate = useNavigate()
@@ -153,51 +52,6 @@ export default function PreferencesOnboardingPage() {
 
   const progress = (step / 5) * 100
   const currentStepIndex = step - 1
-  const preferredMealCategories = form.values.preferredMealCategories
-  const disabledMealCategories = useMemo(
-    () => new Set(
-      form.values.dietaryRestrictions.flatMap(
-        (restriction) => restrictedMealCategories[restriction] ?? [],
-      ),
-    ),
-    [form.values.dietaryRestrictions],
-  )
-
-  useEffect(() => {
-    const nextMealCategories = preferredMealCategories.filter(
-      (category) => !disabledMealCategories.has(category),
-    )
-
-    if (nextMealCategories.length !== preferredMealCategories.length) {
-      form.setFieldValue('preferredMealCategories', nextMealCategories)
-    }
-  }, [preferredMealCategories, disabledMealCategories, form])
-
-  const toggleArrayValue = (
-    field: 'dietaryRestrictions' | 'healthConcerns' | 'preferredMealCategories',
-    value: string,
-  ) => {
-    // get current selected items
-    const currentValues = form.values[field]
-
-    if (field === 'dietaryRestrictions' && value === 'none') {
-      form.setFieldValue(field, currentValues.includes(value) ? [] : [value])
-      return
-    }
-
-    if (field === 'healthConcerns' && value === 'none') {
-      form.setFieldValue(field, currentValues.includes(value) ? [] : [value])
-      return
-    }
-
-    // check if value already exists in checked values list; if yes, remove it (uncheck)
-    // if no, add the new value, except for none cases
-    const nextValues = currentValues.includes(value) // check whether the clicked option is already selected
-      ? currentValues.filter((item) => item != value) // if yes, remove it from the array
-      : [...currentValues.filter((item) => item !== 'none'), value] // if no, remove special 'none' case, then append the new selection
-
-    form.setFieldValue(field, nextValues)
-  }
 
   const canContinue = () => {
     if (step === 1) return Boolean(form.values.mainGoal)
@@ -255,27 +109,27 @@ export default function PreferencesOnboardingPage() {
   }
 
   return (
-    <Box className="preference-page">
-      <Box component="main" className="preference-shell">
-        <Box component="section" className="preference-panel">
-          <Box className="preference-header">
-            <Box className="preference-topline">
+    <Box className="ui-page">
+      <Box component="main" className="ui-page-shell">
+        <Box component="section" className="ui-feature-panel">
+          <Box className="ui-page-header">
+            <Box className="ui-topline">
               <Text>Step {step} of 5</Text>
             </Box>
 
             <Title order={1}>Let us get to know you more.</Title>
-            <Text className="preference-intro">{stepDescriptions[currentStepIndex]}</Text>
+            <Text className="ui-page-copy">{stepDescriptions[currentStepIndex]}</Text>
 
-            <Box className="preference-progress">
+            <Box className="ui-progress">
               <Progress value={progress} color="#0f6b43" size="sm" radius="xl" />
-              <Box className="preference-step-list">
+              <Box className="ui-step-list">
                 {stepLabels.map((label, index) => (
                   <Box
                     key={label}
                     className={[
-                      'preference-step-pill',
-                      index + 1 === step ? 'preference-step-pill-active' : '',
-                      index + 1 < step ? 'preference-step-pill-complete' : '',
+                      'ui-step-pill',
+                      index + 1 === step ? 'ui-step-pill-active' : '',
+                      index + 1 < step ? 'ui-step-pill-complete' : '',
                     ].join(' ')}
                   >
                     <span>{index + 1 < step ? '✓' : index + 1}</span>
@@ -291,104 +145,66 @@ export default function PreferencesOnboardingPage() {
           )}
 
           {step === 1 && (
-            <QuestionBlock title="What is your main goal?">
-              <Box className="preference-stack">
-                {mainGoalOptions.map((goal) => (
-                  <OptionButton 
-                    key={goal.value}
-                    label={goal.label}
-                    selected={form.values.mainGoal === goal.value}
-                    onClick={() => form.setFieldValue('mainGoal', goal.value)}
-                  />
-                ))}
-              </Box>
-            </QuestionBlock>
+            <GoalStep 
+              value={form.values.mainGoal}
+              onChange={(value) => form.setFieldValue('mainGoal', value)}
+            />
           )}
 
           {step === 2 && (
-            <QuestionBlock title="Do you have any dietary restrictions?">
-              <Box className="preference-chip-grid">
-                {dietaryRestrictionOptions.map((restriction) => (
-                  <OptionButton 
-                    key={restriction.value}
-                    label={restriction.label}
-                    selected={form.values.dietaryRestrictions.includes(restriction.value)}
-                    onClick={() => toggleArrayValue('dietaryRestrictions', restriction.value)}
-                  />
-                ))}
-              </Box>
-            </QuestionBlock>
+            <DietaryRestrictionStep 
+              value={form.values.dietaryRestrictions}
+              onChange={(value) => {
+                form.setFieldValue('dietaryRestrictions', value)
+                form.setFieldValue(
+                  'preferredMealCategories',
+                  filterMealTagsForDietaryRestrictions(
+                    form.values.preferredMealCategories,
+                    value,
+                  ),
+                )
+              }}
+            />
           )}
 
           {step === 3 && (
-            <QuestionBlock title="Do you want recommendations based on any condition or health concern?">
-              <Box className="preference-stack preference-stack-compact">
-                {healthConcernOptions.map((concern) => (
-                  <OptionButton 
-                    key={concern.value}
-                    label={concern.label}
-                    selected={form.values.healthConcerns.includes(concern.value)}
-                    onClick={() => toggleArrayValue('healthConcerns', concern.value)}
-                    wide
-                  />
-                ))}
-              </Box>
-            </QuestionBlock>
+            <HealthConcernStep 
+              value={form.values.healthConcerns}
+              onChange={(value) => form.setFieldValue('healthConcerns', value)}
+            />
           )}
 
           {step === 4 && (
-            <QuestionBlock title="Tell Us Your Budget and Location">
-              <Box className="preference-form-grid">
-                <NumberInput 
-                  label="Monthly meal budget"
-                  prefix="RM "
-                  min={1}
-                  hideControls
-                  value={form.values.monthlyMealBudget}
-                  onChange={(value) => form.setFieldValue('monthlyMealBudget', value)}
-                  classNames={{
-                    label: 'preference-input-label',
-                    input: 'preference-input'
-                  }}
-                />
-
-                <LocationSelectGroup
-                  label="Workplace / school location"
-                  description="Where do you usually need lunch or dinner recommendations?"
-                  value={form.values.workSchoolLocation}
-                  onChange={(value) => form.setFieldValue('workSchoolLocation', value)}
-                />
-
-                <LocationSelectGroup
-                  label="Home location"
-                  description="Where should evening and weekend recommendations be centered?"
-                  value={form.values.homeLocation}
-                  onChange={(value) => form.setFieldValue('homeLocation', value)}
-                />
-              </Box>
-            </QuestionBlock>
+            <BudgetLocationStep 
+              monthlyMealBudget={form.values.monthlyMealBudget}
+              onMonthlyMealBudgetChange={(value) => 
+                form.setFieldValue("monthlyMealBudget", value)
+              }
+              workSchoolLocation={form.values.workSchoolLocation}
+              onWorkSchoolLocationChange={(value) => 
+                form.setFieldValue("workSchoolLocation", value)
+              }
+              homeLocation={form.values.homeLocation}
+              onHomeLocationChange={(value) => 
+                form.setFieldValue("homeLocation", value)
+              }
+            />
           )}
 
           {step === 5 && (
-            <QuestionBlock title="Which meal types do you want to see more often?">
-              <Box className="preference-chip-grid">
-                {mealCategoryOptions.map((category) => (
-                  <OptionButton 
-                    key={category.value}
-                    label={category.label}
-                    selected={form.values.preferredMealCategories.includes(category.value)}
-                    disabled={disabledMealCategories.has(category.value)}
-                    onClick={() => {toggleArrayValue('preferredMealCategories', category.value)}}
-                  />
-                ))}
-              </Box>
-            </QuestionBlock>
+            <MealPreferenceStep 
+              value={form.values.preferredMealCategories}
+              dietaryRestrictions={form.values.dietaryRestrictions}
+              onChange={(value) => 
+                form.setFieldValue("preferredMealCategories", value)
+              }
+            />
           )}
 
-          <Group justify="space-between" className="preference-actions">
+          <Group justify="space-between" className="ui-actions">
             <Button
               variant="subtle"
-              className="preference-back-button"
+              className="ui-ghost-button"
               leftSection={<span aria-hidden="true">←</span>}
               onClick={handleBack}
               disabled={step === 1 || isSubmitting}
@@ -398,7 +214,7 @@ export default function PreferencesOnboardingPage() {
 
             {step < 5 ? (
               <Button
-                className="preference-next-button"
+                className="ui-primary-button ui-action-button"
                 rightSection={<span aria-hidden="true">→</span>}
                 onClick={handleNext}
                 disabled={!canContinue()}
@@ -407,7 +223,7 @@ export default function PreferencesOnboardingPage() {
               </Button>
             ) : (
               <Button
-                className="preference-next-button"
+                className="ui-primary-button ui-action-button"
                 rightSection={<span aria-hidden="true">→</span>}
                 onClick={handleSubmit}
                 loading={isSubmitting}
@@ -420,49 +236,5 @@ export default function PreferencesOnboardingPage() {
         </Box>
       </Box>
     </Box>
-  )
-}
-
-function QuestionBlock({
-  title,
-  children,
-}: {
-  title: string
-  children: React.ReactNode
-}) {
-  return (
-    <Box className="preference-question">
-      <Title order={2}>{title}</Title>
-      {children}
-    </Box>
-  )
-}
-
-function OptionButton({
-  label,
-  selected,
-  onClick,
-  wide = false,
-  disabled = false,
-}: {
-  label: string,
-  selected: boolean,
-  onClick: () => void,
-  wide?: boolean,
-  disabled?: boolean
-}) {
-  return (
-     <UnstyledButton
-      className={[
-        'preference-option',
-        selected ? 'preference-option-selected' : '',
-        wide ? 'preference-option-wide' : '',
-        disabled ? 'preference-option-disabled' : '',
-      ].join(' ')}
-      disabled={disabled}
-      onClick={onClick}
-    >
-      <span>{label}</span>
-    </UnstyledButton>
   )
 }

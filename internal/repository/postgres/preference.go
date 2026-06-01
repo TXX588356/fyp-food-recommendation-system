@@ -49,7 +49,7 @@ func (r *preferenceRepository) Upsert(ctx context.Context, preference *model.Use
 			return err
 		}
 
-		if err := tx.Where("user_id = ?", preference.UserID).Delete(&model.UserHealthConcern{}).Error; err != nil {
+		if err := tx.Unscoped().Where("user_id = ?", preference.UserID).Delete(&model.UserHealthConcern{}).Error; err != nil {
 			return err
 		}
 		if len(preference.HealthConcerns) > 0 {
@@ -58,16 +58,16 @@ func (r *preferenceRepository) Upsert(ctx context.Context, preference *model.Use
 			}
 		}
 
-		if err := tx.Where("user_id = ?", preference.UserID).Delete(&model.UserDietaryRestriction{}).Error; err != nil {
+		if err := tx.Unscoped().Where("user_id = ?", preference.UserID).Delete(&model.UserDietaryRestriction{}).Error; err != nil {
 			return err
 		}
 		if len(preference.DietaryRestrictions) > 0 {
-			if err := tx.Create(&preference.DietaryRestrictions).Error; err != nil {
+			if err := tx.Unscoped().Create(&preference.DietaryRestrictions).Error; err != nil {
 				return err
 			}
 		}
 
-		if err := tx.Where("user_id = ?", preference.UserID).Delete(&model.UserMealPreference{}).Error; err != nil {
+		if err := tx.Unscoped().Where("user_id = ?", preference.UserID).Delete(&model.UserMealPreference{}).Error; err != nil {
 			return err
 		}
 		if len(preference.MealPreferences) > 0 {
