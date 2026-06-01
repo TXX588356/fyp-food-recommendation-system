@@ -8,7 +8,6 @@ import {
   Title,
 } from '@mantine/core'
 import '@/App.css'
-import { useMediaQuery } from '@mantine/hooks'
 import { useForm } from '@mantine/form'
 import { useState } from 'react'
 import axios from 'axios'
@@ -17,7 +16,6 @@ import { useNavigate } from 'react-router-dom'
 const thumbnailImage = 'https://images.unsplash.com/photo-1606756790138-261d2b21cd75?q=80&w=765&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
 
 export default function RegisterPage() {
-  const isMobile = useMediaQuery('(max-width: 760px)')
   // const [name, setName] = useState('')
   // const [email, setEmail] = useState('')
   // const [password, setPassword] = useState('')
@@ -63,69 +61,45 @@ export default function RegisterPage() {
   }
 
   const inputClassNames = {
-    label: 'auth-input-label',
-    input: 'auth-input',
-    wrapper: 'auth-input-wrapper',
-    innerInput: 'auth-password-inner-input',
-  }
-
-  const inputStyles = {
-    label: {
-      color: '#20342b',
-      fontSize: 13,
-      fontWeight: 800,
-      letterSpacing: '0.08em',
-      marginBottom: 10,
-      textTransform: 'uppercase' as const,
-    },
-    input: {
-      height: 54,
-      borderRadius: 18,
-      background: 'rgba(255, 251, 239, 0.92)',
-      color: '#17241e',
-      fontFamily: 'inherit',
-      paddingInline: 18,
-      transition: 'border-color 180ms ease, box-shadow 180ms ease, background 180ms ease',
-    },
+    label: 'ui-input-label',
+    input: 'ui-input',
+    wrapper: 'ui-input-wrapper',
+    innerInput: 'ui-password-inner-input',
   }
 
   return (
-    <Box
-      className="auth-page"
-      style={{ overflowY: isMobile ? 'auto' : 'hidden', height: '100vh'}}
-
-     >
+    <Box className="ui-fixed-page">
       <Box
         component='main'
-        className="auth-shell"
+        className="ui-split-shell"
       >
         <Box
           component="section"
-          className="auth-visual"
+          className="ui-visual-pane"
         >
           <img src={thumbnailImage} alt="food image" />
-          <Box className="visual-caption">
+          <Box className="ui-visual-caption">
             <span>Food Recommendation System</span>
-            <Title order={2}>Build a palate profile that remembers what you actually like.</Title>
+            <Title order={2} style={{color: '#fff8e8'}}>Build a palate profile that remembers what you actually like.</Title>
           </Box>
         </Box>
         <Box
           component="section"
-          className="auth-content"
+          className="ui-centered-content"
         >
-          <Box className="auth-card">
-            <Box className="auth-topline">
+          <Box className="ui-form-card">
+            <Box className="ui-form-topline">
               <span>new profile</span>
               <Anchor href="/login">Log in</Anchor>
             </Box>
 
             <Title
               order={1}
-              className="auth-heading"
+              className="ui-hero-heading"
             >
               Create your taste account.
             </Title>
-            <p className="auth-copy">
+            <p className="ui-body-copy">
               Save cravings, dietary preferences, and meal rhythms so recommendations feel less random and more like a regular order.
             </p>
 
@@ -133,7 +107,7 @@ export default function RegisterPage() {
             <Box 
               component='form'
               onSubmit={form.onSubmit(handleSubmit)}
-              className="auth-form"
+              className="ui-form"
               noValidate
             >
               <TextInput 
@@ -142,7 +116,6 @@ export default function RegisterPage() {
                 autoComplete='name' 
                 placeholder="e.g. John Doe"
                 classNames={inputClassNames}
-                styles={inputStyles}
                 key={form.key('name')}
                 {...form.getInputProps('name')}
               />
@@ -152,7 +125,6 @@ export default function RegisterPage() {
                 autoComplete='email' 
                 placeholder="you@example.com"
                 classNames={inputClassNames}
-                styles={inputStyles}
                 key={form.key('email')}
                 {...form.getInputProps('email')}
               />
@@ -161,7 +133,6 @@ export default function RegisterPage() {
                 autoComplete='new-password' 
                 placeholder="At least 6 characters"
                 classNames={inputClassNames}
-                styles={inputStyles}
                 key={form.key('password')}
                 {...form.getInputProps('password')}
               />
@@ -169,7 +140,7 @@ export default function RegisterPage() {
               <Button
                 type='submit'
                 fullWidth
-                className="auth-button"
+                className="ui-primary-button"
                 color='#00754A'
                 size='md'
                 loading={isSubmitting}
