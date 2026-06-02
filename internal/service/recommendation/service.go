@@ -2,57 +2,95 @@ package recommendation
 
 import (
 	"context"
-
-	"fyp/food-rs/internal/service/foodapi"
-	"fyp/food-rs/internal/service/llm"
+	"fmt"
+	"fyp/food-rs/internal/interfaces"
+	"strings"
 )
 
-type MealGenerator interface {
-	GenerateMeals(ctx context.Context) (llm.GeminiMealsResponse, error)
+type service struct {
+	mealGenerator interfaces.MealGenerator
+	foodSearcher  interfaces.FoodSearcher
 }
 
-type FoodSearcher interface {
-	SearchFood(ctx context.Context, mealName string) (foodapi.KaloriSearchResponse, bool, error)
-}
-
-type Service struct {
-	generator MealGenerator
-	searcher  FoodSearcher
-}
-
-type MealWithKaloriResult struct {
-	Meal         llm.Meal                     `json:"meal"`
-	KaloriResult foodapi.KaloriSearchResponse `json:"kalori_result,omitempty"`
-	Error        string                       `json:"error,omitempty"`
-}
-
-func NewService(generator MealGenerator, searcher FoodSearcher) Service {
-	return Service{
-		generator: generator,
-		searcher:  searcher,
+func NewService(mealGenerator interfaces.MealGenerator, foodSearcher interfaces.FoodSearcher) interfaces.RecommendationService {
+	return &service{
+		mealGenerator: mealGenerator,
+		foodSearcher:  foodSearcher,
 	}
 }
 
-func (s Service) Recommend(ctx context.Context) ([]MealWithKaloriResult, error) {
-	meals, err := s.generator.GenerateMeals(ctx)
+// GenerateCandidates requests meal suggestions from Gemini and enriches each
+// cancidate with factual macro nutrition data from the food searcher
+func (s *service) GenerateCandidates(ctx context.Context, input interfaces.MealPromptInput) ([]interfaces.MatchedMealCandidate, error) {
+	response, err := s.mealGenerator.GenerateMeals(ctx, input)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("generated meal candidates: %w", err)
 	}
 
-	results := make([]MealWithKaloriResult, 0, len(meals.Meals))
-	for _, meal := range meals.Meals {
-		kaloriResult, found, err := s.searcher.SearchFood(ctx, meal.Name)
-		item := MealWithKaloriResult{Meal: meal}
+	candidates := make([]interfaces.MatchedMealCandidate, 0, len(response.Meals))
+
+	for _, meal := range response.Meals {
+		candidate, found, err := s.matchFood(ctx, meal)
 		if err != nil {
-			item.Error = err.Error()
-		} else if !found {
-			continue
-		} else {
-			item.KaloriResult = kaloriResult
+			return nil, err
 		}
 
-		results = append(results, item)
+		if !found {
+			continue
+		}
+
+		candidates = append(candidates, candidate)
 	}
 
-	return results, nil
+	return candidates, nil
+}
+
+// matchFood tries the normalized Gemini name first, followed by each fallback search term.
+// A meal is discarded if every exact lookup returns no match.
+func (s *service) matchFood(ctx context.Context, meal interfaces.GeneratedMeal) (interfaces.MatchedMealCandidate, bool, error) {
+	searchTerms := buildSearchTerms(meal)
+
+	for _, query := range searchTerms {
+		food, found, err := s.foodSearcher.SearchFood(ctx, query)
+		if err != nil {
+			return interfaces.MatchedMealCandidate{}, false, fmt.Errorf("search food %q: %w", query, err)
+		}
+
+		if found {
+			return interfaces.MatchedMealCandidate{
+				GeneratedMeal: meal,
+				Food:          food,
+				MatchedQuery:  query,
+			}, true, nil
+		}
+	}
+
+	return interfaces.MatchedMealCandidate{}, false, nil
+}
+
+// buildSearchTerms returns unique non-empty lookup terms in priority order.
+func buildSearchTerms(meal interfaces.GeneratedMeal) []string {
+	searchTerms := make([]string, 0, 1+len(meal.AlternativeSearchTerms))
+
+	seen := make(map[string]bool)
+
+	addTerm := func(term string) {
+		trimmed := strings.TrimSpace(term)
+		normalized := strings.ToLower(trimmed)
+
+		if trimmed == "" || seen[normalized] {
+			return
+		}
+
+		seen[normalized] = true
+		searchTerms = append(searchTerms, trimmed)
+	}
+
+	addTerm(meal.Name)
+
+	for _, term := range meal.AlternativeSearchTerms {
+		addTerm(term)
+	}
+
+	return searchTerms
 }
