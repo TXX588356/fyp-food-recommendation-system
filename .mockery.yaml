@@ -1,0 +1,14 @@
+all: false
+dir: internal/mocks
+pkgname: mocks
+structname: "{{.InterfaceName}}"
+filename: "{{ snakecase .InterfaceName }}.go"
+template: testify
+
+packages:
+  fyp/food-rs/internal/interfaces:
+    interfaces:
+      CustomMealRepository:
+      CustomMealService:
+      FoodSearcher:
+      MealGenerator:
