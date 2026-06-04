@@ -2,6 +2,11 @@ ifneq ("$(wildcard .env)","")
 	include .env
 endif
 
+MOCKERY_VERSION := v2.53.6
+MOCKERY := bin/mockery
+
+.PHONY: dev-env-start dev dev-client dev-start generate
+
 dev-env-start:
 	podman start fyp-postgres
 
@@ -20,3 +25,9 @@ dev-start:
   	-p ${DATABASE_PORT}:5432 \
   	postgres
 
+generate: $(MOCKERY)
+	$(MOCKERY)
+	go generate ./...
+
+$(MOCKERY):
+	GOBIN=$(CURDIR)/bin go install github.com/vektra/mockery/v2@$(MOCKERY_VERSION)
