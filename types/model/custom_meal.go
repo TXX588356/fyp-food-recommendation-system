@@ -36,3 +36,18 @@ type CustomMealCategoryTag struct {
 	CustomMealItemID uuid.UUID `gorm:"type:uuid;primaryKey"`
 	MealCategory     string    `gorm:"type:text;primaryKey"`
 }
+
+// TableName maps custom meals to the migration-created table name.
+func (CustomMealItem) TableName() string {
+	return "custom_meal_items"
+}
+
+// TableName maps dietary restriction tags to the migration-created table name.
+func (CustomMealDietaryRestrictionTag) TableName() string {
+	return "custom_meal_dietary_restriction_tags"
+}
+
+// TableName maps category tags to the migration-created table name.
+func (CustomMealCategoryTag) TableName() string {
+	return "custom_meal_categories"
+}

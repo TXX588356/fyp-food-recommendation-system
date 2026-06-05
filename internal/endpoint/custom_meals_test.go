@@ -52,6 +52,8 @@ func registerCustomMealTestRoutes(e *echo.Echo, service interfaces.CustomMealSer
 	customMeals.POST("", handler.createCustomMeal)
 	customMeals.GET("", handler.listVisibleCustomMeals)
 	customMeals.GET("/:id", handler.findVisibleCustomMealByID)
+	customMeals.PUT("/:id", handler.updateCustomMeal)
+	customMeals.DELETE("/:id", handler.deleteCustomMeal)
 }
 
 // performCustomMealRequest executes an HTTP request against the test router.
@@ -271,6 +273,117 @@ var _ = Describe("Custom meal endpoints", func() {
 				Once()
 
 			response := performCustomMealRequest(e, http.MethodGet, "/custom-meals/"+mealID.String(), nil, token)
+
+			Expect(response.Code).To(Equal(http.StatusNotFound))
+			Expect(response.Body.String()).To(ContainSubstring("record not found"))
+		})
+	})
+
+	Describe("PUT /custom-meals/:id", func() {
+		It("should update one owned custom meal", func() {
+			mealID := uuid.New()
+			input := interfaces.CustomMealInput{
+				Name:           "Dubai Chocolate with Strawberry",
+				Price:          10.50,
+				Calories:       420,
+				FatG:           52,
+				ProteinG:       21,
+				CarbsG:         31,
+				State:          "Kuala Lumpur",
+				District:       "Bangsar",
+				RestaurantName: "FamilyMart",
+				DietaryRestrictionTags: []string{
+					"halal",
+				},
+				MealCategoryTags: []string{
+					"nuts",
+					"snacks",
+				},
+			}
+			expectedResponse := &interfaces.CustomMealResponse{
+				ID:             mealID.String(),
+				Name:           "Dubai Chocolate with Strawberry",
+				Price:          10.50,
+				Calories:       420,
+				FatG:           52,
+				ProteinG:       21,
+				CarbsG:         31,
+				State:          "Kuala Lumpur",
+				District:       "Bangsar",
+				RestaurantName: "FamilyMart",
+				IsOwner:        true,
+			}
+
+			customMealService.EXPECT().
+				Update(mock.Anything, userID, mealID, input).
+				Return(expectedResponse, nil).
+				Once()
+
+			response := performCustomMealRequest(e, http.MethodPut, "/custom-meals/"+mealID.String(), input, token)
+
+			Expect(response.Code).To(Equal(http.StatusOK))
+
+			var result interfaces.CustomMealResponse
+			Expect(json.Unmarshal(response.Body.Bytes(), &result)).To(Succeed())
+			Expect(result.ID).To(Equal(mealID.String()))
+			Expect(result.Name).To(Equal("Dubai Chocolate with Strawberry"))
+			Expect(result.Price).To(Equal(10.50))
+		})
+
+		It("should reject an invalid custom meal ID", func() {
+			response := performCustomMealRequest(e, http.MethodPut, "/custom-meals/not-a-uuid", interfaces.CustomMealInput{}, token)
+
+			Expect(response.Code).To(Equal(http.StatusBadRequest))
+			Expect(response.Body.String()).To(ContainSubstring("invalid custom meal id"))
+		})
+
+		It("should return bad request when updating fails", func() {
+			mealID := uuid.New()
+			input := interfaces.CustomMealInput{}
+
+			customMealService.EXPECT().
+				Update(mock.Anything, userID, mealID, input).
+				Return(nil, errors.New("custom meal name is required")).
+				Once()
+
+			response := performCustomMealRequest(e, http.MethodPut, "/custom-meals/"+mealID.String(), input, token)
+
+			Expect(response.Code).To(Equal(http.StatusBadRequest))
+			Expect(response.Body.String()).To(ContainSubstring("custom meal name is required"))
+		})
+	})
+
+	Describe("DELETE /custom-meals/:id", func() {
+		It("should delete one owned custom meal", func() {
+			mealID := uuid.New()
+
+			customMealService.EXPECT().
+				Delete(mock.Anything, userID, mealID).
+				Return(nil).
+				Once()
+
+			response := performCustomMealRequest(e, http.MethodDelete, "/custom-meals/"+mealID.String(), nil, token)
+
+			Expect(response.Code).To(Equal(http.StatusOK))
+			Expect(response.Body.String()).To(ContainSubstring("custom meal deleted"))
+		})
+
+		It("should reject an invalid custom meal ID", func() {
+			response := performCustomMealRequest(e, http.MethodDelete, "/custom-meals/not-a-uuid", nil, token)
+
+			Expect(response.Code).To(Equal(http.StatusBadRequest))
+			Expect(response.Body.String()).To(ContainSubstring("invalid custom meal id"))
+		})
+
+		It("should return not found when deleting fails", func() {
+			mealID := uuid.New()
+
+			customMealService.EXPECT().
+				Delete(mock.Anything, userID, mealID).
+				Return(errors.New("record not found")).
+				Once()
+
+			response := performCustomMealRequest(e, http.MethodDelete, "/custom-meals/"+mealID.String(), nil, token)
 
 			Expect(response.Code).To(Equal(http.StatusNotFound))
 			Expect(response.Body.String()).To(ContainSubstring("record not found"))

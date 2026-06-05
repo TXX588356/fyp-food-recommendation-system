@@ -113,6 +113,69 @@ func (_c *CustomMealService_Create_Call) RunAndReturn(run func(ctx context.Conte
 	return _c
 }
 
+// Delete provides a mock function for the type CustomMealService
+func (_mock *CustomMealService) Delete(ctx context.Context, userID uuid.UUID, customMealID uuid.UUID) error {
+	ret := _mock.Called(ctx, userID, customMealID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Delete")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) error); ok {
+		r0 = returnFunc(ctx, userID, customMealID)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// CustomMealService_Delete_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Delete'
+type CustomMealService_Delete_Call struct {
+	*mock.Call
+}
+
+// Delete is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID uuid.UUID
+//   - customMealID uuid.UUID
+func (_e *CustomMealService_Expecter) Delete(ctx interface{}, userID interface{}, customMealID interface{}) *CustomMealService_Delete_Call {
+	return &CustomMealService_Delete_Call{Call: _e.mock.On("Delete", ctx, userID, customMealID)}
+}
+
+func (_c *CustomMealService_Delete_Call) Run(run func(ctx context.Context, userID uuid.UUID, customMealID uuid.UUID)) *CustomMealService_Delete_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *CustomMealService_Delete_Call) Return(err error) *CustomMealService_Delete_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *CustomMealService_Delete_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID, customMealID uuid.UUID) error) *CustomMealService_Delete_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // FindVisibleByID provides a mock function for the type CustomMealService
 func (_mock *CustomMealService) FindVisibleByID(ctx context.Context, userID uuid.UUID, customMealID uuid.UUID) (*interfaces.CustomMealResponse, error) {
 	ret := _mock.Called(ctx, userID, customMealID)
@@ -257,6 +320,86 @@ func (_c *CustomMealService_ListVisible_Call) Return(customMealResponses []*inte
 }
 
 func (_c *CustomMealService_ListVisible_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID, query string) ([]*interfaces.CustomMealResponse, error)) *CustomMealService_ListVisible_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Update provides a mock function for the type CustomMealService
+func (_mock *CustomMealService) Update(ctx context.Context, userID uuid.UUID, customMealID uuid.UUID, input interfaces.CustomMealInput) (*interfaces.CustomMealResponse, error) {
+	ret := _mock.Called(ctx, userID, customMealID, input)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Update")
+	}
+
+	var r0 *interfaces.CustomMealResponse
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, interfaces.CustomMealInput) (*interfaces.CustomMealResponse, error)); ok {
+		return returnFunc(ctx, userID, customMealID, input)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, interfaces.CustomMealInput) *interfaces.CustomMealResponse); ok {
+		r0 = returnFunc(ctx, userID, customMealID, input)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*interfaces.CustomMealResponse)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, uuid.UUID, interfaces.CustomMealInput) error); ok {
+		r1 = returnFunc(ctx, userID, customMealID, input)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// CustomMealService_Update_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Update'
+type CustomMealService_Update_Call struct {
+	*mock.Call
+}
+
+// Update is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID uuid.UUID
+//   - customMealID uuid.UUID
+//   - input interfaces.CustomMealInput
+func (_e *CustomMealService_Expecter) Update(ctx interface{}, userID interface{}, customMealID interface{}, input interface{}) *CustomMealService_Update_Call {
+	return &CustomMealService_Update_Call{Call: _e.mock.On("Update", ctx, userID, customMealID, input)}
+}
+
+func (_c *CustomMealService_Update_Call) Run(run func(ctx context.Context, userID uuid.UUID, customMealID uuid.UUID, input interfaces.CustomMealInput)) *CustomMealService_Update_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		var arg3 interfaces.CustomMealInput
+		if args[3] != nil {
+			arg3 = args[3].(interfaces.CustomMealInput)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *CustomMealService_Update_Call) Return(customMealResponse *interfaces.CustomMealResponse, err error) *CustomMealService_Update_Call {
+	_c.Call.Return(customMealResponse, err)
+	return _c
+}
+
+func (_c *CustomMealService_Update_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID, customMealID uuid.UUID, input interfaces.CustomMealInput) (*interfaces.CustomMealResponse, error)) *CustomMealService_Update_Call {
 	_c.Call.Return(run)
 	return _c
 }

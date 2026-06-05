@@ -18,9 +18,44 @@ func NewCustomMealPostgresRepository(db *gorm.DB) interfaces.CustomMealRepositor
 	return &customMealRepository{db: db}
 }
 
-// Create stores a custom meal and its associated tag rows.
+// Create stores a custom meal and its associated tag rows in one transaction.
 func (r *customMealRepository) Create(ctx context.Context, meal *model.CustomMealItem) (*model.CustomMealItem, error) {
-	err := r.db.WithContext(ctx).Create(meal).Error
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		dietaryRestrictionTags := meal.DietaryRestrictionTags
+		mealCategoryTags := meal.MealCategoryTags
+
+		meal.DietaryRestrictionTags = nil
+		meal.MealCategoryTags = nil
+
+		if err := tx.Create(meal).Error; err != nil {
+			return err
+		}
+
+		for i := range dietaryRestrictionTags {
+			dietaryRestrictionTags[i].CustomMealItemID = meal.ID
+		}
+
+		for i := range mealCategoryTags {
+			mealCategoryTags[i].CustomMealItemID = meal.ID
+		}
+
+		if len(dietaryRestrictionTags) > 0 {
+			if err := tx.Create(&dietaryRestrictionTags).Error; err != nil {
+				return err
+			}
+		}
+
+		if len(mealCategoryTags) > 0 {
+			if err := tx.Create(&mealCategoryTags).Error; err != nil {
+				return err
+			}
+		}
+
+		meal.DietaryRestrictionTags = dietaryRestrictionTags
+		meal.MealCategoryTags = mealCategoryTags
+
+		return nil
+	})
 
 	return meal, err
 }
@@ -89,4 +124,95 @@ func (r *customMealRepository) FindVisibleByID(ctx context.Context, userID uuid.
 	}
 
 	return &meal, nil
+}
+
+// UpdateOwned updates a custom meal only when it belongs to the specified user.
+// Tag rows are replaced inside the same transaction so the meal and tags stay consistent.
+func (r *customMealRepository) UpdateOwned(ctx context.Context, userID uuid.UUID, meal *model.CustomMealItem) (*model.CustomMealItem, error) {
+	var updatedMeal model.CustomMealItem
+
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		result := tx.Model(&model.CustomMealItem{}).
+			Where("id = ? AND created_by = ?", meal.ID, userID).
+			Updates(map[string]any{
+				"name":            meal.Name,
+				"price":           meal.Price,
+				"calories":        meal.Calories,
+				"fat_g":           meal.FatG,
+				"protein_g":       meal.ProteinG,
+				"carbs_g":         meal.CarbsG,
+				"state":           meal.State,
+				"district":        meal.District,
+				"restaurant_name": meal.RestaurantName,
+			})
+
+		if result.Error != nil {
+			return result.Error
+		}
+
+		if result.RowsAffected == 0 {
+			return gorm.ErrRecordNotFound
+		}
+
+		if err := tx.Where("custom_meal_item_id = ?", meal.ID).
+			Delete(&model.CustomMealDietaryRestrictionTag{}).Error; err != nil {
+			return err
+		}
+
+		if err := tx.Where("custom_meal_item_id = ?", meal.ID).
+			Delete(&model.CustomMealCategoryTag{}).Error; err != nil {
+			return err
+		}
+
+		for i := range meal.DietaryRestrictionTags {
+			meal.DietaryRestrictionTags[i].CustomMealItemID = meal.ID
+		}
+
+		for i := range meal.MealCategoryTags {
+			meal.MealCategoryTags[i].CustomMealItemID = meal.ID
+		}
+
+		if len(meal.DietaryRestrictionTags) > 0 {
+			if err := tx.Create(&meal.DietaryRestrictionTags).Error; err != nil {
+				return err
+			}
+		}
+
+		if len(meal.MealCategoryTags) > 0 {
+			if err := tx.Create(&meal.MealCategoryTags).Error; err != nil {
+				return err
+			}
+		}
+
+		return tx.
+			Preload("DietaryRestrictionTags").
+			Preload("MealCategoryTags").
+			Where("id = ? AND created_by = ?", meal.ID, userID).
+			First(&updatedMeal).Error
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &updatedMeal, nil
+}
+
+// DeleteOwned soft-deletes a custom meal only when it belongs to the specified
+// user. Existing meal-log history should keep its own snapshots and should not
+// depend on this source row after logging.
+func (r *customMealRepository) DeleteOwned(ctx context.Context, userID uuid.UUID, customMealID uuid.UUID) error {
+	result := r.db.WithContext(ctx).
+		Where("id = ? AND created_by = ?", customMealID, userID).
+		Delete(&model.CustomMealItem{})
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+
+	return nil
 }
