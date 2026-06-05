@@ -6,6 +6,7 @@ import (
 	"fyp/food-rs/internal/interfaces"
 	"fyp/food-rs/internal/repository/postgres"
 	authservice "fyp/food-rs/internal/service/auth"
+	customMealService "fyp/food-rs/internal/service/custommeal"
 	preferenceService "fyp/food-rs/internal/service/preference"
 
 	"gorm.io/gorm"
@@ -20,6 +21,7 @@ type App struct {
 	authService       interfaces.AuthService
 	JWTSecret         string
 	preferenceService interfaces.PreferenceService
+	customMealService interfaces.CustomMealService
 }
 
 func New(db *gorm.DB, jwtSecret string) *App {
@@ -54,6 +56,17 @@ func (a *App) GetPreferenceService(ctx context.Context) (interfaces.PreferenceSe
 	return a.preferenceService, nil
 }
 
+// GetCustomMealService builds custom meal service from Postgres custom meal repo
+func (a *App) GetCustomMealService(ctx context.Context) (interfaces.CustomMealService, error) {
+	if a.customMealService != nil {
+		return a.customMealService, nil
+	}
+
+	customMealRepo := postgres.NewCustomMealPostgresRepository(a.PostgresDB)
+	a.customMealService = customMealService.NewService(customMealRepo)
+	return a.customMealService, nil
+}
+
 func FromContext(ctx context.Context) *App {
 	a := ctx.Value(appContextKey)
 	if a != nil {
@@ -63,6 +76,7 @@ func FromContext(ctx context.Context) *App {
 	return nil
 }
 
+// WithApp stores the application dependency container inside a context
 func WithApp(ctx context.Context, a *App) context.Context {
 	return context.WithValue(ctx, appContextKey, a)
 }

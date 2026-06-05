@@ -19,3 +19,10 @@ type PreferenceRepository interface {
 	Upsert(ctx context.Context, preference *model.UserPreference) (*model.UserPreference, error)
 	UpdateDataSharingConsent(ctx context.Context, userID uuid.UUID, consent bool) error
 }
+
+type CustomMealRepository interface {
+	Create(ctx context.Context, meal *model.CustomMealItem) (*model.CustomMealItem, error)
+	ListOwnedByUser(ctx context.Context, userID uuid.UUID, query string) ([]model.CustomMealItem, error)
+	ListSharedFromOtherUsers(ctx context.Context, userID uuid.UUID, query string) ([]model.CustomMealItem, error)
+	FindVisibleByID(ctx context.Context, userID uuid.UUID, customMealID uuid.UUID) (*model.CustomMealItem, error)
+}

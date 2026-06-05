@@ -3,88 +3,65 @@ package recommendation
 import (
 	"context"
 	"errors"
-	"fyp/food-rs/internal/interfaces"
 	"testing"
+
+	"fyp/food-rs/internal/interfaces"
+	"fyp/food-rs/internal/mocks"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/mock"
 )
 
+// TestRecommendation runs the recommendation service test suite.
 func TestRecommendation(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Recommendation Suite")
 }
 
-type stubMealGenerator struct {
-	response interfaces.GeminiMealsResponse
-	err      error
-}
-
-func (s stubMealGenerator) GenerateMeals(ctx context.Context, input interfaces.MealPromptInput) (interfaces.GeminiMealsResponse, error) {
-	return s.response, s.err
-}
-
-type stubFoodSearcher struct {
-	results map[string]interfaces.FoodSearchResult
-	errors  map[string]error
-	queries []string // slice that records every query setn to the stub
-}
-
-func (s *stubFoodSearcher) SearchFood(ctx context.Context, query string) (interfaces.FoodSearchResult, bool, error) {
-	s.queries = append(s.queries, query) // append queries each time SearchFood is called
-
-	if err := s.errors[query]; err != nil {
-		return interfaces.FoodSearchResult{}, false, err
-	}
-
-	food, found := s.results[query]
-	return food, found, nil
-}
-
 var _ = Describe("Recommendation candidate generation", func() {
 	var (
-		ctx          context.Context
-		foodSearcher *stubFoodSearcher
+		ctx           context.Context
+		mealGenerator *mocks.MealGenerator
+		foodSearcher  *mocks.FoodSearcher
+		service       interfaces.RecommendationService
+		input         interfaces.MealPromptInput
 	)
 
 	BeforeEach(func() {
 		ctx = context.Background()
-		foodSearcher = &stubFoodSearcher{
-			results: map[string]interfaces.FoodSearchResult{},
-			errors:  map[string]error{},
-		}
+		input = interfaces.MealPromptInput{}
+		mealGenerator = mocks.NewMealGenerator(GinkgoT())
+		foodSearcher = mocks.NewFoodSearcher(GinkgoT())
+		service = NewService(mealGenerator, foodSearcher)
 	})
 
 	It("should match a meal using its normalized name first", func() {
-		foodSearcher.results["Nasi Lemak"] = interfaces.FoodSearchResult{
-			ID:   "food-1",
-			Name: "Nasi Lemak",
-		}
-
-		service := NewService(stubMealGenerator{
-			response: interfaces.GeminiMealsResponse{
+		mealGenerator.EXPECT().GenerateMeals(mock.Anything, input).
+			Return(interfaces.GeminiMealsResponse{
 				Meals: []interfaces.GeneratedMeal{
 					{Name: "Nasi Lemak"},
 				},
-			},
-		}, foodSearcher)
+			}, nil).
+			Once()
 
-		candidates, err := service.GenerateCandidates(ctx, interfaces.MealPromptInput{})
+		foodSearcher.EXPECT().SearchFood(mock.Anything, "Nasi Lemak").
+			Return(interfaces.FoodSearchResult{
+				ID:   "food-1",
+				Name: "Nasi Lemak",
+			}, true, nil).
+			Once()
+
+		candidates, err := service.GenerateCandidates(ctx, input)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(candidates).To(HaveLen(1))
 		Expect(candidates[0].MatchedQuery).To(Equal("Nasi Lemak"))
-		Expect(foodSearcher.queries).To(Equal([]string{"Nasi Lemak"}))
 	})
 
 	It("should try alternative search terms when the normalized name is not found", func() {
-		foodSearcher.results["Wan Tan Mee"] = interfaces.FoodSearchResult{
-			ID:   "food-2",
-			Name: "Wantan Mee",
-		}
-
-		service := NewService(stubMealGenerator{
-			response: interfaces.GeminiMealsResponse{
+		mealGenerator.EXPECT().GenerateMeals(mock.Anything, input).
+			Return(interfaces.GeminiMealsResponse{
 				Meals: []interfaces.GeneratedMeal{
 					{
 						Name: "Wantan Mee",
@@ -94,66 +71,78 @@ var _ = Describe("Recommendation candidate generation", func() {
 						},
 					},
 				},
-			},
-		}, foodSearcher)
+			}, nil).
+			Once()
 
-		candidates, err := service.GenerateCandidates(ctx, interfaces.MealPromptInput{})
+		foodSearcher.EXPECT().SearchFood(mock.Anything, "Wantan Mee").
+			Return(interfaces.FoodSearchResult{}, false, nil).
+			Once()
+		foodSearcher.EXPECT().SearchFood(mock.Anything, "Wonton Mee").
+			Return(interfaces.FoodSearchResult{}, false, nil).
+			Once()
+		foodSearcher.EXPECT().SearchFood(mock.Anything, "Wan Tan Mee").
+			Return(interfaces.FoodSearchResult{
+				ID:   "food-2",
+				Name: "Wantan Mee",
+			}, true, nil).
+			Once()
+
+		candidates, err := service.GenerateCandidates(ctx, input)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(candidates).To(HaveLen(1))
 		Expect(candidates[0].MatchedQuery).To(Equal("Wan Tan Mee"))
-
-		// verifies the order of API search attempts
-		Expect(foodSearcher.queries).To(Equal([]string{
-			"Wantan Mee",
-			"Wonton Mee",
-			"Wan Tan Mee",
-		}))
 	})
 
 	It("should discard a meal when every search term returns no result", func() {
-		service := NewService(stubMealGenerator{
-			response: interfaces.GeminiMealsResponse{
+		mealGenerator.EXPECT().GenerateMeals(mock.Anything, input).
+			Return(interfaces.GeminiMealsResponse{
 				Meals: []interfaces.GeneratedMeal{
 					{
-						Name: "Unknown Meal",
-						AlternativeSearchTerms: []string{
-							"Unknown Food",
-						},
+						Name:                   "Unknown Meal",
+						AlternativeSearchTerms: []string{"Unknown Food"},
 					},
 				},
-			},
-		}, foodSearcher,
-		)
+			}, nil).
+			Once()
 
-		candidates, err := service.GenerateCandidates(ctx, interfaces.MealPromptInput{})
+		foodSearcher.EXPECT().SearchFood(mock.Anything, "Unknown Meal").
+			Return(interfaces.FoodSearchResult{}, false, nil).
+			Once()
+		foodSearcher.EXPECT().SearchFood(mock.Anything, "Unknown Food").
+			Return(interfaces.FoodSearchResult{}, false, nil).
+			Once()
+
+		candidates, err := service.GenerateCandidates(ctx, input)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(candidates).To(BeEmpty())
 	})
 
 	It("should return a controlled error when Gemini fails", func() {
-		service := NewService(stubMealGenerator{
-			err: errors.New("Gemini unavailable"),
-		}, foodSearcher)
+		mealGenerator.EXPECT().GenerateMeals(mock.Anything, input).
+			Return(interfaces.GeminiMealsResponse{}, errors.New("Gemini unavailable")).
+			Once()
 
-		_, err := service.GenerateCandidates(ctx, interfaces.MealPromptInput{})
+		_, err := service.GenerateCandidates(ctx, input)
 
 		Expect(err).To(MatchError("generated meal candidates: Gemini unavailable"))
 	})
 
 	It("should return a controlled error when food search fails", func() {
-		foodSearcher.errors["Nasi Lemak"] = errors.New("food API unavailable")
-
-		service := NewService(stubMealGenerator{
-			response: interfaces.GeminiMealsResponse{
+		mealGenerator.EXPECT().GenerateMeals(mock.Anything, input).
+			Return(interfaces.GeminiMealsResponse{
 				Meals: []interfaces.GeneratedMeal{
 					{Name: "Nasi Lemak"},
 				},
-			},
-		}, foodSearcher)
+			}, nil).
+			Once()
 
-		_, err := service.GenerateCandidates(ctx, interfaces.MealPromptInput{})
+		foodSearcher.EXPECT().SearchFood(mock.Anything, "Nasi Lemak").
+			Return(interfaces.FoodSearchResult{}, false, errors.New("food API unavailable")).
+			Once()
+
+		_, err := service.GenerateCandidates(ctx, input)
 
 		Expect(err).To(MatchError(`search food "Nasi Lemak": food API unavailable`))
 	})
