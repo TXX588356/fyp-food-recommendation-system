@@ -25,4 +25,6 @@ type CustomMealRepository interface {
 	ListOwnedByUser(ctx context.Context, userID uuid.UUID, query string) ([]model.CustomMealItem, error)
 	ListSharedFromOtherUsers(ctx context.Context, userID uuid.UUID, query string) ([]model.CustomMealItem, error)
 	FindVisibleByID(ctx context.Context, userID uuid.UUID, customMealID uuid.UUID) (*model.CustomMealItem, error)
+	UpdateOwned(ctx context.Context, userID uuid.UUID, meal *model.CustomMealItem) (*model.CustomMealItem, error)
+	DeleteOwned(ctx context.Context, userID uuid.UUID, customMealID uuid.UUID) error
 }

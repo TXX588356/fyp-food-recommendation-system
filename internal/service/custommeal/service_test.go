@@ -2,6 +2,7 @@ package custommeal
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"fyp/food-rs/internal/interfaces"
@@ -225,6 +226,91 @@ var _ = Describe("Custom meal service", func() {
 			Expect(response.IsShared).To(BeFalse())
 			Expect(response.DietaryRestrictionTags).To(Equal([]string{"halal"}))
 			Expect(response.MealCategoryTags).To(Equal([]string{"nuts", "snacks"}))
+		})
+	})
+
+	Describe("Update", func() {
+		It("should update custom meal when given valid input", func() {
+			mealID := uuid.New()
+			input := validInput()
+			input.Name = "Dubai Chocolate With Strawberry"
+			input.Price = 12.99
+
+			updatedMeal := customMeal(mealID, userID, "Dubai Chocolate With Strawberry")
+			updatedMeal.Price = 12.99
+
+			repo.EXPECT().UpdateOwned(mock.Anything, userID, mock.MatchedBy(func(meal *model.CustomMealItem) bool {
+				return meal.ID == mealID &&
+					meal.CreatedBy == userID &&
+					meal.Name == "Dubai Chocolate With Strawberry" &&
+					meal.Price == 12.99 &&
+					len(meal.DietaryRestrictionTags) == 1 &&
+					len(meal.MealCategoryTags) == 2
+			}),
+			).
+				Return(&updatedMeal, nil).
+				Once()
+
+			response, err := svc.Update(ctx, userID, mealID, input)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(response).NotTo(BeNil())
+			Expect(response.ID).To(Equal(mealID.String()))
+			Expect(response.Name).To(Equal("Dubai Chocolate With Strawberry"))
+			Expect(response.Price).To(Equal(12.99))
+			Expect(response.IsOwner).To(BeTrue())
+			Expect(response.IsShared).To(BeFalse())
+			Expect(response.DietaryRestrictionTags).To(Equal([]string{"halal"}))
+			Expect(response.MealCategoryTags).To(Equal([]string{"nuts", "snacks"}))
+		})
+
+		It("should reject invalid input before calling the repository", func() {
+			mealID := uuid.New()
+			input := validInput()
+			input.Name = " "
+
+			response, err := svc.Update(ctx, userID, mealID, input)
+
+			Expect(err).To(MatchError("custom meal name is required"))
+			Expect(response).To(BeNil())
+		})
+
+		It("should return repository errors", func() {
+			mealID := uuid.New()
+			input := validInput()
+
+			repo.EXPECT().
+				UpdateOwned(mock.Anything, userID, mock.MatchedBy(func(meal *model.CustomMealItem) bool {
+					return meal.ID == mealID && meal.CreatedBy == userID
+				}),
+				).Return(nil, errors.New("record not found")).
+				Once()
+
+			response, err := svc.Update(ctx, userID, mealID, input)
+			Expect(err).To(MatchError("record not found"))
+			Expect(response).To(BeNil())
+		})
+	})
+
+	Describe("Delete", func() {
+		It("should delete custom meal when the custom meal ID is valid", func() {
+			mealID := uuid.New()
+
+			repo.EXPECT().DeleteOwned(mock.Anything, userID, mealID).Return(nil).Once()
+
+			err := svc.Delete(ctx, userID, mealID)
+
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should return repository errors", func() {
+			mealID := uuid.New()
+
+			repo.EXPECT().DeleteOwned(mock.Anything, userID, mealID).Return(errors.New("record not found")).Once()
+
+			err := svc.Delete(ctx, userID, mealID)
+
+			Expect(err).To(MatchError("record not found"))
 		})
 	})
 })

@@ -36,6 +36,8 @@ func RegisterCustomMealRoutes(ctx context.Context, e *echo.Echo) {
 	customMeal.POST("", h.createCustomMeal)
 	customMeal.GET("", h.listVisibleCustomMeals)
 	customMeal.GET("/:id", h.findVisibleCustomMealByID)
+	customMeal.PUT("/:id", h.updateCustomMeal)
+	customMeal.DELETE("/:id", h.deleteCustomMeal)
 }
 
 // createCustomMeal validates the request body and creates a custom meal owned
@@ -113,6 +115,67 @@ func (h *customMealHandler) findVisibleCustomMealByID(c *echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, result)
+}
+
+// updateCustomMeal updates a meal if the meal is owned by the authenticated user.
+func (h *customMealHandler) updateCustomMeal(c *echo.Context) error {
+	var input interfaces.CustomMealInput
+
+	if err := c.Bind(&input); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "invalid request body",
+		})
+	}
+
+	userID, err := middleware.UserIDFromContext(c)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, map[string]string{
+			"error": err.Error(),
+		})
+	}
+
+	customMealID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "invalid custom meal id",
+		})
+	}
+
+	result, err := h.customMealService.Update(c.Request().Context(), userID, customMealID, input)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": err.Error(),
+		})
+	}
+
+	return c.JSON(http.StatusOK, result)
+}
+
+// deleteCustomMeal deletes a meal if the meal is owned by the authenticated user.
+func (h *customMealHandler) deleteCustomMeal(c *echo.Context) error {
+	userID, err := middleware.UserIDFromContext(c)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, map[string]string{
+			"error": err.Error(),
+		})
+	}
+
+	customMealID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "invalid custom meal id",
+		})
+	}
+
+	if err := h.customMealService.Delete(c.Request().Context(), userID, customMealID); err != nil {
+		return c.JSON(http.StatusNotFound, map[string]string{
+			"error": err.Error(),
+		})
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{
+		"message": "custom meal deleted",
+	})
 }
 
 // init adds custom-meal route registration to the application's endpoint list

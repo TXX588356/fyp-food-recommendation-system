@@ -127,6 +127,29 @@ var allowedMealPreferenceTags = map[string]bool{
 	"western":        true,
 }
 
+// Update validates input, rebuilds the custom meal model, and updates it only
+// when the meal belongs to the authenticated user.
+func (s *service) Update(ctx context.Context, userID uuid.UUID, customMealID uuid.UUID, input interfaces.CustomMealInput) (*interfaces.CustomMealResponse, error) {
+	if err := validateCustomMealInput(input); err != nil {
+		return nil, err
+	}
+
+	meal := buildCustomMealModel(userID, input)
+	meal.ID = customMealID
+
+	updatedMeal, err := s.customMealRepo.UpdateOwned(ctx, userID, meal)
+	if err != nil {
+		return nil, err
+	}
+
+	return buildCustomMealResponse(updatedMeal, userID), nil
+}
+
+// Delete removes a custom meal only when it belongs to the authenticated user.
+func (s *service) Delete(ctx context.Context, userID uuid.UUID, customMealID uuid.UUID) error {
+	return s.customMealRepo.DeleteOwned(ctx, userID, customMealID)
+}
+
 // validateCustomMealInput enforces required fields, non-negative nutrition
 // values, and supported tag values before a custom meal is saved.
 func validateCustomMealInput(input interfaces.CustomMealInput) error {

@@ -45,4 +45,6 @@ type CustomMealService interface {
 	Create(ctx context.Context, userID uuid.UUID, input CustomMealInput) (*CustomMealResponse, error)
 	ListVisible(ctx context.Context, userID uuid.UUID, query string) ([]*CustomMealResponse, error)
 	FindVisibleByID(ctx context.Context, userID uuid.UUID, customMealID uuid.UUID) (*CustomMealResponse, error)
+	Update(ctx context.Context, userID uuid.UUID, customMealID uuid.UUID, input CustomMealInput) (*CustomMealResponse, error)
+	Delete(ctx context.Context, userID uuid.UUID, customMealID uuid.UUID) error
 }
