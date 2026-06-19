@@ -58,7 +58,7 @@ func BuildMealRecommendationPrompt(input interfaces.MealPromptInput) string {
 	- Do not generate restaurants or location availability.
 	- Do not generate food tags, preference tags, calories, protein, carbohydrates, or fat.
 	- A food API will provide tags and macro nutrition values after matching.
-	- Prefer meals commonly available in Malaysia. You may include suitable international meals.
+	- Prefer meals commonly available in Malaysia. You may include suitable international meals if it is included in preferred meal tags.
 
 	USER CONTEXT:
 	- Goal: %s
@@ -75,6 +75,15 @@ func BuildMealRecommendationPrompt(input interfaces.MealPromptInput) string {
 	- high_blood_pressure: focus on lower-sodium meals
 	- diabetes: focus on lower-sugar meals with moderate carbohydrates
 	- gout: avoid high-purine meals
+
+	MEAL TIMING GUIDANCE:
+	- Breakfast should be practical morning food: moderate calories, not overly oily, and suitable before work or school.
+	- Lunch can include more filling meals with higher calories, carbohydrates, and digestive load because it is usually the main daytime meal.
+	- Dinner should be lighter than lunch. Prefer meals with lower calories, lower carbohydrates, and easier digestion.
+	- For dinner, avoid very heavy fried rice/noodle dishes, oversized rice portions, and meals that are typically greasy unless the user's goal requires higher intake.
+	- For lunch, suitable examples include rice bowls, noodle meals, mixed rice, chicken rice, nasi lemak, or other balanced meals with enough energy.
+	- For dinner, suitable examples include soup noodles, porridge, grilled protein with vegetables, yong tau foo, lighter rice portions, or simple warm meals.
+	- Still respect the user's goal: muscle_gain can use higher-protein dinners, but keep dinner less heavy than lunch when possible.
 
 	Generate exactly 6 meals suitable for the selected meal category.
 

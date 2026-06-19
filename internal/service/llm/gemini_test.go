@@ -136,5 +136,25 @@ var _ = Describe("Gemini meal generation", func() {
 				)
 			}
 		})
+
+		It("includes meal timing guidance for lunch and dinner", func() {
+			prompt := BuildMealRecommendationPrompt(interfaces.MealPromptInput{
+				MealCategory: "dinner",
+			})
+
+			expectedValues := []string{
+				"Lunch can include more filling meals with higher calories, carbohydrates, and digestive load",
+				"Dinner should be lighter than lunch",
+				"lower calories, lower carbohydrates, and easier digestion",
+			}
+
+			for _, expected := range expectedValues {
+				Expect(strings.Contains(prompt, expected)).To(
+					BeTrue(),
+					"expected prompt to contain %q",
+					expected,
+				)
+			}
+		})
 	})
 })

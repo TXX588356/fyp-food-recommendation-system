@@ -8,9 +8,10 @@ import {
   Title,
 } from '@mantine/core'
 import axios from 'axios'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
+import { useAuth } from '@/auth/useAuth'
 import './RecommendationPage.css'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
@@ -55,6 +56,11 @@ type GenerateRecommendationsResponse = {
 
 type CategoryState<T> = Record<MealCategory, T>
 
+type PersistedRecommendationState = {
+  candidatesByCategory: CategoryState<MatchedMealCandidate[]>
+  generatedByCategory: CategoryState<boolean>
+}
+
 const mealCategoryOptions: Array<{ value: MealCategory; label: string;}> = [
   { value: 'breakfast', label: 'Breakfast'},
   { value: 'lunch', label: 'Lunch'},
@@ -91,6 +97,50 @@ const emptyErrors: CategoryState<string | null> = {
 }
 
 const formatRM = (value: number) => `RM ${value.toFixed(2)}`
+
+const buildRecommendationStorageKey = (userKey: string | undefined) => {
+  return `recommendation:${userKey ?? 'anonymous'}`
+}
+
+const loadPersistedRecommendations = (storageKey: string): PersistedRecommendationState => {
+  try {
+    const rawValue = localStorage.getItem(storageKey)
+
+    if (!rawValue) {
+      return {
+        candidatesByCategory: emptyCandidates,
+        generatedByCategory: emptyGenerated,
+      }
+    }
+
+    const parsedValue = JSON.parse(rawValue) as Partial<PersistedRecommendationState>
+
+    return {
+      candidatesByCategory: {
+        ...emptyCandidates,
+        ...parsedValue.candidatesByCategory,
+      },
+      generatedByCategory: {
+        ...emptyGenerated,
+        ...parsedValue.generatedByCategory,
+      },
+    }
+  } catch {
+    localStorage.removeItem(storageKey)
+
+    return {
+      candidatesByCategory: emptyCandidates,
+      generatedByCategory: emptyGenerated,
+    }
+  }
+}
+
+const savePersistedRecommendations = (
+  storageKey: string,
+  nextState: PersistedRecommendationState,
+) => {
+  localStorage.setItem(storageKey, JSON.stringify(nextState))
+}
 
 type IconName = 'refresh' | 'bowl' | 'fork' | 'sparkle' | 'warning'
 
@@ -162,13 +212,59 @@ function RecommendationIcon({ name, size = 20 }: { name: IconName; size?: number
 }
 
 export default function RecommendationPage() {
+  const { user } = useAuth()
+  const userKey = user?.id ?? user?.email
+
+  const recommendationStorageKey = useMemo(
+    () => buildRecommendationStorageKey(userKey),
+    [userKey],
+  )
+
+  const persistedRecommendations = useMemo(
+    () => loadPersistedRecommendations(recommendationStorageKey),
+    [recommendationStorageKey],
+  )
+
   const [activeCategory, setActiveCategory] = useState<MealCategory | null>(null)
-  const [candidatesByCategory, setCandidatesByCategory] = useState<CategoryState<MatchedMealCandidate[]>>(emptyCandidates)
+  const [candidatesByCategory, setCandidatesByCategory] = useState<CategoryState<MatchedMealCandidate[]>>(
+    persistedRecommendations.candidatesByCategory,
+  )
   const [loadingByCategory, setLoadingByCategory] = useState<CategoryState<boolean>>(emptyLoading)
-  const [generatedByCategory, setGeneratedByCategory] = useState<CategoryState<boolean>>(emptyGenerated)
+  const [generatedByCategory, setGeneratedByCategory] = useState<CategoryState<boolean>>(
+    persistedRecommendations.generatedByCategory,
+  )
   const [errorsByCategory, setErrorsByCategory] = useState<CategoryState<string | null>>(emptyErrors)
 
   const token = localStorage.getItem('token')
+
+  const persistRecommendationCategory = (
+    mealCategory: MealCategory,
+    candidates: MatchedMealCandidate[],
+  ) => {
+    const persistedRecommendations = loadPersistedRecommendations(recommendationStorageKey)
+    const nextCandidatesByCategory = {
+      ...persistedRecommendations.candidatesByCategory,
+      [mealCategory]: candidates,
+    }
+    const nextGeneratedByCategory = {
+      ...persistedRecommendations.generatedByCategory,
+      [mealCategory]: true,
+    }
+
+    savePersistedRecommendations(recommendationStorageKey, {
+      candidatesByCategory: nextCandidatesByCategory,
+      generatedByCategory: nextGeneratedByCategory,
+    })
+
+    setCandidatesByCategory((current) => ({
+      ...current,
+      [mealCategory]: candidates,
+    }))
+    setGeneratedByCategory((current) => ({
+      ...current,
+      [mealCategory]: true,
+    }))
+  }
 
   const generateRecommendations = async (mealCategory: MealCategory, force = false) => {
     if (loadingByCategory[mealCategory] || (generatedByCategory[mealCategory] && !force)) {
@@ -193,11 +289,7 @@ export default function RecommendationPage() {
         },
       )
 
-      setCandidatesByCategory((current) => ({
-        ...current,
-        [mealCategory]: response.data.candidates ?? [],
-      }))
-      setGeneratedByCategory((current) => ({ ...current, [mealCategory]: true }))
+      persistRecommendationCategory(mealCategory, response.data.candidates ?? [])
     } catch (error) {
       console.error(`Failed to generate ${mealCategory} recommendations`, error)
 
