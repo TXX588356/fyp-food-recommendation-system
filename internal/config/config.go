@@ -3,13 +3,13 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/viper"
 )
 
 type Config struct {
 	GeminiAPIKey string
-	KaloriAPIKey string
 	DatabaseURL  string
 	JWTSecret    string
 }
@@ -26,11 +26,14 @@ func Load() Config {
 	_ = viper.ReadInConfig()
 
 	return Config{
-		GeminiAPIKey: viper.GetString("GEMINI_API_KEY"),
-		KaloriAPIKey: viper.GetString("KAL_API"),
-		DatabaseURL:  viper.GetString("DATABASE_URL"),
-		JWTSecret:    viper.GetString("SECURITY_JWT_SECRET"),
+		GeminiAPIKey: configString("GEMINI_API_KEY"),
+		DatabaseURL:  configString("DATABASE_URL"),
+		JWTSecret:    configString("SECURITY_JWT_SECRET"),
 	}
+}
+
+func configString(key string) string {
+	return strings.TrimSpace(viper.GetString(key))
 }
 
 func findDotEnv() (string, bool) {

@@ -2,7 +2,6 @@ import { mainGoalOptions } from "@/preferences/options";
 import { OptionButton } from "@/types/OptionButton";
 import { QuestionBlock } from "@/types/QuestionBlock";
 import { Box } from "@mantine/core";
-import "@/App.css"
 
 type GoalStepProps = {
   value: string,

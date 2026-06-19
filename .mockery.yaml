@@ -12,3 +12,5 @@ packages:
       CustomMealService:
       FoodSearcher:
       MealGenerator:
+      PreferenceService:
+      RecommendationService:

@@ -7,7 +7,6 @@
   Title,
   Alert,
 } from '@mantine/core'
-import '@/App.css'
 import { useState } from 'react'
 import { useAuth } from '@/auth/useAuth'
 import axios from 'axios'

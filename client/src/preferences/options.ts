@@ -49,7 +49,6 @@ export function parseMalaysiaCitiesCsv(csv: string): CityRow[] {
 export const mealCategoryOptions = [
   { value: "american", label: "American" },
   { value: "basics", label: "Basics" },
-  { value: "breakfast", label: "Breakfast" },
   { value: "chinese", label: "Chinese" },
   { value: "condiments", label: "Condiments" },
   { value: "desserts", label: "Desserts" },

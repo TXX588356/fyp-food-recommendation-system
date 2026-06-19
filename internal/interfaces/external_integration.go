@@ -1,6 +1,10 @@
 package interfaces
 
-import "context"
+import (
+	"context"
+
+	"github.com/google/uuid"
+)
 
 type MealPromptInput struct {
 	Goal                string
@@ -21,10 +25,10 @@ type PriceRange struct {
 }
 
 type GeneratedMeal struct {
-	// Kalori API search
+	// Food API search
 	Name string `json:"name"`
 
-	// Fallback exact-search terms if Name does not match Kalori API
+	// Fallback exact-search terms if Name does not match the food API
 	AlternativeSearchTerms []string   `json:"alternative_search_terms"`
 	EstimatedPriceRange    PriceRange `json:"estimated_price_range"`
 
@@ -50,6 +54,7 @@ type FoodSearchResult struct {
 	FatG     float64  `json:"fat_g"`
 	ProteinG float64  `json:"protein_g"`
 	CarbsG   float64  `json:"carbs_g"`
+	ImageURL string   `json:"image_url,omitempty"`
 }
 
 type MealGenerator interface {
@@ -57,5 +62,5 @@ type MealGenerator interface {
 }
 
 type FoodSearcher interface {
-	SearchFood(ctx context.Context, query string) (FoodSearchResult, bool, error)
+	SearchFood(ctx context.Context, userID uuid.UUID, query string) (FoodSearchResult, bool, error)
 }

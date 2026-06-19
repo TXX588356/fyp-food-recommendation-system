@@ -176,7 +176,6 @@ var allowedHealthConcerns = map[string]bool{
 var allowedMealPreferenceTags = map[string]bool{
 	"american":       true,
 	"basics":         true,
-	"breakfast":      true,
 	"chinese":        true,
 	"condiments":     true,
 	"desserts":       true,

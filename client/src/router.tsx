@@ -12,6 +12,7 @@ import HealthConcernsPreferencePage from './pages/preferences/HealthConcernsPref
 import PreferredMealPreferencePage from './pages/preferences/PreferredMealPreferencePage'
 import BudgetLocationPreferencePage from './pages/preferences/BudgetLocationPreferencePage'
 import ConsentPreferencePage from './pages/preferences/ConsentPreferencePage'
+import { CustomMealFormPage, CustomMealSearchPage } from './pages/CustomMealAddPage'
 
 export const router = createBrowserRouter([
   {path: '/', element: <HomeRedirect />,},
@@ -20,6 +21,16 @@ export const router = createBrowserRouter([
   {path: 'recommendation', element: (
     <ProtectedRoute>
       <RecommendationPage />
+    </ProtectedRoute>
+  )},
+  {path: '/meals/add/:mealCategory', element: (
+    <ProtectedRoute>
+      <CustomMealSearchPage />
+    </ProtectedRoute>
+  )},
+  {path: '/meals/add/:mealCategory/custom', element: (
+    <ProtectedRoute>
+      <CustomMealFormPage />
     </ProtectedRoute>
   )},
   {path: '/preferences', element: (

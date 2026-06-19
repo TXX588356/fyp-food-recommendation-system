@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { MantineProvider } from '@mantine/core'
 import '@mantine/core/styles.css'
 import '@/index.css'
+import '@/App.css'
 import App from '@/App.tsx'
 import { AuthProvider } from '@/auth/AuthContext';
 

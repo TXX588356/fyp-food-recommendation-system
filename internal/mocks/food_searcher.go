@@ -8,6 +8,7 @@ import (
 	"context"
 	"fyp/food-rs/internal/interfaces"
 
+	"github.com/google/uuid"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -39,8 +40,8 @@ func (_m *FoodSearcher) EXPECT() *FoodSearcher_Expecter {
 }
 
 // SearchFood provides a mock function for the type FoodSearcher
-func (_mock *FoodSearcher) SearchFood(ctx context.Context, query string) (interfaces.FoodSearchResult, bool, error) {
-	ret := _mock.Called(ctx, query)
+func (_mock *FoodSearcher) SearchFood(ctx context.Context, userID uuid.UUID, query string) (interfaces.FoodSearchResult, bool, error) {
+	ret := _mock.Called(ctx, userID, query)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SearchFood")
@@ -49,21 +50,21 @@ func (_mock *FoodSearcher) SearchFood(ctx context.Context, query string) (interf
 	var r0 interfaces.FoodSearchResult
 	var r1 bool
 	var r2 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (interfaces.FoodSearchResult, bool, error)); ok {
-		return returnFunc(ctx, query)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) (interfaces.FoodSearchResult, bool, error)); ok {
+		return returnFunc(ctx, userID, query)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) interfaces.FoodSearchResult); ok {
-		r0 = returnFunc(ctx, query)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) interfaces.FoodSearchResult); ok {
+		r0 = returnFunc(ctx, userID, query)
 	} else {
 		r0 = ret.Get(0).(interfaces.FoodSearchResult)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string) bool); ok {
-		r1 = returnFunc(ctx, query)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, string) bool); ok {
+		r1 = returnFunc(ctx, userID, query)
 	} else {
 		r1 = ret.Get(1).(bool)
 	}
-	if returnFunc, ok := ret.Get(2).(func(context.Context, string) error); ok {
-		r2 = returnFunc(ctx, query)
+	if returnFunc, ok := ret.Get(2).(func(context.Context, uuid.UUID, string) error); ok {
+		r2 = returnFunc(ctx, userID, query)
 	} else {
 		r2 = ret.Error(2)
 	}
@@ -77,24 +78,30 @@ type FoodSearcher_SearchFood_Call struct {
 
 // SearchFood is a helper method to define mock.On call
 //   - ctx context.Context
+//   - userID uuid.UUID
 //   - query string
-func (_e *FoodSearcher_Expecter) SearchFood(ctx interface{}, query interface{}) *FoodSearcher_SearchFood_Call {
-	return &FoodSearcher_SearchFood_Call{Call: _e.mock.On("SearchFood", ctx, query)}
+func (_e *FoodSearcher_Expecter) SearchFood(ctx interface{}, userID interface{}, query interface{}) *FoodSearcher_SearchFood_Call {
+	return &FoodSearcher_SearchFood_Call{Call: _e.mock.On("SearchFood", ctx, userID, query)}
 }
 
-func (_c *FoodSearcher_SearchFood_Call) Run(run func(ctx context.Context, query string)) *FoodSearcher_SearchFood_Call {
+func (_c *FoodSearcher_SearchFood_Call) Run(run func(ctx context.Context, userID uuid.UUID, query string)) *FoodSearcher_SearchFood_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 string
+		var arg1 uuid.UUID
 		if args[1] != nil {
-			arg1 = args[1].(string)
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
 		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -105,7 +112,7 @@ func (_c *FoodSearcher_SearchFood_Call) Return(foodSearchResult interfaces.FoodS
 	return _c
 }
 
-func (_c *FoodSearcher_SearchFood_Call) RunAndReturn(run func(ctx context.Context, query string) (interfaces.FoodSearchResult, bool, error)) *FoodSearcher_SearchFood_Call {
+func (_c *FoodSearcher_SearchFood_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID, query string) (interfaces.FoodSearchResult, bool, error)) *FoodSearcher_SearchFood_Call {
 	_c.Call.Return(run)
 	return _c
 }
