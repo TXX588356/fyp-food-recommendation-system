@@ -1,5 +1,4 @@
 import { Box, Title } from "@mantine/core"
-import "@/App.css"
 
 export function QuestionBlock({
   title,

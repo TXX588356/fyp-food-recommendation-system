@@ -1,6 +1,5 @@
 import { OptionButton } from "@/types/OptionButton"
 import { QuestionBlock } from "@/types/QuestionBlock"
-import "@/App.css"
 import { Box } from "@mantine/core"
 import { dietaryRestrictionOptions } from "@/preferences/options"
 

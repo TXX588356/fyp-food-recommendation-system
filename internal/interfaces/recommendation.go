@@ -1,6 +1,10 @@
 package interfaces
 
-import "context"
+import (
+	"context"
+
+	"github.com/google/uuid"
+)
 
 type MatchedMealCandidate struct {
 	GeneratedMeal GeneratedMeal    `json:"generated_meal"`
@@ -9,5 +13,5 @@ type MatchedMealCandidate struct {
 }
 
 type RecommendationService interface {
-	GenerateCandidates(ctx context.Context, input MealPromptInput) ([]MatchedMealCandidate, error)
+	GenerateCandidates(ctx context.Context, userID uuid.UUID, input MealPromptInput) ([]MatchedMealCandidate, error)
 }

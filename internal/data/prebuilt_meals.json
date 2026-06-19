@@ -1,0 +1,2422 @@
+[
+  {
+    "id": "nasi-lemak",
+    "name": "Nasi Lemak",
+    "calories": 494,
+    "protein": 13,
+    "carbs": 80,
+    "fat": 14,
+    "serving": "1 plate (350g)",
+    "category": "Rice",
+    "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/55/Nasi_Lemak_dengan_Chili_Nasi_Lemak_dan_Sotong_Pedas%2C_di_Penang_Summer_Restaurant.jpg",
+    "alternative_search_terms": [
+      "Coconut Rice"
+    ]
+  },
+  {
+    "id": "nasi-lemak-ayam-goreng",
+    "name": "Nasi Lemak Ayam Goreng",
+    "calories": 744,
+    "protein": 28,
+    "carbs": 85,
+    "fat": 32,
+    "serving": "1 plate (450g)",
+    "category": "Rice",
+    "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Nasi_Lemak_dengan_Ayam_Goreng_Krispy_dengan_Sos_chili.jpg/960px-Nasi_Lemak_dengan_Ayam_Goreng_Krispy_dengan_Sos_chili.jpg",
+    "alternative_search_terms": [
+      "Coconut Rice Chicken Fried"
+    ]
+  },
+  {
+    "id": "nasi-goreng",
+    "name": "Nasi Goreng",
+    "calories": 472,
+    "protein": 12,
+    "carbs": 84,
+    "fat": 8,
+    "serving": "1 plate (350g)",
+    "category": "Rice",
+    "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Nasi_Goreng_Kampung.jpg/960px-Nasi_Goreng_Kampung.jpg",
+    "alternative_search_terms": [
+      "Fried Rice"
+    ]
+  },
+  {
+    "id": "nasi-goreng-kampung",
+    "name": "Nasi Goreng Kampung",
+    "calories": 518,
+    "protein": 14,
+    "carbs": 81,
+    "fat": 15,
+    "serving": "1 plate (350g)",
+    "category": "Rice",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Fried Rice Kampung"
+    ]
+  },
+  {
+    "id": "nasi-goreng-pattaya",
+    "name": "Nasi Goreng Pattaya",
+    "calories": 650,
+    "protein": 20,
+    "carbs": 75,
+    "fat": 30,
+    "serving": "1 plate (400g)",
+    "category": "Rice",
+    "image_url": "https://daganghalal.blob.core.windows.net/43640/Product/nasi-goreng-pattaya-1718774366503.jpg",
+    "alternative_search_terms": [
+      "Fried Rice Pattaya"
+    ]
+  },
+  {
+    "id": "nasi-ayam",
+    "name": "Nasi Ayam",
+    "calories": 400,
+    "protein": 20,
+    "carbs": 60,
+    "fat": 10,
+    "serving": "1 plate (380g)",
+    "category": "Rice",
+    "image_url": "https://resepichenom.com/_next/image?url=https%3A%2F%2Fcdn.resepichenom.com%2Fimages%2Frecipes%2Fcml0uogy2001qechs5n5jheqd-1769776550178.jpg&w=3840&q=75",
+    "alternative_search_terms": [
+      "Nasi Chicken"
+    ]
+  },
+  {
+    "id": "nasi-ayam-hainan",
+    "name": "Nasi Ayam Hainan",
+    "calories": 618,
+    "protein": 30,
+    "carbs": 75,
+    "fat": 22,
+    "serving": "1 plate (400g)",
+    "category": "Rice",
+    "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/Hainanese_chicken_rice_in_Singapore.jpg/960px-Hainanese_chicken_rice_in_Singapore.jpg",
+    "alternative_search_terms": [
+      "Nasi Chicken Hainan"
+    ]
+  },
+  {
+    "id": "nasi-kandar",
+    "name": "Nasi Kandar",
+    "calories": 800,
+    "protein": 35,
+    "carbs": 100,
+    "fat": 30,
+    "serving": "1 plate (500g)",
+    "category": "Rice",
+    "image_url": "https://images.deliveryhero.io/image/fd-my/LH/ua66-listing.jpg",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "nasi-kerabu",
+    "name": "Nasi Kerabu",
+    "calories": 450,
+    "protein": 15,
+    "carbs": 55,
+    "fat": 18,
+    "serving": "1 plate (380g)",
+    "category": "Rice",
+    "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Nasi_kerabu.jpg/960px-Nasi_kerabu.jpg",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "nasi-dagang",
+    "name": "Nasi Dagang",
+    "calories": 520,
+    "protein": 18,
+    "carbs": 70,
+    "fat": 18,
+    "serving": "1 plate (400g)",
+    "category": "Rice",
+    "image_url": "https://www.malaysiarice.com/wp-content/uploads/2023/04/nasi-dagang-400x375.jpg",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "nasi-briyani",
+    "name": "Nasi Briyani",
+    "calories": 600,
+    "protein": 22,
+    "carbs": 75,
+    "fat": 24,
+    "serving": "1 plate (450g)",
+    "category": "Rice",
+    "image_url": "https://www.adabi.com/wp-content/uploads/2020/03/Adabi-Authentic-Biryani-Spices-Rice.jpg",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "nasi-tomato",
+    "name": "Nasi Tomato",
+    "calories": 380,
+    "protein": 8,
+    "carbs": 65,
+    "fat": 10,
+    "serving": "1 plate (300g)",
+    "category": "Rice",
+    "image_url": "https://assets.tmecosys.com/image/upload/t_web_rdp_recipe_584x480/img/recipe/ras/Assets/164A6620-E0FC-4DA7-A682-59B2D9668892/Derivates/abfc8652-057c-4318-8bcc-b468ce7e566f.jpg",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "mee-goreng",
+    "name": "Mee Goreng",
+    "calories": 450,
+    "protein": 12,
+    "carbs": 55,
+    "fat": 20,
+    "serving": "1 plate (300g)",
+    "category": "Noodles",
+    "image_url": "https://delishglobe.com/wp-content/uploads/2025/04/Mee-Goreng-Mamak-Mamak-Style-Fried-Noodles.png",
+    "alternative_search_terms": [
+      "Mi Goreng",
+      "Noodles Goreng",
+      "Fried Noodles"
+    ]
+  },
+  {
+    "id": "char-kuey-teow",
+    "name": "Char Kuey Teow",
+    "calories": 744,
+    "protein": 23,
+    "carbs": 76,
+    "fat": 38,
+    "serving": "1 plate (384g)",
+    "category": "Noodles",
+    "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/Char_kway_teow_-_Old_Town_Kopitiam.jpg/960px-Char_kway_teow_-_Old_Town_Kopitiam.jpg",
+    "alternative_search_terms": [
+      "Char Kway Teow",
+      "Char Kuay Teow",
+      "Char Koay Teow",
+      "Char Flat Rice Noodles"
+    ]
+  },
+  {
+    "id": "laksa-penang",
+    "name": "Laksa Penang",
+    "calories": 436,
+    "protein": 18,
+    "carbs": 55,
+    "fat": 18,
+    "serving": "1 bowl (450ml)",
+    "category": "Noodles",
+    "image_url": "https://cdn.resepichenom.com/images/recipes/bd909d9b-21de-431e-b8a0-62d688176e1e-26d02194-c3c5-4988-aa59-a119ef11c34c-enhanced-1770190705301-f7hd-1024.webp",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "laksa-sarawak",
+    "name": "Laksa Sarawak",
+    "calories": 520,
+    "protein": 20,
+    "carbs": 52,
+    "fat": 26,
+    "serving": "1 bowl (450ml)",
+    "category": "Noodles",
+    "image_url": "https://www.curiouscuisiniere.com/wp-content/uploads/2019/01/Sarawak-Laksa-1302.jpg",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "curry-laksa",
+    "name": "Curry Laksa",
+    "calories": 600,
+    "protein": 22,
+    "carbs": 55,
+    "fat": 32,
+    "serving": "1 bowl (450ml)",
+    "category": "Noodles",
+    "image_url": "https://images.food52.com/AGZZn1yfHpNxzBvpJyZxt3a5zsw=/6092154f-b33f-4cf6-bb17-edb72ff52882--WoonHengXFood52_CollabPost2_online-.jpg",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "mee-rebus",
+    "name": "Mee Rebus",
+    "calories": 450,
+    "protein": 18,
+    "carbs": 60,
+    "fat": 15,
+    "serving": "1 bowl (400ml)",
+    "category": "Noodles",
+    "image_url": "https://woonheng.com/wp-content/uploads/2021/07/Vegan-Mee-Rebus-4761-e1625751608805.jpg",
+    "alternative_search_terms": [
+      "Mi Rebus",
+      "Noodles Rebus"
+    ]
+  },
+  {
+    "id": "mee-siam",
+    "name": "Mee Siam",
+    "calories": 380,
+    "protein": 12,
+    "carbs": 50,
+    "fat": 14,
+    "serving": "1 bowl (350ml)",
+    "category": "Noodles",
+    "image_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ08HJu5ay_L4MGYJnCpRwlSKXeQVNrxC5Slw&s",
+    "alternative_search_terms": [
+      "Mi Siam",
+      "Noodles Siam"
+    ]
+  },
+  {
+    "id": "mee-curry",
+    "name": "Mee Curry",
+    "calories": 480,
+    "protein": 18,
+    "carbs": 48,
+    "fat": 24,
+    "serving": "1 bowl (400ml)",
+    "category": "Noodles",
+    "image_url": "https://www.ajinomotofoodbizpartner.com.my/wp-content/uploads/2023/09/Curry-Mee-thumbnail-03.jpg",
+    "alternative_search_terms": [
+      "Mi Curry",
+      "Noodles Curry"
+    ]
+  },
+  {
+    "id": "mee-hoon-goreng",
+    "name": "Mee Hoon Goreng",
+    "calories": 380,
+    "protein": 10,
+    "carbs": 52,
+    "fat": 15,
+    "serving": "1 plate (280g)",
+    "category": "Noodles",
+    "image_url": "https://www.lemon8-app.com/seo/image?item_id=7546575870681629192&index=0&sign=536b0d7e8ee1743e0e3fd54071d2a17c",
+    "alternative_search_terms": [
+      "Mi Hoon Goreng",
+      "Noodles Hoon Goreng",
+      "Rice Vermicelli Fried"
+    ]
+  },
+  {
+    "id": "mee-hoon-soup",
+    "name": "Mee Hoon Soup",
+    "calories": 280,
+    "protein": 12,
+    "carbs": 40,
+    "fat": 8,
+    "serving": "1 bowl (400ml)",
+    "category": "Noodles",
+    "image_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR3nmVuKsIentkZti8M7-9Q9kV1EV-OeWDYIA&s",
+    "alternative_search_terms": [
+      "Mi Hoon Soup",
+      "Noodles Hoon Soup",
+      "Rice Vermicelli Soup"
+    ]
+  },
+  {
+    "id": "wantan-mee",
+    "name": "Wantan Mee",
+    "calories": 420,
+    "protein": 18,
+    "carbs": 50,
+    "fat": 16,
+    "serving": "1 bowl (350g)",
+    "category": "Noodles",
+    "image_url": "https://woonheng.com/wp-content/uploads/2021/04/Char-Siu-Wonton-Mee-4-500x500.jpg",
+    "alternative_search_terms": [
+      "Wantan Mi",
+      "Wantan Noodles",
+      "Wonton Mee",
+      "Wan Tan Mee"
+    ]
+  },
+  {
+    "id": "pan-mee",
+    "name": "Pan Mee",
+    "calories": 380,
+    "protein": 15,
+    "carbs": 48,
+    "fat": 14,
+    "serving": "1 bowl (400ml)",
+    "category": "Noodles",
+    "image_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQCiWiz650u7PnlS17QgHb9PKTsfYBY2cc1nA&s",
+    "alternative_search_terms": [
+      "Pan Mi",
+      "Pan Noodles"
+    ]
+  },
+  {
+    "id": "loh-mee",
+    "name": "Loh Mee",
+    "calories": 450,
+    "protein": 16,
+    "carbs": 55,
+    "fat": 18,
+    "serving": "1 bowl (400ml)",
+    "category": "Noodles",
+    "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/LorMee.JPG",
+    "alternative_search_terms": [
+      "Loh Mi",
+      "Loh Noodles"
+    ]
+  },
+  {
+    "id": "roti-canai",
+    "name": "Roti Canai",
+    "calories": 250,
+    "protein": 5,
+    "carbs": 36,
+    "fat": 10,
+    "serving": "1 piece (100g)",
+    "category": "Roti",
+    "image_url": "https://www.elmundoeats.com/wp-content/uploads/2017/11/Roti-Canai-3-500x500.jpg",
+    "alternative_search_terms": [
+      "Roti Prata"
+    ]
+  },
+  {
+    "id": "roti-canai-telur",
+    "name": "Roti Canai Telur",
+    "calories": 356,
+    "protein": 12,
+    "carbs": 46,
+    "fat": 14,
+    "serving": "1 piece (130g)",
+    "category": "Roti",
+    "image_url": "https://daganghalal.blob.core.windows.net/28833/Product/1000x1000__roticanaitelur-1659401986532.jpg",
+    "alternative_search_terms": [
+      "Roti Prata Telur",
+      "Roti Canai Egg"
+    ]
+  },
+  {
+    "id": "roti-tissue",
+    "name": "Roti Tissue",
+    "calories": 450,
+    "protein": 8,
+    "carbs": 65,
+    "fat": 18,
+    "serving": "1 piece (150g)",
+    "category": "Roti",
+    "image_url": "https://upload.wikimedia.org/wikipedia/commons/f/f2/Roti_Tissue_in_UncleK%2C_SUN_Plaza%2C_Medan.jpg",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "roti-bom",
+    "name": "Roti Bom",
+    "calories": 420,
+    "protein": 8,
+    "carbs": 55,
+    "fat": 20,
+    "serving": "1 piece (120g)",
+    "category": "Roti",
+    "image_url": "https://magazine.foodpanda.my/wp-content/uploads/sites/23/2020/04/cropped-Roti-Bom.jpg",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "roti-sardin",
+    "name": "Roti Sardin",
+    "calories": 380,
+    "protein": 14,
+    "carbs": 40,
+    "fat": 18,
+    "serving": "1 piece (140g)",
+    "category": "Roti",
+    "image_url": "https://www.singaporeanmalaysianrecipes.com/wp-content/uploads/2025/04/roti-sardin-goreng-recipe.jpg",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "roti-jala",
+    "name": "Roti Jala",
+    "calories": 180,
+    "protein": 5,
+    "carbs": 25,
+    "fat": 7,
+    "serving": "3 pieces (90g)",
+    "category": "Roti",
+    "image_url": "https://resepichenom.com/_next/image?url=https%3A%2F%2Fcdn.resepichenom.com%2Fimages%2Frecipes%2Fcml3hpfgd004wa20ipff2p488-1769935234191.jpg&w=3840&q=75",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "tosai",
+    "name": "Tosai",
+    "calories": 120,
+    "protein": 3,
+    "carbs": 22,
+    "fat": 2,
+    "serving": "1 piece (80g)",
+    "category": "Roti",
+    "image_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRFBQXDINfcGqxRAZvHLmif5GrqOv0YjH5rJA&s",
+    "alternative_search_terms": [
+      "Dosa"
+    ]
+  },
+  {
+    "id": "chapati",
+    "name": "Chapati",
+    "calories": 150,
+    "protein": 4,
+    "carbs": 28,
+    "fat": 3,
+    "serving": "1 piece (60g)",
+    "category": "Roti",
+    "image_url": "https://www.allrecipes.com/thmb/qgfQljqLcHe4Zr_SMWzsB2Gd6E8=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/AR-85469-indian-chapati-bread-DDMFS-4x3-d2692c11f56b4546b35dccd42ace1958.jpg",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "naan",
+    "name": "Naan",
+    "calories": 260,
+    "protein": 7,
+    "carbs": 45,
+    "fat": 6,
+    "serving": "1 piece (90g)",
+    "category": "Roti",
+    "image_url": "https://www.kingarthurbaking.com/sites/default/files/2021-02/naan-3.jpg",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "satay-ayam",
+    "name": "Satay Ayam",
+    "calories": 180,
+    "protein": 22,
+    "carbs": 3,
+    "fat": 10,
+    "serving": "5 sticks (100g)",
+    "category": "Meat",
+    "image_url": "https://www.unileverfoodsolutions.com.my/dam/global-ufs/mcos/SEA/calcmenu/recipes/MY-recipes/chicken-&-other-poultry-dishes/satay-ayam/main-header.jpg",
+    "alternative_search_terms": [
+      "Satay Chicken"
+    ]
+  },
+  {
+    "id": "satay-daging",
+    "name": "Satay Daging",
+    "calories": 200,
+    "protein": 25,
+    "carbs": 3,
+    "fat": 11,
+    "serving": "5 sticks (110g)",
+    "category": "Meat",
+    "image_url": "https://gerobaksate.my/online/wp-content/uploads/sites/10/2023/10/sate-daging.jpg",
+    "alternative_search_terms": [
+      "Satay Beef"
+    ]
+  },
+  {
+    "id": "rendang-daging",
+    "name": "Rendang Daging",
+    "calories": 350,
+    "protein": 29,
+    "carbs": 8,
+    "fat": 24,
+    "serving": "1 serving (120g)",
+    "category": "Meat",
+    "image_url": "https://resepichenom.com/_next/image?url=https%3A%2F%2Fcdn.resepichenom.com%2Fimages%2Frecipes%2Ff8de874f-c8d3-449d-a4ee-7c63a44415d3-1771516972856.jpg&w=3840&q=75",
+    "alternative_search_terms": [
+      "Rendang Beef"
+    ]
+  },
+  {
+    "id": "rendang-ayam",
+    "name": "Rendang Ayam",
+    "calories": 280,
+    "protein": 24,
+    "carbs": 6,
+    "fat": 18,
+    "serving": "1 serving (120g)",
+    "category": "Meat",
+    "image_url": "https://cdn.resepichenom.com/images/recipes/f2dbbdc7-9462-4e20-9fd0-dd02ffd72f18-1770565095852.jpg",
+    "alternative_search_terms": [
+      "Rendang Chicken"
+    ]
+  },
+  {
+    "id": "ayam-goreng",
+    "name": "Ayam Goreng",
+    "calories": 320,
+    "protein": 28,
+    "carbs": 12,
+    "fat": 18,
+    "serving": "1 piece (120g)",
+    "category": "Meat",
+    "image_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT31yHrdaSP-lQqVszngux27O5NJDQXtwCyuQ&s",
+    "alternative_search_terms": [
+      "Fried Chicken",
+      "Chicken Fried"
+    ]
+  },
+  {
+    "id": "ayam-masak-merah",
+    "name": "Ayam Masak Merah",
+    "calories": 280,
+    "protein": 24,
+    "carbs": 10,
+    "fat": 16,
+    "serving": "1 serving (150g)",
+    "category": "Meat",
+    "image_url": "https://resepichenom.com/_next/image?url=https%3A%2F%2Fcdn.resepichenom.com%2Fimages%2Frecipes%2Ff2bce62ac27a2e825dfe3ad5f5d0ca3a11ac10a7.webp&w=3840&q=75",
+    "alternative_search_terms": [
+      "Chicken Cooked Red Sauce"
+    ]
+  },
+  {
+    "id": "ayam-percik",
+    "name": "Ayam Percik",
+    "calories": 350,
+    "protein": 26,
+    "carbs": 12,
+    "fat": 22,
+    "serving": "1 serving (180g)",
+    "category": "Meat",
+    "image_url": "https://cdn.resepichenom.com/images/recipes/Ayam_Percik.webp",
+    "alternative_search_terms": [
+      "Chicken Percik"
+    ]
+  },
+  {
+    "id": "ayam-kurma",
+    "name": "Ayam Kurma",
+    "calories": 320,
+    "protein": 25,
+    "carbs": 10,
+    "fat": 20,
+    "serving": "1 serving (150g)",
+    "category": "Meat",
+    "image_url": "https://resepichenom.com/_next/image?url=https%3A%2F%2Fcdn.resepichenom.com%2Fimages%2Frecipes%2FKurma_Ayam.webp&w=3840&q=75",
+    "alternative_search_terms": [
+      "Chicken Kurma"
+    ]
+  },
+  {
+    "id": "daging-masak-kicap",
+    "name": "Daging Masak Kicap",
+    "calories": 280,
+    "protein": 24,
+    "carbs": 8,
+    "fat": 18,
+    "serving": "1 serving (150g)",
+    "category": "Meat",
+    "image_url": "https://cdn.resepichenom.com/images/recipes/Daging_Masak_Kicap_Web.webp",
+    "alternative_search_terms": [
+      "Beef Cooked Soy Sauce"
+    ]
+  },
+  {
+    "id": "kambing-masak-kurma",
+    "name": "Kambing Masak Kurma",
+    "calories": 380,
+    "protein": 26,
+    "carbs": 12,
+    "fat": 26,
+    "serving": "1 serving (180g)",
+    "category": "Meat",
+    "image_url": "https://cdn.rasa.my/rasa/Untitled-design-18.png",
+    "alternative_search_terms": [
+      "Mutton Cooked Kurma"
+    ]
+  },
+  {
+    "id": "ikan-bakar",
+    "name": "Ikan Bakar",
+    "calories": 220,
+    "protein": 28,
+    "carbs": 4,
+    "fat": 10,
+    "serving": "1 piece (150g)",
+    "category": "Seafood",
+    "image_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTVWKHa2Vf9FeH70gsR-6k6v5SSnrPdX-N3NA&s",
+    "alternative_search_terms": [
+      "Grilled Fish",
+      "Fish Grilled"
+    ]
+  },
+  {
+    "id": "ikan-goreng",
+    "name": "Ikan Goreng",
+    "calories": 280,
+    "protein": 26,
+    "carbs": 8,
+    "fat": 16,
+    "serving": "1 piece (150g)",
+    "category": "Seafood",
+    "image_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQAtgX23m7SXW6l48n8y63YaAADI58PzlEyCA&s",
+    "alternative_search_terms": [
+      "Fried Fish",
+      "Fish Fried"
+    ]
+  },
+  {
+    "id": "sambal-udang",
+    "name": "Sambal Udang",
+    "calories": 180,
+    "protein": 18,
+    "carbs": 6,
+    "fat": 10,
+    "serving": "1 serving (120g)",
+    "category": "Seafood",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Sambal Prawn",
+      "Sambal Shrimp"
+    ]
+  },
+  {
+    "id": "sambal-sotong",
+    "name": "Sambal Sotong",
+    "calories": 200,
+    "protein": 20,
+    "carbs": 8,
+    "fat": 10,
+    "serving": "1 serving (130g)",
+    "category": "Seafood",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Sambal Squid"
+    ]
+  },
+  {
+    "id": "ikan-asam-pedas",
+    "name": "Ikan Asam Pedas",
+    "calories": 250,
+    "protein": 26,
+    "carbs": 10,
+    "fat": 12,
+    "serving": "1 serving (180g)",
+    "category": "Seafood",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Fish Asam Pedas"
+    ]
+  },
+  {
+    "id": "udang-masak-lemak",
+    "name": "Udang Masak Lemak",
+    "calories": 280,
+    "protein": 20,
+    "carbs": 8,
+    "fat": 20,
+    "serving": "1 serving (150g)",
+    "category": "Seafood",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Prawn Cooked Coconut Milk"
+    ]
+  },
+  {
+    "id": "ketam-masak-cili",
+    "name": "Ketam Masak Cili",
+    "calories": 320,
+    "protein": 22,
+    "carbs": 12,
+    "fat": 22,
+    "serving": "1 serving (200g)",
+    "category": "Seafood",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Crab Cooked Cili"
+    ]
+  },
+  {
+    "id": "kangkung-belacan",
+    "name": "Kangkung Belacan",
+    "calories": 120,
+    "protein": 4,
+    "carbs": 8,
+    "fat": 8,
+    "serving": "1 serving (150g)",
+    "category": "Vegetables",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "sayur-lodeh",
+    "name": "Sayur Lodeh",
+    "calories": 180,
+    "protein": 5,
+    "carbs": 15,
+    "fat": 12,
+    "serving": "1 serving (200g)",
+    "category": "Vegetables",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "sambal-terung",
+    "name": "Sambal Terung",
+    "calories": 140,
+    "protein": 3,
+    "carbs": 12,
+    "fat": 10,
+    "serving": "1 serving (150g)",
+    "category": "Vegetables",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Sambal Eggplant"
+    ]
+  },
+  {
+    "id": "pucuk-paku-goreng",
+    "name": "Pucuk Paku Goreng",
+    "calories": 100,
+    "protein": 3,
+    "carbs": 8,
+    "fat": 7,
+    "serving": "1 serving (120g)",
+    "category": "Vegetables",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Pucuk Paku Fried"
+    ]
+  },
+  {
+    "id": "ulam",
+    "name": "Ulam",
+    "calories": 50,
+    "protein": 2,
+    "carbs": 8,
+    "fat": 1,
+    "serving": "1 serving (80g)",
+    "category": "Vegetables",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "kerabu-timun",
+    "name": "Kerabu Timun",
+    "calories": 80,
+    "protein": 2,
+    "carbs": 10,
+    "fat": 4,
+    "serving": "1 serving (100g)",
+    "category": "Vegetables",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Kerabu Cucumber"
+    ]
+  },
+  {
+    "id": "sup-kambing",
+    "name": "Sup Kambing",
+    "calories": 280,
+    "protein": 22,
+    "carbs": 12,
+    "fat": 16,
+    "serving": "1 bowl (350ml)",
+    "category": "Soups",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Mutton Soup",
+      "Lamb Soup",
+      "Soup Mutton"
+    ]
+  },
+  {
+    "id": "sup-tulang",
+    "name": "Sup Tulang",
+    "calories": 320,
+    "protein": 24,
+    "carbs": 15,
+    "fat": 18,
+    "serving": "1 bowl (400ml)",
+    "category": "Soups",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Bone Soup",
+      "Soup Tulang"
+    ]
+  },
+  {
+    "id": "sup-ayam",
+    "name": "Sup Ayam",
+    "calories": 180,
+    "protein": 15,
+    "carbs": 10,
+    "fat": 8,
+    "serving": "1 bowl (300ml)",
+    "category": "Soups",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Chicken Soup",
+      "Soup Chicken"
+    ]
+  },
+  {
+    "id": "sup-ikan",
+    "name": "Sup Ikan",
+    "calories": 150,
+    "protein": 16,
+    "carbs": 8,
+    "fat": 6,
+    "serving": "1 bowl (300ml)",
+    "category": "Soups",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Fish Soup",
+      "Soup Fish"
+    ]
+  },
+  {
+    "id": "tom-yam",
+    "name": "Tom Yam",
+    "calories": 220,
+    "protein": 18,
+    "carbs": 12,
+    "fat": 12,
+    "serving": "1 bowl (350ml)",
+    "category": "Soups",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Tom Yum"
+    ]
+  },
+  {
+    "id": "bak-kut-teh",
+    "name": "Bak Kut Teh",
+    "calories": 350,
+    "protein": 28,
+    "carbs": 10,
+    "fat": 22,
+    "serving": "1 bowl (400ml)",
+    "category": "Soups",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Pork Rib Tea"
+    ]
+  },
+  {
+    "id": "curry-puff",
+    "name": "Curry Puff",
+    "calories": 220,
+    "protein": 5,
+    "carbs": 22,
+    "fat": 13,
+    "serving": "1 piece (60g)",
+    "category": "Snacks",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "karipap",
+    "name": "Karipap",
+    "calories": 180,
+    "protein": 4,
+    "carbs": 20,
+    "fat": 10,
+    "serving": "1 piece (50g)",
+    "category": "Snacks",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Curry Puff"
+    ]
+  },
+  {
+    "id": "popiah",
+    "name": "Popiah",
+    "calories": 150,
+    "protein": 5,
+    "carbs": 22,
+    "fat": 5,
+    "serving": "1 roll (80g)",
+    "category": "Snacks",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "rojak",
+    "name": "Rojak",
+    "calories": 280,
+    "protein": 6,
+    "carbs": 35,
+    "fat": 14,
+    "serving": "1 serving (200g)",
+    "category": "Snacks",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "pasembur",
+    "name": "Pasembur",
+    "calories": 350,
+    "protein": 10,
+    "carbs": 40,
+    "fat": 18,
+    "serving": "1 serving (250g)",
+    "category": "Snacks",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "otak-otak",
+    "name": "Otak-Otak",
+    "calories": 120,
+    "protein": 10,
+    "carbs": 6,
+    "fat": 7,
+    "serving": "2 pieces (80g)",
+    "category": "Snacks",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "keropok-lekor",
+    "name": "Keropok Lekor",
+    "calories": 180,
+    "protein": 8,
+    "carbs": 25,
+    "fat": 6,
+    "serving": "5 pieces (100g)",
+    "category": "Snacks",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "pisang-goreng",
+    "name": "Pisang Goreng",
+    "calories": 150,
+    "protein": 2,
+    "carbs": 24,
+    "fat": 6,
+    "serving": "2 pieces (100g)",
+    "category": "Snacks",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Banana Fritters",
+      "Fried Banana",
+      "Pisang Fried"
+    ]
+  },
+  {
+    "id": "cekodok",
+    "name": "Cekodok",
+    "calories": 120,
+    "protein": 2,
+    "carbs": 18,
+    "fat": 5,
+    "serving": "3 pieces (75g)",
+    "category": "Snacks",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "cucur-udang",
+    "name": "Cucur Udang",
+    "calories": 180,
+    "protein": 6,
+    "carbs": 20,
+    "fat": 9,
+    "serving": "3 pieces (90g)",
+    "category": "Snacks",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Prawn Fritters",
+      "Shrimp Fritters",
+      "Cucur Prawn"
+    ]
+  },
+  {
+    "id": "apam-balik",
+    "name": "Apam Balik",
+    "calories": 280,
+    "protein": 6,
+    "carbs": 45,
+    "fat": 10,
+    "serving": "1 piece (120g)",
+    "category": "Snacks",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "cendol",
+    "name": "Cendol",
+    "calories": 280,
+    "protein": 3,
+    "carbs": 55,
+    "fat": 8,
+    "serving": "1 bowl (250ml)",
+    "category": "Desserts",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "ais-kacang",
+    "name": "Ais Kacang",
+    "calories": 320,
+    "protein": 5,
+    "carbs": 65,
+    "fat": 6,
+    "serving": "1 bowl (300ml)",
+    "category": "Desserts",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Iced Kacang"
+    ]
+  },
+  {
+    "id": "bubur-cha-cha",
+    "name": "Bubur Cha Cha",
+    "calories": 250,
+    "protein": 4,
+    "carbs": 45,
+    "fat": 8,
+    "serving": "1 bowl (200ml)",
+    "category": "Desserts",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Porridge Cha Cha"
+    ]
+  },
+  {
+    "id": "kuih-lapis",
+    "name": "Kuih Lapis",
+    "calories": 150,
+    "protein": 2,
+    "carbs": 25,
+    "fat": 6,
+    "serving": "2 pieces (80g)",
+    "category": "Desserts",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "kuih-seri-muka",
+    "name": "Kuih Seri Muka",
+    "calories": 180,
+    "protein": 3,
+    "carbs": 30,
+    "fat": 7,
+    "serving": "2 pieces (100g)",
+    "category": "Desserts",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "ondeh-ondeh",
+    "name": "Ondeh-Ondeh",
+    "calories": 120,
+    "protein": 2,
+    "carbs": 22,
+    "fat": 4,
+    "serving": "4 pieces (60g)",
+    "category": "Desserts",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "teh-tarik",
+    "name": "Teh Tarik",
+    "calories": 170,
+    "protein": 2,
+    "carbs": 26,
+    "fat": 4,
+    "serving": "1 glass (250ml)",
+    "category": "Drinks",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Pulled Milk Tea"
+    ]
+  },
+  {
+    "id": "kopi-o",
+    "name": "Kopi O",
+    "calories": 50,
+    "protein": 0,
+    "carbs": 12,
+    "fat": 0,
+    "serving": "1 glass (200ml)",
+    "category": "Drinks",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Black Coffee"
+    ]
+  },
+  {
+    "id": "milo-ais",
+    "name": "Milo Ais",
+    "calories": 200,
+    "protein": 6,
+    "carbs": 32,
+    "fat": 5,
+    "serving": "1 glass (300ml)",
+    "category": "Drinks",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Iced Milo"
+    ]
+  },
+  {
+    "id": "bandung",
+    "name": "Bandung",
+    "calories": 150,
+    "protein": 3,
+    "carbs": 28,
+    "fat": 3,
+    "serving": "1 glass (250ml)",
+    "category": "Drinks",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "air-kelapa",
+    "name": "Air Kelapa",
+    "calories": 45,
+    "protein": 1,
+    "carbs": 9,
+    "fat": 0,
+    "serving": "1 glass (250ml)",
+    "category": "Drinks",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Coconut Water"
+    ]
+  },
+  {
+    "id": "sirap-limau",
+    "name": "Sirap Limau",
+    "calories": 100,
+    "protein": 0,
+    "carbs": 26,
+    "fat": 0,
+    "serving": "1 glass (250ml)",
+    "category": "Drinks",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Lime Syrup Drink"
+    ]
+  },
+  {
+    "id": "tofu-scramble",
+    "name": "Tofu Scramble",
+    "calories": 421,
+    "protein": 20,
+    "carbs": 24,
+    "fat": 27,
+    "serving": "1 tray (255g)",
+    "category": [
+      "Vegan",
+      "Proteins"
+    ],
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "oatmeal",
+    "name": "Oatmeal",
+    "calories": 307,
+    "protein": 8.7,
+    "carbs": 54.8,
+    "fat": 5.3,
+    "serving": "1 cup (81g)",
+    "category": [
+      "Grains",
+      "Healthy"
+    ],
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "congee",
+    "name": "Congee",
+    "calories": 99,
+    "protein": 2,
+    "carbs": 21.4,
+    "fat": 0.2,
+    "serving": "1 cup (255g)",
+    "category": [
+      "Rice",
+      "Chinese"
+    ],
+    "image_url": "https://bittmanproject.com/wp-content/uploads/congee2.jpg",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "congee-with-meat-poultry-and-or-seafood",
+    "name": "Congee with meat, poultry, and/or seafood",
+    "calories": 148,
+    "protein": 11.1,
+    "carbs": 17.8,
+    "fat": 3.3,
+    "serving": "1 cup (255g)",
+    "category": [
+      "Rice",
+      "Chinese",
+      "Meat",
+      "Seafood"
+    ],
+    "image_url": "https://omnivorescookbook.com/wp-content/uploads/2015/04/1503_Seafood-Congee_550.jpg",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "coconut-rice",
+    "name": "Coconut Rice",
+    "calories": 180,
+    "protein": 3,
+    "carbs": 28,
+    "fat": 7,
+    "serving": "100g",
+    "category": "basics",
+    "image_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS412afnrqRpUCCt28JIBNL21Z8aLv3ajVPbw&s",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "omelette",
+    "name": "Omelette",
+    "calories": 150,
+    "protein": 10,
+    "carbs": 2,
+    "fat": 12,
+    "serving": "1 egg",
+    "category": "basics",
+    "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/FoodOmelete.jpg/250px-FoodOmelete.jpg",
+    "alternative_search_terms": [
+      "Telur Dadar",
+      "Egg Dadar"
+    ]
+  },
+  {
+    "id": "boiled-egg",
+    "name": "Boiled Egg",
+    "calories": 78,
+    "protein": 6,
+    "carbs": 0.6,
+    "fat": 5,
+    "serving": "1 egg",
+    "category": "basics",
+    "image_url": "https://kehamilansehat.com/wp-content/uploads/2025/08/7-Manfaat-Telur-Rebus-untuk-Ibu-Hamil-yang-Jarang-Diketahui-1-1024x576.png",
+    "alternative_search_terms": [
+      "Telur Rebus",
+      "Egg Rebus"
+    ]
+  },
+  {
+    "id": "ikan-bilis",
+    "name": "Ikan Bilis",
+    "calories": 80,
+    "protein": 12,
+    "carbs": 0,
+    "fat": 3,
+    "serving": "30g",
+    "category": "basics",
+    "image_url": "https://www.singaporeanmalaysianrecipes.com/wp-content/smush-webp/2021/04/ikan-bilis.jpg.webp",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "sambal-belacan",
+    "name": "Sambal Belacan",
+    "calories": 50,
+    "protein": 1,
+    "carbs": 5,
+    "fat": 3,
+    "serving": "1 tbsp",
+    "category": "basics",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "tempeh-goreng",
+    "name": "Tempeh Goreng",
+    "calories": 200,
+    "protein": 15,
+    "carbs": 10,
+    "fat": 12,
+    "serving": "100g",
+    "category": "basics",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Fried Tempeh",
+      "Tempeh Fried"
+    ]
+  },
+  {
+    "id": "tahu-goreng",
+    "name": "Tahu Goreng",
+    "calories": 180,
+    "protein": 12,
+    "carbs": 8,
+    "fat": 12,
+    "serving": "100g",
+    "category": "basics",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Fried Tofu",
+      "Tofu Fried"
+    ]
+  },
+  {
+    "id": "kangkung",
+    "name": "Kangkung",
+    "calories": 19,
+    "protein": 2.6,
+    "carbs": 3,
+    "fat": 0.2,
+    "serving": "100g",
+    "category": "vegetables",
+    "image_url": "https://images.alodokter.com/dk0z4ums3/image/upload/v1610428714/attached_image/5-manfaat-kangkung-yang-sayang-dilewatkan.jpg",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "spinach",
+    "name": "Spinach",
+    "calories": 23,
+    "protein": 2.9,
+    "carbs": 3.6,
+    "fat": 0.4,
+    "serving": "100g",
+    "category": "vegetables",
+    "image_url": "https://www.simplyrecipes.com/thmb/SQcDd5aB_gznMU6Qjb7aPYuoMU4=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/Simply-Recipes-Easy-Sauteed-Spinach-LEAD-2-5666df10f7184e2b8a92cf44f0855872.jpg",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "mustard-greens",
+    "name": "Mustard Greens",
+    "calories": 27,
+    "protein": 2.9,
+    "carbs": 4.7,
+    "fat": 0.4,
+    "serving": "100g",
+    "category": "vegetables",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "cabbage",
+    "name": "Cabbage",
+    "calories": 25,
+    "protein": 1.3,
+    "carbs": 6,
+    "fat": 0.1,
+    "serving": "100g",
+    "category": "vegetables",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "cucumber",
+    "name": "Cucumber",
+    "calories": 15,
+    "protein": 0.7,
+    "carbs": 3.6,
+    "fat": 0.1,
+    "serving": "100g",
+    "category": "vegetables",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "tomato",
+    "name": "Tomato",
+    "calories": 18,
+    "protein": 0.9,
+    "carbs": 3.9,
+    "fat": 0.2,
+    "serving": "100g",
+    "category": "vegetables",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "carrot",
+    "name": "Carrot",
+    "calories": 41,
+    "protein": 0.9,
+    "carbs": 10,
+    "fat": 0.2,
+    "serving": "100g",
+    "category": "vegetables",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "broccoli",
+    "name": "Broccoli",
+    "calories": 34,
+    "protein": 2.8,
+    "carbs": 7,
+    "fat": 0.4,
+    "serving": "100g",
+    "category": "vegetables",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "kacang-panjang-long-bean",
+    "name": "Kacang Panjang (Long Bean)",
+    "calories": 47,
+    "protein": 2.8,
+    "carbs": 8,
+    "fat": 0.4,
+    "serving": "100g",
+    "category": "vegetables",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Long Bean",
+      "Kacang Panjang",
+      "Long Bean (long Bean)"
+    ]
+  },
+  {
+    "id": "terung-eggplant",
+    "name": "Terung (Eggplant)",
+    "calories": 25,
+    "protein": 1,
+    "carbs": 6,
+    "fat": 0.2,
+    "serving": "100g",
+    "category": "vegetables",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Eggplant",
+      "Terung",
+      "Eggplant (eggplant)"
+    ]
+  },
+  {
+    "id": "dada-ayam-chicken-breast",
+    "name": "Dada Ayam (Chicken Breast)",
+    "calories": 165,
+    "protein": 31,
+    "carbs": 0,
+    "fat": 3.6,
+    "serving": "100g",
+    "category": "proteins",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Chicken Breast",
+      "Dada Ayam",
+      "Dada Chicken (chicken Breast)"
+    ]
+  },
+  {
+    "id": "paha-ayam-chicken-thigh",
+    "name": "Paha Ayam (Chicken Thigh)",
+    "calories": 209,
+    "protein": 26,
+    "carbs": 0,
+    "fat": 11,
+    "serving": "100g",
+    "category": "proteins",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Chicken Thigh",
+      "Paha Ayam",
+      "Paha Chicken (chicken Thigh)"
+    ]
+  },
+  {
+    "id": "daging-lembu-beef",
+    "name": "Daging Lembu (Beef)",
+    "calories": 250,
+    "protein": 26,
+    "carbs": 0,
+    "fat": 15,
+    "serving": "100g",
+    "category": "proteins",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Beef",
+      "Daging Lembu",
+      "Beef (beef)"
+    ]
+  },
+  {
+    "id": "ikan-salmon",
+    "name": "Ikan Salmon",
+    "calories": 208,
+    "protein": 20,
+    "carbs": 0,
+    "fat": 13,
+    "serving": "100g",
+    "category": "proteins",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Fish Salmon"
+    ]
+  },
+  {
+    "id": "ikan-kembung",
+    "name": "Ikan Kembung",
+    "calories": 139,
+    "protein": 21,
+    "carbs": 0,
+    "fat": 6,
+    "serving": "100g",
+    "category": "proteins",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Fish Kembung"
+    ]
+  },
+  {
+    "id": "ikan-tilapia",
+    "name": "Ikan Tilapia",
+    "calories": 96,
+    "protein": 20,
+    "carbs": 0,
+    "fat": 1.7,
+    "serving": "100g",
+    "category": "proteins",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Fish Tilapia"
+    ]
+  },
+  {
+    "id": "prawn",
+    "name": "Prawn",
+    "calories": 99,
+    "protein": 24,
+    "carbs": 0.2,
+    "fat": 0.3,
+    "serving": "100g",
+    "category": "proteins",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "squid",
+    "name": "Squid",
+    "calories": 92,
+    "protein": 18,
+    "carbs": 3,
+    "fat": 1.4,
+    "serving": "100g",
+    "category": "proteins",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "chicken-egg",
+    "name": "Chicken Egg",
+    "calories": 155,
+    "protein": 13,
+    "carbs": 1.1,
+    "fat": 11,
+    "serving": "2 eggs",
+    "category": "proteins",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "tofu",
+    "name": "Tofu",
+    "calories": 76,
+    "protein": 8,
+    "carbs": 1.9,
+    "fat": 4.8,
+    "serving": "100g",
+    "category": "proteins",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "kaya-toast",
+    "name": "Kaya Toast",
+    "calories": 180,
+    "protein": 4,
+    "carbs": 28,
+    "fat": 6,
+    "serving": "2 slices (80g)",
+    "category": "western",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "half-boiled-eggs",
+    "name": "Half-Boiled Eggs",
+    "calories": 140,
+    "protein": 12,
+    "carbs": 1,
+    "fat": 10,
+    "serving": "2 eggs (100g)",
+    "category": "western",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "dim-sum-siu-mai",
+    "name": "Dim Sum Siu Mai",
+    "calories": 160,
+    "protein": 10,
+    "carbs": 12,
+    "fat": 8,
+    "serving": "4 pcs (80g)",
+    "category": "chinese",
+    "image_url": "https://www.recipetineats.com/tachyon/2020/02/Siu-Mai_Chinese-steamed-dumplings_0.jpg",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "lontong",
+    "name": "Lontong",
+    "calories": 350,
+    "protein": 12,
+    "carbs": 48,
+    "fat": 12,
+    "serving": "1 plate (350g)",
+    "category": "western",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "nasi-ulam",
+    "name": "Nasi Ulam",
+    "calories": 380,
+    "protein": 10,
+    "carbs": 55,
+    "fat": 14,
+    "serving": "1 plate (350g)",
+    "category": "rice",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "roti-bakar",
+    "name": "Roti Bakar",
+    "calories": 200,
+    "protein": 5,
+    "carbs": 30,
+    "fat": 7,
+    "serving": "2 slices (80g)",
+    "category": "western",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Roti Grilled"
+    ]
+  },
+  {
+    "id": "bihun-sup",
+    "name": "Bihun Sup",
+    "calories": 280,
+    "protein": 15,
+    "carbs": 40,
+    "fat": 6,
+    "serving": "1 bowl (400ml)",
+    "category": "noodles",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Rice Vermicelli Soup"
+    ]
+  },
+  {
+    "id": "nasi-lemak-rendang",
+    "name": "Nasi Lemak Rendang",
+    "calories": 750,
+    "protein": 28,
+    "carbs": 85,
+    "fat": 34,
+    "serving": "1 plate (500g)",
+    "category": "rice",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Coconut Rice Rendang"
+    ]
+  },
+  {
+    "id": "roti-telur-bawang",
+    "name": "Roti Telur Bawang",
+    "calories": 420,
+    "protein": 14,
+    "carbs": 45,
+    "fat": 20,
+    "serving": "1 piece (150g)",
+    "category": "roti",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Roti Egg Bawang"
+    ]
+  },
+  {
+    "id": "kolo-mee",
+    "name": "Kolo Mee",
+    "calories": 450,
+    "protein": 18,
+    "carbs": 55,
+    "fat": 18,
+    "serving": "1 bowl (350g)",
+    "category": "noodles",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Kolo Mi",
+      "Kolo Noodles"
+    ]
+  },
+  {
+    "id": "sarawak-laksa",
+    "name": "Sarawak Laksa",
+    "calories": 520,
+    "protein": 22,
+    "carbs": 55,
+    "fat": 24,
+    "serving": "1 bowl (450ml)",
+    "category": "noodles",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "ikan-pari-bakar",
+    "name": "Ikan Pari Bakar",
+    "calories": 280,
+    "protein": 32,
+    "carbs": 5,
+    "fat": 14,
+    "serving": "1 serving (200g)",
+    "category": "seafood",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Fish Pari Grilled"
+    ]
+  },
+  {
+    "id": "sambal-petai-udang",
+    "name": "Sambal Petai Udang",
+    "calories": 220,
+    "protein": 18,
+    "carbs": 12,
+    "fat": 12,
+    "serving": "1 serving (150g)",
+    "category": "seafood",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Sambal Petai Prawn"
+    ]
+  },
+  {
+    "id": "gulai-kawah",
+    "name": "Gulai Kawah",
+    "calories": 350,
+    "protein": 22,
+    "carbs": 15,
+    "fat": 24,
+    "serving": "1 serving (180g)",
+    "category": "meat",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "mee-bandung",
+    "name": "Mee Bandung",
+    "calories": 420,
+    "protein": 18,
+    "carbs": 52,
+    "fat": 16,
+    "serving": "1 bowl (400ml)",
+    "category": "noodles",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Mi Bandung",
+      "Noodles Bandung"
+    ]
+  },
+  {
+    "id": "asam-pedas-ikan",
+    "name": "Asam Pedas Ikan",
+    "calories": 260,
+    "protein": 28,
+    "carbs": 12,
+    "fat": 12,
+    "serving": "1 serving (200g)",
+    "category": "seafood",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Asam Pedas Fish"
+    ]
+  },
+  {
+    "id": "daging-dendeng",
+    "name": "Daging Dendeng",
+    "calories": 200,
+    "protein": 28,
+    "carbs": 8,
+    "fat": 6,
+    "serving": "100g",
+    "category": "meat",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Beef Dendeng"
+    ]
+  },
+  {
+    "id": "kerabu-mangga",
+    "name": "Kerabu Mangga",
+    "calories": 120,
+    "protein": 2,
+    "carbs": 18,
+    "fat": 5,
+    "serving": "1 serving (120g)",
+    "category": "vegetables",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "nasi-campur",
+    "name": "Nasi Campur",
+    "calories": 650,
+    "protein": 25,
+    "carbs": 75,
+    "fat": 28,
+    "serving": "1 plate (450g)",
+    "category": "rice",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "claypot-chicken-rice",
+    "name": "Claypot Chicken Rice",
+    "calories": 580,
+    "protein": 28,
+    "carbs": 70,
+    "fat": 20,
+    "serving": "1 pot (450g)",
+    "category": "rice",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "hokkien-mee",
+    "name": "Hokkien Mee",
+    "calories": 480,
+    "protein": 22,
+    "carbs": 55,
+    "fat": 20,
+    "serving": "1 plate (400g)",
+    "category": "noodles",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Hokkien Mi",
+      "Hokkien Noodles"
+    ]
+  },
+  {
+    "id": "yong-tau-foo",
+    "name": "Yong Tau Foo",
+    "calories": 320,
+    "protein": 18,
+    "carbs": 30,
+    "fat": 14,
+    "serving": "6 pcs (250g)",
+    "category": "vegetables",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "ikan-tenggiri-goreng",
+    "name": "Ikan Tenggiri Goreng",
+    "calories": 180,
+    "protein": 24,
+    "carbs": 5,
+    "fat": 8,
+    "serving": "1 piece (120g)",
+    "category": "seafood",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Fish Tenggiri Fried"
+    ]
+  },
+  {
+    "id": "sushi-roll",
+    "name": "Sushi Roll",
+    "calories": 200,
+    "protein": 8,
+    "carbs": 38,
+    "fat": 1,
+    "serving": "6 pcs (180g)",
+    "category": "japanese",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "ramen",
+    "name": "Ramen",
+    "calories": 450,
+    "protein": 18,
+    "carbs": 55,
+    "fat": 18,
+    "serving": "1 bowl (500ml)",
+    "category": "japanese",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "tempura",
+    "name": "Tempura",
+    "calories": 280,
+    "protein": 12,
+    "carbs": 25,
+    "fat": 16,
+    "serving": "5 pcs (150g)",
+    "category": "japanese",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "teriyaki-chicken",
+    "name": "Teriyaki Chicken",
+    "calories": 320,
+    "protein": 28,
+    "carbs": 18,
+    "fat": 14,
+    "serving": "1 serving (200g)",
+    "category": "japanese",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "miso-soup",
+    "name": "Miso Soup",
+    "calories": 60,
+    "protein": 4,
+    "carbs": 6,
+    "fat": 2,
+    "serving": "1 bowl (200ml)",
+    "category": "japanese",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "pad-thai",
+    "name": "Pad Thai",
+    "calories": 380,
+    "protein": 12,
+    "carbs": 48,
+    "fat": 16,
+    "serving": "1 plate (350g)",
+    "category": "thai",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "green-curry",
+    "name": "Green Curry",
+    "calories": 420,
+    "protein": 20,
+    "carbs": 15,
+    "fat": 32,
+    "serving": "1 serving (300g)",
+    "category": "thai",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "tom-yum-soup",
+    "name": "Tom Yum Soup",
+    "calories": 180,
+    "protein": 15,
+    "carbs": 12,
+    "fat": 8,
+    "serving": "1 bowl (350ml)",
+    "category": "thai",
+    "image_url": "",
+    "alternative_search_terms": [
+      "Tom Yam Soup"
+    ]
+  },
+  {
+    "id": "som-tam",
+    "name": "Som Tam",
+    "calories": 120,
+    "protein": 4,
+    "carbs": 18,
+    "fat": 4,
+    "serving": "1 serving (150g)",
+    "category": "thai",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "pho",
+    "name": "Pho",
+    "calories": 380,
+    "protein": 22,
+    "carbs": 45,
+    "fat": 10,
+    "serving": "1 bowl (500ml)",
+    "category": "vietnamese",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "banh-mi",
+    "name": "Banh Mi",
+    "calories": 350,
+    "protein": 18,
+    "carbs": 45,
+    "fat": 12,
+    "serving": "1 sandwich (250g)",
+    "category": "vietnamese",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "spring-rolls",
+    "name": "Spring Rolls",
+    "calories": 150,
+    "protein": 5,
+    "carbs": 20,
+    "fat": 6,
+    "serving": "3 pcs (90g)",
+    "category": "vietnamese",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "bibimbap",
+    "name": "Bibimbap",
+    "calories": 550,
+    "protein": 25,
+    "carbs": 70,
+    "fat": 18,
+    "serving": "1 bowl (500g)",
+    "category": "korean",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "korean-fried-chicken",
+    "name": "Korean Fried Chicken",
+    "calories": 380,
+    "protein": 25,
+    "carbs": 22,
+    "fat": 22,
+    "serving": "5 pcs (200g)",
+    "category": "korean",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "kimchi-jjigae",
+    "name": "Kimchi Jjigae",
+    "calories": 280,
+    "protein": 18,
+    "carbs": 15,
+    "fat": 16,
+    "serving": "1 bowl (400ml)",
+    "category": "korean",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "kung-pao-chicken",
+    "name": "Kung Pao Chicken",
+    "calories": 350,
+    "protein": 28,
+    "carbs": 18,
+    "fat": 20,
+    "serving": "1 serving (200g)",
+    "category": "chinese",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "sweet-and-sour-pork",
+    "name": "Sweet and Sour Pork",
+    "calories": 380,
+    "protein": 20,
+    "carbs": 35,
+    "fat": 18,
+    "serving": "1 serving (200g)",
+    "category": "chinese",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "mapo-tofu",
+    "name": "Mapo Tofu",
+    "calories": 220,
+    "protein": 14,
+    "carbs": 10,
+    "fat": 15,
+    "serving": "1 serving (200g)",
+    "category": "chinese",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "dim-sum-har-gow",
+    "name": "Dim Sum Har Gow",
+    "calories": 120,
+    "protein": 8,
+    "carbs": 12,
+    "fat": 4,
+    "serving": "4 pcs (80g)",
+    "category": "chinese",
+    "image_url": "https://upload.wikimedia.org/wikipedia/commons/9/94/Steamed_prawn_dumplings.jpg",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "fried-rice",
+    "name": "Fried Rice",
+    "calories": 450,
+    "protein": 12,
+    "carbs": 58,
+    "fat": 18,
+    "serving": "1 plate (350g)",
+    "category": ["chinese", "rice"],
+    "image_url": "https://twokooksinthekitchen.com/wp-content/uploads/2022/07/Chinese-egg-fried-rice.jpg",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "cheeseburger",
+    "name": "Cheeseburger",
+    "calories": 550,
+    "protein": 28,
+    "carbs": 40,
+    "fat": 32,
+    "serving": "1 burger (200g)",
+    "category": "western",
+    "image_url": "https://images.themodernproper.com/production/posts/2016/ClassicCheeseBurger_9.jpg?w=1200&h=1200&q=60&fm=jpg&fit=crop&dm=1749310239&s=463b18fc3bb51dc5d96e866c848527c4",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "caesar-salad",
+    "name": "Caesar Salad",
+    "calories": 280,
+    "protein": 12,
+    "carbs": 15,
+    "fat": 20,
+    "serving": "1 bowl (250g)",
+    "category": "western",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "grilled-steak",
+    "name": "Grilled Steak",
+    "calories": 420,
+    "protein": 45,
+    "carbs": 0,
+    "fat": 26,
+    "serving": "200g",
+    "category": "western",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "fish-and-chips",
+    "name": "Fish and Chips",
+    "calories": 600,
+    "protein": 25,
+    "carbs": 55,
+    "fat": 32,
+    "serving": "1 serving (350g)",
+    "category": "western",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "spaghetti-bolognese",
+    "name": "Spaghetti Bolognese",
+    "calories": 480,
+    "protein": 22,
+    "carbs": 55,
+    "fat": 18,
+    "serving": "1 plate (350g)",
+    "category": "western",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "carbonara",
+    "name": "Carbonara",
+    "calories": 550,
+    "protein": 20,
+    "carbs": 50,
+    "fat": 30,
+    "serving": "1 plate (350g)",
+    "category": "western",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "margherita-pizza",
+    "name": "Margherita Pizza",
+    "calories": 250,
+    "protein": 12,
+    "carbs": 30,
+    "fat": 10,
+    "serving": "1 slice (100g)",
+    "category": "western",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "pepperoni-pizza",
+    "name": "Pepperoni Pizza",
+    "calories": 300,
+    "protein": 14,
+    "carbs": 28,
+    "fat": 15,
+    "serving": "1 slice (110g)",
+    "category": "western",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "club-sandwich",
+    "name": "Club Sandwich",
+    "calories": 450,
+    "protein": 25,
+    "carbs": 35,
+    "fat": 25,
+    "serving": "1 sandwich (280g)",
+    "category": "western",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "eggs-benedict",
+    "name": "Eggs Benedict",
+    "calories": 400,
+    "protein": 18,
+    "carbs": 22,
+    "fat": 28,
+    "serving": "1 serving (250g)",
+    "category": "western",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "french-fries",
+    "name": "French Fries",
+    "calories": 320,
+    "protein": 4,
+    "carbs": 42,
+    "fat": 15,
+    "serving": "1 serving (150g)",
+    "category": "western",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "onion-rings",
+    "name": "Onion Rings",
+    "calories": 280,
+    "protein": 4,
+    "carbs": 35,
+    "fat": 14,
+    "serving": "8 pcs (120g)",
+    "category": "western",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "chicken-wings",
+    "name": "Chicken Wings",
+    "calories": 350,
+    "protein": 22,
+    "carbs": 8,
+    "fat": 26,
+    "serving": "6 pcs (180g)",
+    "category": "western",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "mac-and-cheese",
+    "name": "Mac and Cheese",
+    "calories": 400,
+    "protein": 15,
+    "carbs": 42,
+    "fat": 20,
+    "serving": "1 serving (250g)",
+    "category": "western",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "grilled-salmon",
+    "name": "Grilled Salmon",
+    "calories": 280,
+    "protein": 35,
+    "carbs": 0,
+    "fat": 15,
+    "serving": "150g",
+    "category": "healthy",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "chicken-breast-grilled",
+    "name": "Chicken Breast Grilled",
+    "calories": 165,
+    "protein": 31,
+    "carbs": 0,
+    "fat": 3.6,
+    "serving": "100g",
+    "category": "healthy",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "quinoa-bowl",
+    "name": "Quinoa Bowl",
+    "calories": 320,
+    "protein": 12,
+    "carbs": 52,
+    "fat": 8,
+    "serving": "1 bowl (300g)",
+    "category": "healthy",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "acai-bowl",
+    "name": "Acai Bowl",
+    "calories": 350,
+    "protein": 6,
+    "carbs": 60,
+    "fat": 10,
+    "serving": "1 bowl (300g)",
+    "category": "healthy",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "green-smoothie",
+    "name": "Green Smoothie",
+    "calories": 180,
+    "protein": 5,
+    "carbs": 35,
+    "fat": 3,
+    "serving": "1 glass (350ml)",
+    "category": "healthy",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "protein-shake",
+    "name": "Protein Shake",
+    "calories": 200,
+    "protein": 25,
+    "carbs": 15,
+    "fat": 5,
+    "serving": "1 glass (400ml)",
+    "category": "healthy",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "mixed-salad",
+    "name": "Mixed Salad",
+    "calories": 120,
+    "protein": 4,
+    "carbs": 12,
+    "fat": 6,
+    "serving": "1 bowl (200g)",
+    "category": "healthy",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "avocado-toast",
+    "name": "Avocado Toast",
+    "calories": 280,
+    "protein": 8,
+    "carbs": 25,
+    "fat": 18,
+    "serving": "1 slice (120g)",
+    "category": "healthy",
+    "image_url": "",
+    "alternative_search_terms": []
+  },
+  {
+    "id": "steamed-vegetables",
+    "name": "Steamed Vegetables",
+    "calories": 80,
+    "protein": 3,
+    "carbs": 15,
+    "fat": 1,
+    "serving": "1 serving (150g)",
+    "category": "healthy",
+    "image_url": "",
+    "alternative_search_terms": []
+  }
+]

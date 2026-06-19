@@ -1,0 +1,53 @@
+.ui-recommendation-layout { min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr); margin-top: 30px; align-items: start; }
+.ui-recommendation-results { display: grid; gap: 16px; }
+.ui-recommendation-state { min-height: 220px; padding: 28px; display: grid; place-items: center; align-content: center; gap: 10px; text-align: center; color: var(--ink-2); }
+.ui-recommendation-state svg { color: var(--green); }
+.ui-recommendation-grid { display: grid; gap: 16px; }
+.ui-recommendation-regenerate { width: 100%; min-height: 52px; margin-top: 16px; font-size: 15px; }
+.ui-recommendation-add-meal { width: 100%; min-height: 50px; margin-top: 10px; }
+
+.ui-meal-accordion { display: grid; gap: 14px; }
+.ui-meal-accordion-item {
+  overflow: hidden; border: 1px solid rgba(32, 52, 43, 0.16); border-radius: 22px;
+  background: rgba(255, 251, 239, 0.78); box-shadow: var(--shadow-sm);
+}
+.ui-meal-accordion-control {
+  padding: 0; color: var(--ink); background: transparent;
+  transition: background 160ms ease;
+}
+.ui-meal-accordion-control:hover { background: rgba(15, 107, 67, 0.06); }
+.ui-meal-accordion-control .mantine-Accordion-label { padding: 0; }
+.ui-meal-accordion-control .mantine-Accordion-chevron { margin-right: 18px; color: var(--green); }
+.ui-meal-accordion-heading {
+  min-height: 96px; padding: 18px 20px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 16px; align-items: center;
+}
+.ui-meal-accordion-heading h2 {
+  margin: 0; color: var(--ink); font-family: var(--serif); font-size: clamp(28px, 3vw, 42px);
+  font-weight: 500; line-height: 1;
+}
+.ui-meal-accordion-heading p { margin: 5px 0 0; color: var(--muted); font-size: 14px; font-weight: 800; line-height: 1.35; }
+.ui-meal-accordion-icon {
+  width: 46px; height: 46px; display: grid; place-items: center; border-radius: 50%;
+  background: rgba(15, 107, 67, 0.12); color: var(--green-dark);
+}
+.ui-meal-accordion-count { min-width: 96px; justify-content: center; background: rgba(15, 107, 67, 0.12); color: var(--green-dark); }
+.ui-meal-accordion-panel { padding: 0 20px 20px; }
+.ui-meal-accordion-panel .mantine-Accordion-content { padding: 0; }
+
+@media (max-width: 960px) {
+  .ui-recommendation-layout { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 680px) {
+  .ui-meal-accordion-heading {
+    min-height: auto; padding: 16px; grid-template-columns: auto minmax(0, 1fr); gap: 12px;
+  }
+  .ui-meal-accordion-heading h2 { font-size: clamp(26px, 8vw, 36px); }
+  .ui-meal-accordion-heading p { font-size: 13px; }
+  .ui-meal-accordion-count {
+    grid-column: 1 / -1; width: fit-content; min-width: 0; justify-self: start;
+  }
+  .ui-meal-accordion-icon { width: 40px; height: 40px; }
+  .ui-meal-accordion-panel { padding: 0 14px 16px; }
+}

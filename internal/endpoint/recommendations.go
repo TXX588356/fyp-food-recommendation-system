@@ -1,0 +1,201 @@
+package endpoint
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"fyp/food-rs/app"
+	"fyp/food-rs/internal/endpoint/middleware"
+	"fyp/food-rs/internal/interfaces"
+	"log"
+	"log/slog"
+	"net/http"
+	"strings"
+
+	"github.com/labstack/echo/v5"
+)
+
+type recommendationHandler struct {
+	preferenceService     interfaces.PreferenceService
+	recommendationService interfaces.RecommendationService
+}
+
+type generateRecommendationRequest struct {
+	MealCategory      string  `json:"mealCategory"`
+	CurrentMonthSpent float64 `json:"currentMonthSpent"`
+	PerMealBudget     float64 `json:"perMealBudget"`
+}
+
+type generateRecommendationsResponse struct {
+	Candidates []interfaces.MatchedMealCandidate `json:"candidates"`
+}
+
+var allowedRecommendationMealCategories = map[string]bool{
+	"breakfast": true,
+	"lunch":     true,
+	"dinner":    true,
+	"snack":     true,
+}
+
+func RegisterRecommendationRoutes(ctx context.Context, e *echo.Echo) {
+	a := app.FromContext(ctx)
+	if a == nil {
+		log.Fatal("app missing from context")
+		return
+	}
+
+	preferenceService, err := a.GetPreferenceService(ctx)
+	if err != nil {
+		log.Fatal("failed to get preference service", "error", err)
+		return
+	}
+
+	recommendationService, err := a.GetRecommendationService(ctx)
+	if err != nil {
+		log.Fatal("failed to get recommendation service", "error", err)
+		return
+	}
+
+	h := &recommendationHandler{
+		preferenceService:     preferenceService,
+		recommendationService: recommendationService,
+	}
+
+	recommendations := e.Group("/recommendations", middleware.Auth(a.JWTSecret))
+	recommendations.POST("", h.generateRecommendations)
+}
+
+func (h *recommendationHandler) generateRecommendations(c *echo.Context) error {
+	var request generateRecommendationRequest
+
+	if err := c.Bind(&request); err != nil {
+		slog.Warn("recommendation request rejected: invalid body", "error", err)
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "invalid request body",
+		})
+	}
+
+	if err := validateGenerateRecommendationRequest(request); err != nil {
+		slog.Warn("recommendation request rejected: validation failed",
+			"meal_category", request.MealCategory,
+			"current_month_spent", request.CurrentMonthSpent,
+			"per_meal_budget", request.PerMealBudget,
+			"error", err,
+		)
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": err.Error(),
+		})
+	}
+
+	userID, err := middleware.UserIDFromContext(c)
+	if err != nil {
+		slog.Warn("recommendation request rejected: unauthorized", "error", err)
+		return c.JSON(http.StatusUnauthorized, map[string]string{
+			"error": "unauthorized",
+		})
+	}
+
+	slog.Info("recommendation request started",
+		"user_id", userID,
+		"meal_category", strings.TrimSpace(request.MealCategory),
+		"current_month_spent", request.CurrentMonthSpent,
+		"per_meal_budget", request.PerMealBudget,
+	)
+
+	// Load saved preferences for the user
+	preferences, err := h.preferenceService.GetByUserID(c.Request().Context(), userID)
+	if err != nil {
+		slog.Error("recommendation request failed: load preferences",
+			"user_id", userID,
+			"error", err,
+		)
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "failed to load preferences",
+		})
+	}
+
+	// Build meal prompt input
+	input := buildMealPromptFromPreferences(*preferences, request)
+	slog.Info("recommendation prompt input built",
+		"user_id", userID,
+		"goal", input.Goal,
+		"meal_category", input.MealCategory,
+		"dietary_restrictions_count", len(input.DietaryRestrictions),
+		"health_concerns_count", len(input.HealthConcerns),
+		"preferred_tags_count", len(input.PreferredMealTags),
+		"monthly_budget", input.MonthlyMealBudget,
+		"remaining_budget", input.RemainingBudget,
+		"per_meal_budget", input.PerMealBudget,
+	)
+
+	candidates, err := h.recommendationService.GenerateCandidates(c.Request().Context(), userID, input)
+	if err != nil {
+		slog.Error("recommendation request failed: generate candidates",
+			"user_id", userID,
+			"meal_category", input.MealCategory,
+			"error", err,
+		)
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "failed to generate recommendations",
+		})
+	}
+
+	slog.Info("recommendation request completed",
+		"user_id", userID,
+		"meal_category", input.MealCategory,
+		"candidate_count", len(candidates),
+	)
+
+	return c.JSON(http.StatusOK, generateRecommendationsResponse{
+		Candidates: candidates,
+	})
+}
+
+func validateGenerateRecommendationRequest(input generateRecommendationRequest) error {
+	mealCategory := strings.TrimSpace(input.MealCategory)
+	if mealCategory == "" {
+		return errors.New("meal category is required")
+	}
+
+	if !allowedRecommendationMealCategories[mealCategory] {
+		return fmt.Errorf("unsupported meal category: %s", mealCategory)
+	}
+
+	if input.CurrentMonthSpent < 0 {
+		return errors.New("current month spent cannot be negative")
+	}
+
+	if input.PerMealBudget < 0 {
+		return errors.New("per meal budget cannot be negative")
+	}
+
+	return nil
+}
+
+func buildMealPromptFromPreferences(preferences interfaces.PreferenceResponse, request generateRecommendationRequest) interfaces.MealPromptInput {
+	remainingBudget := preferences.MonthlyMealBudget - request.CurrentMonthSpent
+	if remainingBudget < 0 {
+		remainingBudget = 0
+	}
+
+	perMealBudget := request.PerMealBudget
+	if perMealBudget <= 0 {
+		perMealBudget = preferences.MonthlyMealBudget / 60
+	}
+
+	return interfaces.MealPromptInput{
+		Goal:                preferences.MainGoal,
+		DietaryRestrictions: preferences.DietaryRestrictions,
+		HealthConcerns:      preferences.HealthConcerns,
+		PreferredMealTags:   preferences.PreferredMealTags,
+		MealCategory:        strings.TrimSpace(request.MealCategory),
+		MonthlyMealBudget:   preferences.MonthlyMealBudget,
+		CurrentMonthSpent:   request.CurrentMonthSpent,
+		RemainingBudget:     remainingBudget,
+		PerMealBudget:       perMealBudget,
+	}
+}
+
+func init() {
+	endpoints = append(endpoints, RegisterRecommendationRoutes)
+}

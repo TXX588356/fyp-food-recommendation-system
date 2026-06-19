@@ -1,5 +1,4 @@
 import { UnstyledButton } from "@mantine/core"
-import "@/App.css"
 
 export function OptionButton({
   label,

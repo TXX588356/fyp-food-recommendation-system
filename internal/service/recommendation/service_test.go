@@ -8,6 +8,7 @@ import (
 	"fyp/food-rs/internal/interfaces"
 	"fyp/food-rs/internal/mocks"
 
+	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
@@ -26,11 +27,13 @@ var _ = Describe("Recommendation candidate generation", func() {
 		foodSearcher  *mocks.FoodSearcher
 		service       interfaces.RecommendationService
 		input         interfaces.MealPromptInput
+		userID        uuid.UUID
 	)
 
 	BeforeEach(func() {
 		ctx = context.Background()
 		input = interfaces.MealPromptInput{}
+		userID = uuid.New()
 		mealGenerator = mocks.NewMealGenerator(GinkgoT())
 		foodSearcher = mocks.NewFoodSearcher(GinkgoT())
 		service = NewService(mealGenerator, foodSearcher)
@@ -45,14 +48,14 @@ var _ = Describe("Recommendation candidate generation", func() {
 			}, nil).
 			Once()
 
-		foodSearcher.EXPECT().SearchFood(mock.Anything, "Nasi Lemak").
+		foodSearcher.EXPECT().SearchFood(mock.Anything, userID, "Nasi Lemak").
 			Return(interfaces.FoodSearchResult{
 				ID:   "food-1",
 				Name: "Nasi Lemak",
 			}, true, nil).
 			Once()
 
-		candidates, err := service.GenerateCandidates(ctx, input)
+		candidates, err := service.GenerateCandidates(ctx, userID, input)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(candidates).To(HaveLen(1))
@@ -74,20 +77,20 @@ var _ = Describe("Recommendation candidate generation", func() {
 			}, nil).
 			Once()
 
-		foodSearcher.EXPECT().SearchFood(mock.Anything, "Wantan Mee").
+		foodSearcher.EXPECT().SearchFood(mock.Anything, userID, "Wantan Mee").
 			Return(interfaces.FoodSearchResult{}, false, nil).
 			Once()
-		foodSearcher.EXPECT().SearchFood(mock.Anything, "Wonton Mee").
+		foodSearcher.EXPECT().SearchFood(mock.Anything, userID, "Wonton Mee").
 			Return(interfaces.FoodSearchResult{}, false, nil).
 			Once()
-		foodSearcher.EXPECT().SearchFood(mock.Anything, "Wan Tan Mee").
+		foodSearcher.EXPECT().SearchFood(mock.Anything, userID, "Wan Tan Mee").
 			Return(interfaces.FoodSearchResult{
 				ID:   "food-2",
 				Name: "Wantan Mee",
 			}, true, nil).
 			Once()
 
-		candidates, err := service.GenerateCandidates(ctx, input)
+		candidates, err := service.GenerateCandidates(ctx, userID, input)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(candidates).To(HaveLen(1))
@@ -106,14 +109,14 @@ var _ = Describe("Recommendation candidate generation", func() {
 			}, nil).
 			Once()
 
-		foodSearcher.EXPECT().SearchFood(mock.Anything, "Unknown Meal").
+		foodSearcher.EXPECT().SearchFood(mock.Anything, userID, "Unknown Meal").
 			Return(interfaces.FoodSearchResult{}, false, nil).
 			Once()
-		foodSearcher.EXPECT().SearchFood(mock.Anything, "Unknown Food").
+		foodSearcher.EXPECT().SearchFood(mock.Anything, userID, "Unknown Food").
 			Return(interfaces.FoodSearchResult{}, false, nil).
 			Once()
 
-		candidates, err := service.GenerateCandidates(ctx, input)
+		candidates, err := service.GenerateCandidates(ctx, userID, input)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(candidates).To(BeEmpty())
@@ -124,7 +127,7 @@ var _ = Describe("Recommendation candidate generation", func() {
 			Return(interfaces.GeminiMealsResponse{}, errors.New("Gemini unavailable")).
 			Once()
 
-		_, err := service.GenerateCandidates(ctx, input)
+		_, err := service.GenerateCandidates(ctx, userID, input)
 
 		Expect(err).To(MatchError("generated meal candidates: Gemini unavailable"))
 	})
@@ -138,11 +141,11 @@ var _ = Describe("Recommendation candidate generation", func() {
 			}, nil).
 			Once()
 
-		foodSearcher.EXPECT().SearchFood(mock.Anything, "Nasi Lemak").
+		foodSearcher.EXPECT().SearchFood(mock.Anything, userID, "Nasi Lemak").
 			Return(interfaces.FoodSearchResult{}, false, errors.New("food API unavailable")).
 			Once()
 
-		_, err := service.GenerateCandidates(ctx, input)
+		_, err := service.GenerateCandidates(ctx, userID, input)
 
 		Expect(err).To(MatchError(`search food "Nasi Lemak": food API unavailable`))
 	})

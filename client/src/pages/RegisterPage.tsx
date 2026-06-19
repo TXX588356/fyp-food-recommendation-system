@@ -7,7 +7,6 @@ import {
   TextInput,
   Title,
 } from '@mantine/core'
-import '@/App.css'
 import { useForm } from '@mantine/form'
 import { useState } from 'react'
 import axios from 'axios'
