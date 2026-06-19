@@ -50,6 +50,7 @@ func (s *service) generateRefreshToken() (string, string, error) {
 	return raw, hex.EncodeToString(hash[:]), nil
 }
 
+// hashRefreshToken is used when client sends refresh token back
 func hashRefreshToken(raw string) string {
 	hash := sha256.Sum256([]byte(raw))
 	return hex.EncodeToString(hash[:])

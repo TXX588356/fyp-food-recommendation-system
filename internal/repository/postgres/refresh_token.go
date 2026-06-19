@@ -22,6 +22,7 @@ func (r *refreshTokenRepository) Create(ctx context.Context, refreshToken *model
 	return r.db.WithContext(ctx).Create(refreshToken).Error
 }
 
+// FindByHash finds the refresh token row when /auth/refresh is called
 func (r *refreshTokenRepository) FindByHash(ctx context.Context, hash string) (*model.RefreshToken, error) {
 	var refreshToken model.RefreshToken
 
@@ -34,6 +35,7 @@ func (r *refreshTokenRepository) FindByHash(ctx context.Context, hash string) (*
 	return &refreshToken, nil
 }
 
+// Rotate creates a new refresh token and revokes the old one
 func (r *refreshTokenRepository) Rotate(ctx context.Context, oldTokenID uuid.UUID, newToken *model.RefreshToken) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(newToken).Error; err != nil {
