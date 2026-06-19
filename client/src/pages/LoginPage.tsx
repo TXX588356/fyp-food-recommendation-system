@@ -45,7 +45,7 @@ export default function LoginPage() {
       try {
         const response = await axios.post(`${API_BASE_URL}/auth/login`, values)
 
-        login(response.data.user, response.data.token)
+        login(response.data.user, response.data.accessToken, response.data.refreshToken)
 
         if (response.data.user.hasCompletedOnboarding) {
           navigate('/recommendation', { replace: true})

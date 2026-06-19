@@ -62,7 +62,8 @@ func (a *App) GetAuthService(ctx context.Context) (interfaces.AuthService, error
 	}
 
 	userRepo := postgres.NewUserPostgresRepository(a.PostgresDB)
-	a.authService = authservice.NewService(userRepo, a.JWTSecret)
+	refreshTokenRepo := postgres.NewRefreshTokenPostgresRepository(a.PostgresDB)
+	a.authService = authservice.NewService(userRepo, refreshTokenRepo, a.JWTSecret)
 
 	return a.authService, nil
 }

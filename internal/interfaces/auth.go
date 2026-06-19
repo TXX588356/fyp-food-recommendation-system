@@ -1,6 +1,8 @@
 package interfaces
 
-import "context"
+import (
+	"context"
+)
 
 type RegisterInput struct {
 	Name     string
@@ -13,6 +15,10 @@ type LoginInput struct {
 	Password string
 }
 
+type RefreshInput struct {
+	RefreshToken string `json:"refreshToken"`
+}
+
 type AuthUser struct {
 	ID                     string `json:"id"`
 	Name                   string `json:"name"`
@@ -21,11 +27,14 @@ type AuthUser struct {
 }
 
 type AuthResult struct {
-	User  AuthUser `json:"user"`
-	Token string   `json:"token"`
+	User         AuthUser `json:"user"`
+	AccessToken  string   `json:"accessToken"`
+	RefreshToken string   `json:"refreshToken"`
 }
 
 type AuthService interface {
 	Register(ctx context.Context, input RegisterInput) (*AuthResult, error)
 	Login(ctx context.Context, input LoginInput) (*AuthResult, error)
+	Refresh(ctx context.Context, rawRefreshToken string) (*AuthResult, error)
+	Logout(ctx context.Context, rawRefreshToken string) error
 }

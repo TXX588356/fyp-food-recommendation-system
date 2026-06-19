@@ -30,6 +30,8 @@ func RegisterAuthRoutes(ctx context.Context, e *echo.Echo) {
 	auth := e.Group("/auth")
 	auth.POST("/register", h.register)
 	auth.POST("/login", h.login)
+	auth.POST("/refresh", h.refresh)
+	auth.POST("/logout", h.logout)
 
 }
 
@@ -67,6 +69,35 @@ func (h *authHandler) login(c *echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, result)
 
+}
+
+func (h *authHandler) refresh(c *echo.Context) error {
+	var input interfaces.RefreshInput
+
+	if err := c.Bind(&input); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+	}
+
+	result, err := h.authService.Refresh(c.Request().Context(), input.RefreshToken)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, map[string]string{"error": err.Error()})
+	}
+
+	return c.JSON(http.StatusOK, result)
+}
+
+func (h *authHandler) logout(c *echo.Context) error {
+	var input interfaces.RefreshInput
+
+	if err := c.Bind(&input); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+	}
+
+	if err := h.authService.Logout(c.Request().Context(), input.RefreshToken); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{"message": "logged out"})
 }
 
 func init() {

@@ -109,7 +109,7 @@ var _ = Describe("Recommendation endpoint contract", func() {
 
 		It("should reject negative per meal budget", func() {
 			err := validateGenerateRecommendationRequest(generateRecommendationRequest{
-				MealCategory:  "french",
+				MealCategory:  "lunch",
 				PerMealBudget: -1,
 			})
 

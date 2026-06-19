@@ -8,20 +8,23 @@ import (
 	"fyp/food-rs/types/model"
 	"net/mail"
 	"strings"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
 type service struct {
-	userRepo  interfaces.UserRepository
-	jwtSecret string
+	userRepo         interfaces.UserRepository
+	refreshTokenRepo interfaces.RefreshTokenRepository
+	jwtSecret        string
 }
 
-func NewService(userRepo interfaces.UserRepository, jwtSecret string) interfaces.AuthService {
+func NewService(userRepo interfaces.UserRepository, refreshTokenRepo interfaces.RefreshTokenRepository, jwtSecret string) interfaces.AuthService {
 	return &service{
-		userRepo:  userRepo,
-		jwtSecret: jwtSecret,
+		userRepo:         userRepo,
+		refreshTokenRepo: refreshTokenRepo,
+		jwtSecret:        jwtSecret,
 	}
 }
 
@@ -61,7 +64,20 @@ func (s *service) Register(ctx context.Context, input interfaces.RegisterInput) 
 		return nil, err
 	}
 	// 5. generate JWT
-	token, err := s.generateToken(createdUser)
+	accessToken, err := s.generateAccessToken(createdUser)
+	if err != nil {
+		return nil, err
+	}
+	refreshToken, refreshTokenHash, err := s.generateRefreshToken()
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.refreshTokenRepo.Create(ctx, &model.RefreshToken{
+		UserID:    createdUser.ID,
+		TokenHash: refreshTokenHash,
+		ExpiresAt: time.Now().Add(14 * 24 * time.Hour),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +89,8 @@ func (s *service) Register(ctx context.Context, input interfaces.RegisterInput) 
 			Email:                  createdUser.Email,
 			HasCompletedOnboarding: createdUser.HasCompletedOnboarding,
 		},
-		Token: token,
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
 	}, nil
 }
 
@@ -103,7 +120,20 @@ func (s *service) Login(ctx context.Context, input interfaces.LoginInput) (*inte
 		return nil, errors.New("invalid email or password")
 	}
 	// 3. generate JWT
-	token, err := s.generateToken(existingUser)
+	accessToken, err := s.generateAccessToken(existingUser)
+	if err != nil {
+		return nil, err
+	}
+	refreshToken, refreshTokenHash, err := s.generateRefreshToken()
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.refreshTokenRepo.Create(ctx, &model.RefreshToken{
+		UserID:    existingUser.ID,
+		TokenHash: refreshTokenHash,
+		ExpiresAt: time.Now().Add(14 * 24 * time.Hour),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -113,10 +143,64 @@ func (s *service) Login(ctx context.Context, input interfaces.LoginInput) (*inte
 			ID:                     existingUser.ID.String(),
 			Name:                   existingUser.Name,
 			Email:                  existingUser.Email,
-			HasCompletedOnboarding: existingUser.HasCompletedOnboarding,
-		},
-		Token: token,
+			HasCompletedOnboarding: existingUser.HasCompletedOnboarding},
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
 	}, nil
+}
+
+func (s *service) Refresh(ctx context.Context, rawRefreshToken string) (*interfaces.AuthResult, error) {
+	hash := hashRefreshToken(rawRefreshToken)
+
+	oldToken, err := s.refreshTokenRepo.FindByHash(ctx, hash)
+	if err != nil {
+		return nil, errors.New("invalid refresh token")
+	}
+
+	if oldToken.RevokedAt != nil || time.Now().After(oldToken.ExpiresAt) {
+		return nil, errors.New("invalid refresh token")
+	}
+
+	user, err := s.userRepo.FindByID(ctx, oldToken.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	newRawRefreshToken, newHash, err := s.generateRefreshToken()
+	if err != nil {
+		return nil, err
+	}
+
+	newRefreshToken := &model.RefreshToken{
+		UserID:    user.ID,
+		TokenHash: newHash,
+		ExpiresAt: time.Now().Add(14 * 24 * time.Hour),
+	}
+
+	err = s.refreshTokenRepo.Rotate(ctx, oldToken.ID, newRefreshToken)
+	if err != nil {
+		return nil, err
+	}
+
+	accessToken, err := s.generateAccessToken(user)
+	if err != nil {
+		return nil, err
+	}
+
+	return &interfaces.AuthResult{
+		User: interfaces.AuthUser{
+			ID:                     user.ID.String(),
+			Name:                   user.Name,
+			Email:                  user.Email,
+			HasCompletedOnboarding: user.HasCompletedOnboarding},
+		AccessToken:  accessToken,
+		RefreshToken: newRawRefreshToken,
+	}, nil
+}
+
+func (s *service) Logout(ctx context.Context, rawRefreshToken string) error {
+	hash := hashRefreshToken(rawRefreshToken)
+	return s.refreshTokenRepo.RevokeByHash(ctx, hash)
 }
 
 func validateRegisterInput(input interfaces.RegisterInput) error {

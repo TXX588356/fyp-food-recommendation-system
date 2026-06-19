@@ -14,6 +14,13 @@ type UserRepository interface {
 	UpdateOnboardingStatus(ctx context.Context, id uuid.UUID, completed bool) error
 }
 
+type RefreshTokenRepository interface {
+	Create(ctx context.Context, refreshToken *model.RefreshToken) error
+	Rotate(ctx context.Context, oldToken uuid.UUID, newToken *model.RefreshToken) error
+	FindByHash(ctx context.Context, hash string) (*model.RefreshToken, error)
+	RevokeByHash(ctx context.Context, hash string) error
+}
+
 type PreferenceRepository interface {
 	FindByUserID(ctx context.Context, userID uuid.UUID) (*model.UserPreference, error)
 	Upsert(ctx context.Context, preference *model.UserPreference) (*model.UserPreference, error)
