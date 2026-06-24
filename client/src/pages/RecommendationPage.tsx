@@ -340,6 +340,15 @@ export default function RecommendationPage() {
     </Box>
   )
 
+  const today = new Date()
+  const options = {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  } as const
+  const formattedDate = today.toLocaleDateString('en-US', options)
+
   return (
     <Box className="ui-settings-page ui-recommendation-page">
       <Box component="main" className="ui-settings-frame">
@@ -350,6 +359,14 @@ export default function RecommendationPage() {
         </nav>
 
         <Box className="ui-recommendation-layout">
+        <Text 
+          size="lg" 
+          fw={700} 
+          style={{
+          textAlign: 'center',
+          marginBottom: '10px',
+        }}>{formattedDate}</Text>
+
           <Box component="section" className="ui-recommendation-results">
             <Accordion
               value={activeCategory}
@@ -429,7 +446,7 @@ export default function RecommendationPage() {
                         className="ui-ghost-button ui-recommendation-add-meal"
                         variant="subtle"
                       >
-                        Add meal to {option.label.toLowerCase()}
+                        Add other meal to {option.label.toLowerCase()}
                       </Button>
                     </Accordion.Panel>
                   </Accordion.Item>

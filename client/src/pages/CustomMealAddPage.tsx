@@ -4,6 +4,7 @@ import {
   Box,
   Button,
   Checkbox,
+  FileInput,
   Group,
   NumberInput,
   Select,
@@ -16,7 +17,7 @@ import axios from 'axios'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
-import { dietaryRestrictionOptions } from '@/preferences/options'
+import { dietaryRestrictionOptions, mealCategoryOptions } from '@/preferences/options'
 import './CustomMealAddPage.css'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
@@ -34,6 +35,7 @@ type CustomMealResponse = {
   state: string
   district: string
   restaurantName: string
+  imageURL: string
   dietaryRestrictionTags: string[]
   mealCategoryTags: string[]
   isOwner: boolean
@@ -74,6 +76,8 @@ type CustomMealDraft = {
   district: string
   restaurantName: string
   dietaryRestrictionTags: string[]
+  mealCategoryTags: string[]
+  mealURL: string
 }
 
 const mealTimeLabels: Record<MealTime, string> = {
@@ -104,6 +108,9 @@ const stateOptions = [
 
 const customMealDietaryOptions = dietaryRestrictionOptions.filter((option) => option.value !== 'none')
 
+const validateMealCategoryTags = (mealCategoryTags: string[]) =>
+  mealCategoryTags.length === 0 ? 'Please select at least one meal category.' : null
+
 const emptyDraft: CustomMealDraft = {
   name: '',
   price: '',
@@ -115,6 +122,8 @@ const emptyDraft: CustomMealDraft = {
   district: '',
   restaurantName: '',
   dietaryRestrictionTags: [],
+  mealCategoryTags: [],
+  mealURL: '',
 }
 
 const isMealTime = (value: string | undefined): value is MealTime =>
@@ -352,6 +361,7 @@ export function CustomMealFormPage() {
   const [draft, setDraft] = useState<CustomMealDraft>(emptyDraft)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [mealImage, setMealImage] = useState<File | null>(null)
 
   const token = localStorage.getItem('token')
 
@@ -371,6 +381,19 @@ export function CustomMealFormPage() {
         dietaryRestrictionTags: hasTag
           ? current.dietaryRestrictionTags.filter((currentTag) => currentTag !== tag)
           : [...current.dietaryRestrictionTags, tag],
+      }
+    })
+  }
+
+  const toggleMealCategoryTag = (tag: string) => {
+    setDraft((current) => {
+      const hasTag = current.mealCategoryTags.includes(tag)
+
+      return {
+        ...current,
+        mealCategoryTags: hasTag
+          ? current.mealCategoryTags.filter((currentTag) => currentTag !== tag)
+          : [...current.mealCategoryTags, tag],
       }
     })
   }
@@ -397,6 +420,13 @@ export function CustomMealFormPage() {
       return
     }
 
+    const mealCategoryError = validateMealCategoryTags(draft.mealCategoryTags)
+
+    if (mealCategoryError) {
+      setError(mealCategoryError)
+      return
+    }
+
     setIsSaving(true)
 
     try {
@@ -413,7 +443,8 @@ export function CustomMealFormPage() {
           district: draft.district,
           restaurantName: draft.restaurantName,
           dietaryRestrictionTags: draft.dietaryRestrictionTags,
-          mealCategoryTags: [],
+          mealCategoryTags: draft.mealCategoryTags,
+          mealURL: draft.mealURL,
         },
         {
           headers: {
@@ -469,6 +500,7 @@ export function CustomMealFormPage() {
               <Text fw={900}>Nutritional info</Text>
               <Group gap="sm" align="center">
                 <NumberInput
+                  hideControls
                   classNames={{ input: 'ui-input ui-short-input' }}
                   min={0}
                   decimalScale={0}
@@ -513,7 +545,7 @@ export function CustomMealFormPage() {
 
           <Box className="ui-custom-meal-fields">
             <Box className="ui-dietary-tag-group">
-              <Text fw={900}>Dietary tags</Text>
+              <Text fw={900}>Dietary tags (optional)</Text>
               <SimpleGrid cols={{ base: 1, xs: 2, sm: 3 }} spacing="sm">
                 {customMealDietaryOptions.map((option) => (
                   <Checkbox
@@ -521,6 +553,30 @@ export function CustomMealFormPage() {
                     label={option.label}
                     checked={draft.dietaryRestrictionTags.includes(option.value)}
                     onChange={() => toggleDietaryTag(option.value)}
+                  />
+                ))}
+              </SimpleGrid>
+            </Box>
+
+            <Box
+              className="ui-dietary-tag-group"
+              role="group"
+              aria-labelledby="meal-category-tags-label"
+              aria-required="true"
+            >
+              <Box>
+                <Text id="meal-category-tags-label" fw={900}>
+                  Meal category tags <Text component="span" c="red">*</Text>
+                </Text>
+                <Text size="sm" c="dimmed">Select at least one.</Text>
+              </Box>
+              <SimpleGrid cols={{ base: 1, xs: 2, sm: 3 }} spacing="sm">
+                {mealCategoryOptions.map((option) => (
+                  <Checkbox
+                    key={option.value}
+                    label={option.label}
+                    checked={draft.mealCategoryTags.includes(option.value)}
+                    onChange={() => toggleMealCategoryTag(option.value)}
                   />
                 ))}
               </SimpleGrid>
@@ -548,6 +604,14 @@ export function CustomMealFormPage() {
                 classNames={{ input: 'ui-input' }}
                 value={draft.restaurantName}
                 onChange={(event) => updateDraft('restaurantName', event.currentTarget.value)}
+              />
+              <FileInput
+                classNames={{ input: 'ui-input' }}
+                clearable 
+                accept="image/png,image/jpeg" 
+                label="Upload meal image" 
+                value={mealImage}
+                onChange={setMealImage}
               />
             </Box>
           </Box>
