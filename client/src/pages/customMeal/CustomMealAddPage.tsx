@@ -812,7 +812,7 @@ export function CustomMealFormPage() {
                 classNames={{ input: 'ui-input' }}
                 clearable 
                 accept="image/png,image/jpeg" 
-                label="Upload meal image" 
+                label="Upload meal image (optional)" 
                 value={mealImage}
                 onChange={setMealImage}
               />
