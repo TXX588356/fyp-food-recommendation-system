@@ -216,6 +216,7 @@ func buildCustomMealModel(userID uuid.UUID, input interfaces.CustomMealInput) *m
 		State:          strings.TrimSpace(input.State),
 		District:       strings.TrimSpace(input.District),
 		RestaurantName: strings.TrimSpace(input.RestaurantName),
+		ImageURL:       strings.TrimSpace(input.ImageURL),
 		CreatedBy:      userID,
 	}
 
@@ -248,6 +249,7 @@ func buildCustomMealResponse(meal *model.CustomMealItem, userID uuid.UUID) *inte
 		State:          meal.State,
 		District:       meal.District,
 		RestaurantName: meal.RestaurantName,
+		ImageURL:       meal.ImageURL,
 		IsOwner:        meal.CreatedBy == userID,
 		IsShared:       meal.CreatedBy != userID,
 	}

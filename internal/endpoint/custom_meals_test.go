@@ -2,23 +2,45 @@ package endpoint
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fyp/food-rs/internal/endpoint/middleware"
 	"fyp/food-rs/internal/interfaces"
 	"fyp/food-rs/internal/mocks"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v5"
+	echomiddleware "github.com/labstack/echo/v5/middleware"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
 )
+
+type recordingImageStorage struct {
+	deletedImageURL string
+	deleteImageErr  error
+}
+
+func (s *recordingImageStorage) UploadMealImage(context.Context, io.Reader, int64, string) (string, string, error) {
+	return "", "", nil
+}
+
+func (s *recordingImageStorage) DeleteObject(context.Context, string) error {
+	return nil
+}
+
+func (s *recordingImageStorage) DeleteMealImage(_ context.Context, imageURL string) error {
+	s.deletedImageURL = imageURL
+	return s.deleteImageErr
+}
 
 func TestCustomMealEndpoints(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -42,14 +64,15 @@ func generateCustomMealTestToken(userID uuid.UUID, jwtSecret string) string {
 }
 
 // registerCustomMealTestRoutes registers custom-meal routes using a mock service.
-func registerCustomMealTestRoutes(e *echo.Echo, service interfaces.CustomMealService, jwtSecret string) {
+func registerCustomMealTestRoutes(e *echo.Echo, service interfaces.CustomMealService, imageStorage interfaces.ImageStorage, jwtSecret string) {
 	handler := &customMealHandler{
 		customMealService: service,
+		imageStorage:      imageStorage,
 	}
 
 	customMeals := e.Group("/custom-meals", middleware.Auth(jwtSecret))
 
-	customMeals.POST("", handler.createCustomMeal)
+	customMeals.POST("", handler.createCustomMeal, echomiddleware.BodyLimit(maxCustomMealRequestSize))
 	customMeals.GET("", handler.listVisibleCustomMeals)
 	customMeals.GET("/:id", handler.findVisibleCustomMealByID)
 	customMeals.PUT("/:id", handler.updateCustomMeal)
@@ -88,6 +111,7 @@ var _ = Describe("Custom meal endpoints", func() {
 	var (
 		e                 *echo.Echo
 		customMealService *mocks.CustomMealService
+		imageStorage      *recordingImageStorage
 		userID            uuid.UUID
 		token             string
 	)
@@ -95,13 +119,26 @@ var _ = Describe("Custom meal endpoints", func() {
 	BeforeEach(func() {
 		e = echo.New()
 		customMealService = mocks.NewCustomMealService(GinkgoT())
+		imageStorage = &recordingImageStorage{}
 		userID = uuid.New()
 		token = generateCustomMealTestToken(userID, jwtSecret)
 
-		registerCustomMealTestRoutes(e, customMealService, jwtSecret)
+		registerCustomMealTestRoutes(e, customMealService, imageStorage, jwtSecret)
 	})
 
 	Describe("POST /custom-meals", func() {
+		It("should reject a request body larger than the configured limit", func() {
+			response := performCustomMealRequest(
+				e,
+				http.MethodPost,
+				"/custom-meals",
+				strings.Repeat("x", 6<<20),
+				token,
+			)
+
+			Expect(response.Code).To(Equal(http.StatusRequestEntityTooLarge))
+		})
+
 		It("should create a custom meal", func() {
 			mealID := uuid.New()
 
@@ -354,8 +391,18 @@ var _ = Describe("Custom meal endpoints", func() {
 	})
 
 	Describe("DELETE /custom-meals/:id", func() {
-		It("should delete one owned custom meal", func() {
+		It("should delete one owned custom meal and its image", func() {
 			mealID := uuid.New()
+			imageURL := "http://localhost:9000/images/custom-meals/test.jpg"
+
+			customMealService.EXPECT().
+				FindVisibleByID(mock.Anything, userID, mealID).
+				Return(&interfaces.CustomMealResponse{
+					ID:       mealID.String(),
+					ImageURL: imageURL,
+					IsOwner:  true,
+				}, nil).
+				Once()
 
 			customMealService.EXPECT().
 				Delete(mock.Anything, userID, mealID).
@@ -366,6 +413,52 @@ var _ = Describe("Custom meal endpoints", func() {
 
 			Expect(response.Code).To(Equal(http.StatusOK))
 			Expect(response.Body.String()).To(ContainSubstring("custom meal deleted"))
+			Expect(imageStorage.deletedImageURL).To(Equal(imageURL))
+		})
+
+		It("should skip image cleanup when the meal has no image", func() {
+			mealID := uuid.New()
+
+			customMealService.EXPECT().
+				FindVisibleByID(mock.Anything, userID, mealID).
+				Return(&interfaces.CustomMealResponse{
+					ID:      mealID.String(),
+					IsOwner: true,
+				}, nil).
+				Once()
+			customMealService.EXPECT().
+				Delete(mock.Anything, userID, mealID).
+				Return(nil).
+				Once()
+
+			response := performCustomMealRequest(e, http.MethodDelete, "/custom-meals/"+mealID.String(), nil, token)
+
+			Expect(response.Code).To(Equal(http.StatusOK))
+			Expect(imageStorage.deletedImageURL).To(BeEmpty())
+		})
+
+		It("should keep deletion successful when image cleanup fails", func() {
+			mealID := uuid.New()
+			imageURL := "http://localhost:9000/images/custom-meals/test.jpg"
+			imageStorage.deleteImageErr = errors.New("MinIO unavailable")
+
+			customMealService.EXPECT().
+				FindVisibleByID(mock.Anything, userID, mealID).
+				Return(&interfaces.CustomMealResponse{
+					ID:       mealID.String(),
+					ImageURL: imageURL,
+					IsOwner:  true,
+				}, nil).
+				Once()
+			customMealService.EXPECT().
+				Delete(mock.Anything, userID, mealID).
+				Return(nil).
+				Once()
+
+			response := performCustomMealRequest(e, http.MethodDelete, "/custom-meals/"+mealID.String(), nil, token)
+
+			Expect(response.Code).To(Equal(http.StatusOK))
+			Expect(imageStorage.deletedImageURL).To(Equal(imageURL))
 		})
 
 		It("should reject an invalid custom meal ID", func() {
@@ -377,6 +470,14 @@ var _ = Describe("Custom meal endpoints", func() {
 
 		It("should return not found when deleting fails", func() {
 			mealID := uuid.New()
+
+			customMealService.EXPECT().
+				FindVisibleByID(mock.Anything, userID, mealID).
+				Return(&interfaces.CustomMealResponse{
+					ID:      mealID.String(),
+					IsOwner: true,
+				}, nil).
+				Once()
 
 			customMealService.EXPECT().
 				Delete(mock.Anything, userID, mealID).

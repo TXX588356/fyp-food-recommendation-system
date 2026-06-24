@@ -137,6 +137,7 @@ func customMealSearchResult(meal *interfaces.CustomMealResponse) mealSearchResul
 		ProteinG: meal.ProteinG,
 		CarbsG:   meal.CarbsG,
 		Price:    meal.Price,
+		ImageURL: meal.ImageURL,
 	}
 }
 

@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS custom_meal_items (
     state TEXT NOT NULL,
     district TEXT NOT NULL,
     restaurant_name TEXT NOT NULL,
+    image_url TEXT,
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),

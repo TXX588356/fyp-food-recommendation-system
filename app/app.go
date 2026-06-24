@@ -23,6 +23,7 @@ const appContextKey contextKey = "food-recommendation-system:app"
 
 type App struct {
 	PostgresDB            *gorm.DB
+	ImageStorage          interfaces.ImageStorage
 	authService           interfaces.AuthService
 	JWTSecret             string
 	GeminiAPIKey          string
@@ -47,11 +48,12 @@ var newFoodSearcher = func(datasetPath string) (interfaces.FoodSearcher, error) 
 	return mealdataset.NewPrebuiltSearcher(datasetPath)
 }
 
-func New(db *gorm.DB, jwtSecret string, geminiAPIKey string) *App {
+func New(db *gorm.DB, jwtSecret, geminiAPIKey string, imageStorage interfaces.ImageStorage) *App {
 	return &App{
 		PostgresDB:   db,
 		JWTSecret:    jwtSecret,
 		GeminiAPIKey: geminiAPIKey,
+		ImageStorage: imageStorage,
 	}
 }
 

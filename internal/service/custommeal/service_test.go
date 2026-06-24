@@ -55,6 +55,7 @@ var _ = Describe("Custom meal service", func() {
 				"nuts",
 				"snacks",
 			},
+			ImageURL: "http://localhost:9000/images/custom-meals/test.jpg",
 		}
 	}
 

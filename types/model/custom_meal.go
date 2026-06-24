@@ -18,6 +18,7 @@ type CustomMealItem struct {
 	State          string    `gorm:"type:text"`
 	District       string    `gorm:"type:text"`
 	RestaurantName string    `gorm:"type:text"`
+	ImageURL       string    `gorm:"type:text"`
 	CreatedBy      uuid.UUID `gorm:"type:uuid;not null"`
 	CreatedAt      time.Time
 	UpdatedAt      time.Time

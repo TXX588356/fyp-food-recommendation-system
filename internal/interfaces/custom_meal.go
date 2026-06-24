@@ -18,6 +18,7 @@ type CustomMealInput struct {
 	RestaurantName         string   `json:"restaurantName"`
 	DietaryRestrictionTags []string `json:"dietaryRestrictionTags"`
 	MealCategoryTags       []string `json:"mealCategoryTags"`
+	ImageURL               string   `json:"imageURL"`
 }
 
 type CustomMealResponse struct {
@@ -33,6 +34,7 @@ type CustomMealResponse struct {
 	RestaurantName         string   `json:"restaurantName"`
 	DietaryRestrictionTags []string `json:"dietaryRestrictionTags"`
 	MealCategoryTags       []string `json:"mealCategoryTags"`
+	ImageURL               string   `json:"imageURL"`
 	// Only owner can edit/delete, non-owner can only view/log meal
 	IsOwner bool `json:"isOwner"`
 	// IsShared is true when the current user is viewing another user's custom meal

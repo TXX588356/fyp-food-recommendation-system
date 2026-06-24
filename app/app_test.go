@@ -40,7 +40,7 @@ func TestGetRecommendationServiceUsesPrebuiltMealDataset(t *testing.T) {
 		return stubFoodSearcher{}, nil
 	}
 
-	a := New(nil, "jwt-secret", "gemini-key")
+	a := New(nil, "jwt-secret", "gemini-key", nil)
 
 	service, err := a.GetRecommendationService(context.Background())
 	if err != nil {

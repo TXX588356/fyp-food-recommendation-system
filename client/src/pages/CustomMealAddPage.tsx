@@ -77,7 +77,6 @@ type CustomMealDraft = {
   restaurantName: string
   dietaryRestrictionTags: string[]
   mealCategoryTags: string[]
-  mealURL: string
 }
 
 const mealTimeLabels: Record<MealTime, string> = {
@@ -123,7 +122,6 @@ const emptyDraft: CustomMealDraft = {
   restaurantName: '',
   dietaryRestrictionTags: [],
   mealCategoryTags: [],
-  mealURL: '',
 }
 
 const isMealTime = (value: string | undefined): value is MealTime =>
@@ -427,25 +425,40 @@ export function CustomMealFormPage() {
       return
     }
 
+    const payload = {
+      name: draft.name,
+      price: draft.price,
+      calories: draft.calories,
+      fatG: draft.fatG,
+      proteinG: draft.proteinG,
+      carbsG: draft.carbsG,
+      state: draft.state,
+      district: draft.district,
+      restaurantName: draft.restaurantName,
+      dietaryRestrictionTags: draft.dietaryRestrictionTags,
+      mealCategoryTags: draft.mealCategoryTags,
+    }
+
+    const formData = new FormData()
+
+    formData.append('payload', JSON.stringify(payload))
+    if (mealImage) {
+      formData.append('image', mealImage)
+    }
+
+    const maxImageSize = 5 * 1024 * 1024
+
+    if (mealImage && mealImage.size > maxImageSize) {
+      setError("Image must not exceed 5 MB")
+      return
+    }
+
     setIsSaving(true)
 
     try {
       await axios.post<CustomMealResponse>(
         `${API_BASE_URL}/custom-meals`,
-        {
-          name: draft.name,
-          price: draft.price,
-          calories: draft.calories,
-          fatG: draft.fatG,
-          proteinG: draft.proteinG,
-          carbsG: draft.carbsG,
-          state: draft.state,
-          district: draft.district,
-          restaurantName: draft.restaurantName,
-          dietaryRestrictionTags: draft.dietaryRestrictionTags,
-          mealCategoryTags: draft.mealCategoryTags,
-          mealURL: draft.mealURL,
-        },
+        formData,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -456,7 +469,6 @@ export function CustomMealFormPage() {
       navigate(`/meals/add/${mealTime}`)
     } catch (error) {
       console.error('Failed to save custom meal', error)
-
       if (axios.isAxiosError(error) && error.response?.data?.error) {
         setError(error.response.data.error)
       } else {
