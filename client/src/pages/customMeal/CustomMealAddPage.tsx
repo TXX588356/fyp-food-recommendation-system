@@ -12,6 +12,8 @@ import {
   Text,
   TextInput,
   Title,
+  Modal,
+  Stack,
 } from '@mantine/core'
 import axios from 'axios'
 import { useEffect, useState } from 'react'
@@ -23,6 +25,7 @@ import {
   customMealCreatedNavigationState,
   getCustomMealSuccessMessage,
 } from './customMealNavigation'
+import type { PreferenceData } from '@/preferences/types'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
@@ -396,6 +399,9 @@ export function CustomMealFormPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [mealImage, setMealImage] = useState<File | null>(null)
+  const [isConsentModalOpen, setIsConsentModalOpen] = useState(false)
+  const [isCheckingConsent, setIsCheckingConsent] = useState(false)
+  const [consentChoiceBeingSaved, setConsentChoiceBeingSaved] = useState<boolean | null>(null)
 
   const token = localStorage.getItem('token')
 
@@ -432,12 +438,9 @@ export function CustomMealFormPage() {
     })
   }
 
-  const saveCustomMeal = async () => {
-    setError(null)
-
+  const validateDraft = (): string | null => {
     if (!draft.name.trim()) {
-      setError('Please enter a meal name.')
-      return
+      return 'Please enter a meal name.'
     }
 
     if (
@@ -450,17 +453,25 @@ export function CustomMealFormPage() {
       !draft.district.trim() ||
       !draft.restaurantName.trim()
     ) {
-      setError('Please complete the custom meal details.')
-      return
+      return 'Please complete the custom meal details.'
     }
 
-    const mealCategoryError = validateMealCategoryTags(draft.mealCategoryTags)
+    const categoryError = validateMealCategoryTags(
+      draft.mealCategoryTags,
+    )
 
-    if (mealCategoryError) {
-      setError(mealCategoryError)
-      return
+    if (categoryError) {
+      return categoryError
     }
 
+    if (mealImage && mealImage.size > 5 * 1024 * 1024) {
+      return 'Image must not exceed 5 MB.'
+    }
+
+    return null
+  }
+
+  const createCustomMeal = async () => {
     const payload = {
       name: draft.name,
       price: draft.price,
@@ -482,14 +493,8 @@ export function CustomMealFormPage() {
       formData.append('image', mealImage)
     }
 
-    const maxImageSize = 5 * 1024 * 1024
-
-    if (mealImage && mealImage.size > maxImageSize) {
-      setError("Image must not exceed 5 MB")
-      return
-    }
-
     setIsSaving(true)
+    setError(null)
 
     try {
       await axios.post<CustomMealResponse>(
@@ -517,8 +522,156 @@ export function CustomMealFormPage() {
     }
   }
 
+  const saveCustomMeal = async () => {
+    setError(null)
+
+    const validationError = validateDraft()
+
+    if (validationError) {
+      setError(validationError)
+      return
+    }
+
+    setIsCheckingConsent(true)
+
+    try {
+      const response = await axios.get<PreferenceData>(
+        `${API_BASE_URL}/preferences`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          },
+        },
+      )
+
+      const latestConsent = response.data.dataSharingConsent
+
+      if (latestConsent === null) {
+        setIsConsentModalOpen(true)
+        return 
+      }
+
+      await createCustomMeal()
+    } catch (error) {
+      console.error('Failed to check data sharing consent', error)
+      setError('Could not check your data sharing preference.')
+    } finally {
+      setIsCheckingConsent(false)
+    }
+  }
+
+  const saveConsentAndCreateMeal = async (consent: boolean) => {
+    setError(null)
+    setConsentChoiceBeingSaved(consent)
+
+    try {
+      await axios.put(
+        `${API_BASE_URL}/preferences/data-sharing`,
+        {
+          dataSharingConsent: consent,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      )
+
+      setIsConsentModalOpen(false)
+
+      await createCustomMeal()
+    } catch (error) {
+      console.error('Failed to save data sharing consent', error)
+      setError('Could not save your data sharing preference.')
+    } finally {
+      setConsentChoiceBeingSaved(null)
+    }
+  }
+  
+
   return (
     <Box className="ui-settings-page ui-meal-add-page">
+      <Modal
+        opened={isConsentModalOpen}
+        onClose={() => {
+          if (consentChoiceBeingSaved === null) {
+            setIsConsentModalOpen(false)
+          }
+        }}
+        closeOnClickOutside={
+          consentChoiceBeingSaved === null
+        }
+        closeOnEscape={
+          consentChoiceBeingSaved === null
+        }
+        centered
+        title="Choose your meal sharing preference"
+      >
+        <Stack gap="md">
+          <Text>
+            This preference applies to every custom meal you create. You can change it later from Preferences.
+          </Text>
+
+          <Box className="ui-card-field-group">
+            <Text fw={900}>Share anonymously</Text>
+            <Text size="sm">
+              Other users may discover your custom meals, but your personal account details are not shown
+            </Text>
+          </Box>
+
+          <Box className="ui-card-field-group">
+            <Text fw={900}>Keep my meals private</Text>
+            <Text size="sm">
+              Only you can view and search your custom meals.
+            </Text>
+          </Box>
+
+          <Button
+            className="ui-primary-button"
+            loading={
+              consentChoiceBeingSaved === true
+            }
+            disabled={
+              consentChoiceBeingSaved !== null &&
+              consentChoiceBeingSaved !== true
+            }
+            onClick={() => {
+              void saveConsentAndCreateMeal(true)
+            }}
+          >
+            Share anonymously
+          </Button>
+
+          <Button
+            variant="outline"
+            loading={
+              consentChoiceBeingSaved === false
+            }
+            disabled={
+              consentChoiceBeingSaved !== null &&
+              consentChoiceBeingSaved !== true
+            }
+            onClick={() => {
+              void saveConsentAndCreateMeal(false)
+            }}
+          >
+            No, keep my meals private
+          </Button>
+
+          <Button
+            variant="subtle"
+            disabled={
+              consentChoiceBeingSaved !== null
+            }
+            onClick={() => 
+              setIsConsentModalOpen(false)
+            }
+          >
+            Cancel
+          </Button>
+        </Stack>
+
+      </Modal>
       <Box component="main" className="ui-settings-frame">
         <MainNav active="recommendation" />
 
@@ -676,7 +829,7 @@ export function CustomMealFormPage() {
 
             <Button
               className="ui-dark-button"
-              loading={isSaving}
+              loading={isSaving || isCheckingConsent}
               onClick={saveCustomMeal}
             >
               Save

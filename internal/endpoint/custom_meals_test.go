@@ -64,9 +64,10 @@ func generateCustomMealTestToken(userID uuid.UUID, jwtSecret string) string {
 }
 
 // registerCustomMealTestRoutes registers custom-meal routes using a mock service.
-func registerCustomMealTestRoutes(e *echo.Echo, service interfaces.CustomMealService, imageStorage interfaces.ImageStorage, jwtSecret string) {
+func registerCustomMealTestRoutes(e *echo.Echo, customMealService interfaces.CustomMealService, preferenceService interfaces.PreferenceService, imageStorage interfaces.ImageStorage, jwtSecret string) {
 	handler := &customMealHandler{
-		customMealService: service,
+		customMealService: customMealService,
+		preferenceService: preferenceService,
 		imageStorage:      imageStorage,
 	}
 
@@ -111,9 +112,11 @@ var _ = Describe("Custom meal endpoints", func() {
 	var (
 		e                 *echo.Echo
 		customMealService *mocks.CustomMealService
-		imageStorage      *recordingImageStorage
-		userID            uuid.UUID
-		token             string
+		preferenceService *mocks.PreferenceService
+
+		imageStorage *recordingImageStorage
+		userID       uuid.UUID
+		token        string
 	)
 
 	BeforeEach(func() {
@@ -123,7 +126,7 @@ var _ = Describe("Custom meal endpoints", func() {
 		userID = uuid.New()
 		token = generateCustomMealTestToken(userID, jwtSecret)
 
-		registerCustomMealTestRoutes(e, customMealService, imageStorage, jwtSecret)
+		registerCustomMealTestRoutes(e, customMealService, preferenceService, imageStorage, jwtSecret)
 	})
 
 	Describe("POST /custom-meals", func() {
@@ -140,6 +143,7 @@ var _ = Describe("Custom meal endpoints", func() {
 		})
 
 		It("should create a custom meal", func() {
+			consent := true
 			mealID := uuid.New()
 
 			input := interfaces.CustomMealInput{
@@ -175,6 +179,13 @@ var _ = Describe("Custom meal endpoints", func() {
 				IsOwner:        true,
 				IsShared:       false,
 			}
+
+			preferenceService.EXPECT().
+				GetByUserID(mock.Anything, userID).
+				Return(&interfaces.PreferenceResponse{
+					DataSharingConsent: &consent,
+				}, nil).
+				Once()
 
 			customMealService.EXPECT().
 				Create(mock.Anything, userID, input).
@@ -221,6 +232,79 @@ var _ = Describe("Custom meal endpoints", func() {
 			Expect(response.Code).To(Equal(http.StatusBadRequest))
 			Expect(response.Body.String()).To(ContainSubstring("custom meal name is required"))
 
+		})
+
+		It("should reject creation when consent is unanswered", func() {
+			input := interfaces.CustomMealInput{
+				Name:           "Private Noodles",
+				Price:          8.50,
+				Calories:       500,
+				FatG:           10,
+				ProteinG:       20,
+				CarbsG:         70,
+				State:          "Selangor",
+				District:       "Petaling",
+				RestaurantName: "Test Restaurant",
+				MealCategoryTags: []string{
+					"noodles",
+				},
+			}
+
+			preferenceService.EXPECT().
+				GetByUserID(mock.Anything, userID).
+				Return(&interfaces.PreferenceResponse{
+					DataSharingConsent: nil,
+				}, nil).
+				Once()
+
+			response := performCustomMealRequest(e, http.MethodPost, "/custom-meals", input, token)
+			Expect(response.Code).To(Equal(http.StatusPreconditionRequired))
+			Expect(response.Body.String()).To(ContainSubstring("data sharing consent must be answered"))
+		})
+
+		It("should allow creation when consent is false", func() {
+			consent := false
+
+			input := interfaces.CustomMealInput{
+				Name:           "Private Noodles",
+				Price:          8.50,
+				Calories:       500,
+				FatG:           10,
+				ProteinG:       20,
+				CarbsG:         70,
+				State:          "Selangor",
+				District:       "Petaling",
+				RestaurantName: "Test Restaurant",
+				MealCategoryTags: []string{
+					"noodles",
+				},
+			}
+
+			preferenceService.EXPECT().
+				GetByUserID(mock.Anything, userID).
+				Return(&interfaces.PreferenceResponse{
+					DataSharingConsent: &consent,
+				}, nil).
+				Once()
+
+			customMealService.EXPECT().
+				Create(mock.Anything, userID, input).
+				Return(&interfaces.CustomMealResponse{
+					ID:      uuid.NewString(),
+					Name:    input.Name,
+					IsOwner: true,
+				}, nil).
+				Once()
+
+			response := performCustomMealRequest(
+				e,
+				http.MethodPost,
+				"/custom-meals",
+				input,
+				token,
+			)
+
+			Expect(response.Code).To(Equal(http.StatusCreated))
 		})
 	})
 

@@ -26,6 +26,7 @@ const (
 
 type customMealHandler struct {
 	customMealService interfaces.CustomMealService
+	preferenceService interfaces.PreferenceService
 	imageStorage      interfaces.ImageStorage
 }
 
@@ -42,7 +43,16 @@ func RegisterCustomMealRoutes(ctx context.Context, e *echo.Echo) {
 		log.Fatal("failed to get custom meal service", "error", err)
 	}
 
-	h := &customMealHandler{customMealService: customMealService, imageStorage: a.ImageStorage}
+	preferenceService, err := a.GetPreferenceService(ctx)
+	if err != nil {
+		log.Fatal("failed to get preference service", "error", err)
+	}
+
+	h := &customMealHandler{
+		customMealService: customMealService,
+		preferenceService: preferenceService,
+		imageStorage:      a.ImageStorage,
+	}
 
 	customMeal := e.Group("/custom-meals", middleware.Auth(a.JWTSecret))
 	customMeal.POST("", h.createCustomMeal, echomiddleware.BodyLimit(maxCustomMealRequestSize))
@@ -55,6 +65,26 @@ func RegisterCustomMealRoutes(ctx context.Context, e *echo.Echo) {
 // createCustomMeal validates the request body and creates a custom meal owned
 // by the authenticated user.
 func (h *customMealHandler) createCustomMeal(c *echo.Context) error {
+	userID, err := middleware.UserIDFromContext(c)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, map[string]string{
+			"error": err.Error(),
+		})
+	}
+
+	preferences, err := h.preferenceService.GetByUserID(c.Request().Context(), userID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "could not check data sharing consent",
+		})
+	}
+
+	if preferences == nil || preferences.DataSharingConsent == nil {
+		return c.JSON(http.StatusPreconditionRequired, map[string]string{
+			"error": "data sharing consent must be answered before creating a custom meal",
+		})
+	}
+
 	var input interfaces.CustomMealInput
 	var uploadedObjectName string
 
@@ -124,13 +154,6 @@ func (h *customMealHandler) createCustomMeal(c *echo.Context) error {
 		}
 
 		input.ImageURL = ""
-	}
-
-	userID, err := middleware.UserIDFromContext(c)
-	if err != nil {
-		return c.JSON(http.StatusUnauthorized, map[string]string{
-			"error": err.Error(),
-		})
 	}
 
 	result, err := h.customMealService.Create(c.Request().Context(), userID, input)
