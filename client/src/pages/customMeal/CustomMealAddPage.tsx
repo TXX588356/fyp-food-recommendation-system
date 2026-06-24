@@ -15,10 +15,14 @@ import {
 } from '@mantine/core'
 import axios from 'axios'
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import { dietaryRestrictionOptions, mealCategoryOptions } from '@/preferences/options'
 import './CustomMealAddPage.css'
+import {
+  customMealCreatedNavigationState,
+  getCustomMealSuccessMessage,
+} from './customMealNavigation'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
@@ -201,14 +205,35 @@ function toExistingMeal(meal: MealSearchResult): ExistingMeal {
 
 export function CustomMealSearchPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { mealCategory } = useParams()
   const mealTime = isMealTime(mealCategory) ? mealCategory : 'breakfast'
   const [query, setQuery] = useState('')
   const [visibleMeals, setVisibleMeals] = useState<ExistingMeal[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState(() =>
+    getCustomMealSuccessMessage(location.state),
+  )
 
   const token = localStorage.getItem('token')
+
+  useEffect(() => {
+    if (!successMessage) {
+      return
+    }
+
+    navigate(`${location.pathname}${location.search}`, {
+      replace: true,
+      state: null,
+    })
+
+    const dismissTimer = window.setTimeout(() => {
+      setSuccessMessage(null)
+    }, 4000)
+
+    return () => window.clearTimeout(dismissTimer)
+  }, [location.pathname, location.search, navigate, successMessage])
 
   useEffect(() => {
     const normalizedQuery = query.trim()
@@ -262,6 +287,17 @@ export function CustomMealSearchPage() {
 
   return (
     <Box className="ui-settings-page ui-meal-add-page">
+      {successMessage && (
+        <Box
+          className="ui-custom-meal-success-toast"
+          role="status"
+          aria-live="polite"
+        >
+          <span aria-hidden="true">✓</span>
+          <Text fw={900}>{successMessage}</Text>
+        </Box>
+      )}
+
       <Box component="main" className="ui-settings-frame">
         <MainNav active="recommendation" />
 
@@ -466,7 +502,9 @@ export function CustomMealFormPage() {
         },
       )
 
-      navigate(`/meals/add/${mealTime}`)
+      navigate(`/meals/add/${mealTime}`, {
+        state: customMealCreatedNavigationState,
+      })
     } catch (error) {
       console.error('Failed to save custom meal', error)
       if (axios.isAxiosError(error) && error.response?.data?.error) {
@@ -526,7 +564,7 @@ export function CustomMealFormPage() {
                 <NumberInput
                   classNames={{ input: 'ui-input' }}
                   min={0}
-                  decimalScale={1}
+                  decimalScale={2}
                   placeholder="Carbs"
                   rightSection={<Text fw={900}>g</Text>}
                   value={draft.carbsG}
@@ -535,7 +573,7 @@ export function CustomMealFormPage() {
                 <NumberInput
                   classNames={{ input: 'ui-input' }}
                   min={0}
-                  decimalScale={1}
+                  decimalScale={2}
                   placeholder="Fat"
                   rightSection={<Text fw={900}>g</Text>}
                   value={draft.fatG}
@@ -544,7 +582,7 @@ export function CustomMealFormPage() {
                 <NumberInput
                   classNames={{ input: 'ui-input' }}
                   min={0}
-                  decimalScale={1}
+                  decimalScale={2}
                   placeholder="Protein"
                   rightSection={<Text fw={900}>g</Text>}
                   value={draft.proteinG}

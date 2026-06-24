@@ -1,8 +1,8 @@
 import { createBrowserRouter } from 'react-router-dom'
 
-import RegisterPage from './pages/RegisterPage'
-import LoginPage from './pages/LoginPage'
-import RecommendationPage from './pages/RecommendationPage'
+import RegisterPage from './pages/authentication/RegisterPage'
+import LoginPage from './pages/authentication/LoginPage'
+import RecommendationPage from './pages/recommendation/RecommendationPage'
 import PreferencesOnboardingPage from './pages/onboarding/PreferencesOnboardingPage'
 import PreferencePage from './pages/preferences/PreferencePage'
 import { HomeRedirect, ProtectedRoute, OnboardingRoute } from './RouteGuards'
@@ -12,7 +12,7 @@ import HealthConcernsPreferencePage from './pages/preferences/HealthConcernsPref
 import PreferredMealPreferencePage from './pages/preferences/PreferredMealPreferencePage'
 import BudgetLocationPreferencePage from './pages/preferences/BudgetLocationPreferencePage'
 import ConsentPreferencePage from './pages/preferences/ConsentPreferencePage'
-import { CustomMealFormPage, CustomMealSearchPage } from './pages/CustomMealAddPage'
+import { CustomMealFormPage, CustomMealSearchPage } from './pages/customMeal/CustomMealAddPage'
 
 export const router = createBrowserRouter([
   {path: '/', element: <HomeRedirect />,},
