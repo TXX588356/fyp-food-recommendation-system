@@ -57,6 +57,7 @@ type GenerateRecommendationsResponse = {
 type CategoryState<T> = Record<MealCategory, T>
 
 type PersistedRecommendationState = {
+  generatedDate: string
   candidatesByCategory: CategoryState<MatchedMealCandidate[]>
   generatedByCategory: CategoryState<boolean>
 }
@@ -102,20 +103,42 @@ const buildRecommendationStorageKey = (userKey: string | undefined) => {
   return `recommendation:${userKey ?? 'anonymous'}`
 }
 
+const createEmptyPersistedRecommendations = 
+(): PersistedRecommendationState => ({
+  generatedDate: getLocalDateKey(),
+  candidatesByCategory: {
+    breakfast: [],
+    lunch: [],
+    dinner: [],
+    snack: [],
+  },
+  generatedByCategory: {
+    breakfast: false,
+    lunch: false,
+    dinner: false,
+    snack: false,
+  }
+})
+
 const loadPersistedRecommendations = (storageKey: string): PersistedRecommendationState => {
+  const emptyState = createEmptyPersistedRecommendations()
+
   try {
     const rawValue = localStorage.getItem(storageKey)
 
     if (!rawValue) {
-      return {
-        candidatesByCategory: emptyCandidates,
-        generatedByCategory: emptyGenerated,
-      }
+      return emptyState
     }
 
     const parsedValue = JSON.parse(rawValue) as Partial<PersistedRecommendationState>
 
+    if (parsedValue.generatedDate !== getLocalDateKey()) {
+      localStorage.removeItem(storageKey)
+      return emptyState
+    }
+
     return {
+      generatedDate: parsedValue.generatedDate,
       candidatesByCategory: {
         ...emptyCandidates,
         ...parsedValue.candidatesByCategory,
@@ -127,11 +150,7 @@ const loadPersistedRecommendations = (storageKey: string): PersistedRecommendati
     }
   } catch {
     localStorage.removeItem(storageKey)
-
-    return {
-      candidatesByCategory: emptyCandidates,
-      generatedByCategory: emptyGenerated,
-    }
+    return emptyState
   }
 }
 
@@ -140,6 +159,16 @@ const savePersistedRecommendations = (
   nextState: PersistedRecommendationState,
 ) => {
   localStorage.setItem(storageKey, JSON.stringify(nextState))
+}
+
+const getLocalDateKey = () => {
+  const today = new Date()
+  
+  const year = today.getFullYear()
+  const month = String(today.getMonth() + 1).padStart(2, '0')
+  const day = String(today.getDate()).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
 }
 
 type IconName = 'refresh' | 'bowl' | 'fork' | 'sparkle' | 'warning'
@@ -252,6 +281,7 @@ export default function RecommendationPage() {
     }
 
     savePersistedRecommendations(recommendationStorageKey, {
+      generatedDate: getLocalDateKey(),
       candidatesByCategory: nextCandidatesByCategory,
       generatedByCategory: nextGeneratedByCategory,
     })
