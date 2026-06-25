@@ -70,6 +70,8 @@ func BuildMealRecommendationPrompt(input interfaces.MealPromptInput) string {
 	- Current-month spending: RM%.2f
 	- Remaining monthly budget: RM%.2f
 	- Per-meal budget: RM%.2f
+	- Price market location: %s
+	- Location basis: weekday/work-school or weekend/home
 
 	HEALTH CONCERN MAPPINGS:
 	- high_blood_pressure: focus on lower-sodium meals
@@ -101,6 +103,9 @@ func BuildMealRecommendationPrompt(input interfaces.MealPromptInput) string {
 	3. Estimate a typical Malaysian price range in RM.
 	Use non-negative numeric values.
 	The minimum must not exceed the maximum.
+	Estimate the typical dine-in/takeaway market price in RM for this meal around the selected location.
+	Do not lower the estimate just to fit the user's per-meal budget.
+	If the meal is an international cuisine item, estimate based on typical Malaysian restaurant/cafe pricing for that cuisine near the selected location.
 
 	4. Estimate typical sodium, sugar, and purine risk levels.
 	Use only: "LOW", "MEDIUM", or "HIGH".
@@ -139,6 +144,7 @@ func BuildMealRecommendationPrompt(input interfaces.MealPromptInput) string {
 		input.CurrentMonthSpent,
 		input.RemainingBudget,
 		input.PerMealBudget,
+		input.PriceMarketLocation,
 	)
 }
 

@@ -11,6 +11,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/labstack/echo/v5"
 )
@@ -180,8 +181,31 @@ func buildMealPromptFromPreferences(preferences interfaces.PreferenceResponse, r
 
 	perMealBudget := request.PerMealBudget
 	if perMealBudget <= 0 {
-		perMealBudget = preferences.MonthlyMealBudget / 60
+		perMealBudget = calculateDynamicPerMealBudget(preferences.MonthlyMealBudget, request.CurrentMonthSpent, time.Now())
 	}
+
+	dayOfTheWeek := time.Now().Weekday()
+
+	var location string
+	if dayOfTheWeek == 0 || dayOfTheWeek == 6 {
+		location = preferences.HomeLocation
+	} else {
+		location = preferences.WorkSchoolLocation
+	}
+
+	log.Printf(
+		"data used to build prompt: \nGoal: %s\nDiet Restriction: %v\nConcern: %v\nPreferredMeal: %v\nMeal Category: %s\nBudget: %.2f \nCurrent Spent: %.2f\nRemaning Budget: %.2f\nPer Meal Budget: %.2f\nMarket Location: %s\n",
+		preferences.MainGoal,
+		preferences.DietaryRestrictions,
+		preferences.HealthConcerns,
+		preferences.PreferredMealTags,
+		strings.TrimSpace(request.MealCategory),
+		preferences.MonthlyMealBudget,
+		request.CurrentMonthSpent,
+		remainingBudget,
+		perMealBudget,
+		location,
+	)
 
 	return interfaces.MealPromptInput{
 		Goal:                preferences.MainGoal,
@@ -193,7 +217,24 @@ func buildMealPromptFromPreferences(preferences interfaces.PreferenceResponse, r
 		CurrentMonthSpent:   request.CurrentMonthSpent,
 		RemainingBudget:     remainingBudget,
 		PerMealBudget:       perMealBudget,
+		PriceMarketLocation: location,
 	}
+}
+
+func calculateDynamicPerMealBudget(monthlyBudget float64, currentMonthSpent float64, now time.Time) float64 {
+	remainingBudget := monthlyBudget - currentMonthSpent
+	if remainingBudget <= 0 {
+		return 0
+	}
+
+	firstOfNextMonth := time.Date(now.Year(), now.Month()+1, 1, 0, 0, 0, 0, now.Location())
+	daysRemaining := int(firstOfNextMonth.Sub(time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())).Hours() / 24)
+	if daysRemaining < 1 {
+		daysRemaining = 1
+	}
+
+	const plannedMealsPerDay = 3
+	return remainingBudget / float64(daysRemaining*plannedMealsPerDay)
 }
 
 func init() {
