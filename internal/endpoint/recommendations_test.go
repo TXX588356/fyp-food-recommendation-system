@@ -161,7 +161,15 @@ var _ = Describe("Recommendation endpoint contract", func() {
 			input := buildMealPromptFromPreferences(preferences, request)
 
 			Expect(input.RemainingBudget).To(Equal(float64(450)))
-			Expect(input.PerMealBudget).To(Equal(float64(10)))
+			Expect(input.PerMealBudget).To(BeNumerically(">", 0))
+		})
+
+		It("should calculate dynamic per meal budget from remaining budget and remaining days", func() {
+			now := time.Date(2026, time.June, 25, 12, 0, 0, 0, time.Local)
+
+			got := calculateDynamicPerMealBudget(600, 150, now)
+
+			Expect(got).To(Equal(float64(37.5)))
 		})
 
 		It("should clamp remaining budget to zero", func() {
