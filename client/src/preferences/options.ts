@@ -86,6 +86,7 @@ export function parseMalaysiaCitiesCsv(csv: string): CityRow[] {
 export const mealCategoryOptions = [
   // Regional cuisines
   { value: 'malaysian', label: 'Malaysian' },
+  { value: 'singaporean', label: 'Singaporean' },
   { value: 'indonesian', label: 'Indonesian' },
   { value: 'chinese', label: 'Chinese' },
   { value: 'indian', label: 'Indian' },
@@ -103,6 +104,7 @@ export const mealCategoryOptions = [
   { value: 'western', label: 'Western' },
 
   // Meal and dish types
+  { value: 'breakfast', label: 'Breakfast' },
   { value: 'rice_dishes', label: 'Rice Dishes' },
   { value: 'noodle_dishes', label: 'Noodle Dishes' },
   { value: 'soups', label: 'Soups' },
@@ -115,8 +117,10 @@ export const mealCategoryOptions = [
   { value: 'sandwiches_wraps', label: 'Sandwiches & Wraps' },
   { value: 'breads_flatbreads', label: 'Breads & Flatbreads' },
   { value: 'porridge', label: 'Porridge' },
+  { value: 'dumplings', label: 'Dumplings' },
   { value: 'snacks', label: 'Snacks' },
   { value: 'desserts', label: 'Desserts' },
+  { value: 'kuih', label: 'Kuih' },
   { value: 'beverages', label: 'Beverages' },
   { value: 'condiments_sauces', label: 'Condiments & Sauces' },
 
