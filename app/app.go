@@ -6,12 +6,13 @@ import (
 	"fyp/food-rs/internal/interfaces"
 	"fyp/food-rs/internal/repository/postgres"
 	authservice "fyp/food-rs/internal/service/auth"
+	catalogService "fyp/food-rs/internal/service/catalog"
 	customMealService "fyp/food-rs/internal/service/custommeal"
 	"fyp/food-rs/internal/service/llm"
-	"fyp/food-rs/internal/service/mealdataset"
 	"fyp/food-rs/internal/service/mealsearch"
 	preferenceService "fyp/food-rs/internal/service/preference"
 	recommendationService "fyp/food-rs/internal/service/recommendation"
+	"fyp/food-rs/internal/storage"
 
 	"google.golang.org/genai"
 	"gorm.io/gorm"
@@ -30,9 +31,19 @@ type App struct {
 	preferenceService     interfaces.PreferenceService
 	customMealService     interfaces.CustomMealService
 	recommendationService interfaces.RecommendationService
+	aiClient              AIClient
+	catalogService        *catalogService.Service
+	catalogFoodSearcher   interfaces.FoodSearcher
+	minIOPublicURL        string
+	minIOBucket           string
 }
 
-var newMealGenerator = func(ctx context.Context, apiKey string) (interfaces.MealGenerator, error) {
+type AIClient interface {
+	interfaces.MealGenerator
+	interfaces.CustomMealAutocompleter
+}
+
+var newMealGenerator = func(ctx context.Context, apiKey string) (AIClient, error) {
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{
 		APIKey:  apiKey,
 		Backend: genai.BackendGeminiAPI,
@@ -44,17 +55,41 @@ var newMealGenerator = func(ctx context.Context, apiKey string) (interfaces.Meal
 	return llm.NewClient(client), nil
 }
 
-var newFoodSearcher = func(datasetPath string) (interfaces.FoodSearcher, error) {
-	return mealdataset.NewPrebuiltSearcher(datasetPath)
+func New(db *gorm.DB, jwtSecret, geminiAPIKey string, imageStorage interfaces.ImageStorage, minIOPublicURL, minIOBucket string) *App {
+	return &App{
+		PostgresDB:     db,
+		JWTSecret:      jwtSecret,
+		GeminiAPIKey:   geminiAPIKey,
+		ImageStorage:   imageStorage,
+		minIOPublicURL: minIOPublicURL,
+		minIOBucket:    minIOBucket,
+	}
 }
 
-func New(db *gorm.DB, jwtSecret, geminiAPIKey string, imageStorage interfaces.ImageStorage) *App {
-	return &App{
-		PostgresDB:   db,
-		JWTSecret:    jwtSecret,
-		GeminiAPIKey: geminiAPIKey,
-		ImageStorage: imageStorage,
+func (a *App) GetCatalogService(_ context.Context) (*catalogService.Service, error) {
+	if a.catalogService != nil {
+		return a.catalogService, nil
 	}
+
+	repository := postgres.NewCatalogPostgresRepository(a.PostgresDB)
+	resolver := storage.NewObjectURLResolver(a.minIOPublicURL, a.minIOBucket)
+	a.catalogService = catalogService.NewService(repository, resolver)
+
+	return a.catalogService, nil
+}
+
+func (a *App) GetCatalogFoodSearcher(ctx context.Context) (interfaces.FoodSearcher, error) {
+	if a.catalogFoodSearcher != nil {
+		return a.catalogFoodSearcher, nil
+	}
+
+	service, err := a.GetCatalogService(ctx)
+	if err != nil {
+		return nil, err
+	}
+	a.catalogFoodSearcher = catalogService.NewFoodSearcher(service)
+
+	return a.catalogFoodSearcher, nil
 }
 
 // GetAuthService builds auth service from Postgres user repo
@@ -94,13 +129,31 @@ func (a *App) GetCustomMealService(ctx context.Context) (interfaces.CustomMealSe
 	return a.customMealService, nil
 }
 
+func (a *App) GetAIClient(ctx context.Context) (AIClient, error) {
+	if a.aiClient != nil {
+		return a.aiClient, nil
+	}
+
+	aiClient, err := newMealGenerator(ctx, a.GeminiAPIKey)
+	if err != nil {
+		return nil, err
+	}
+
+	a.aiClient = aiClient
+	return a.aiClient, nil
+}
+
+func (a *App) GetCustomMealAutocompleter(ctx context.Context) (interfaces.CustomMealAutocompleter, error) {
+	return a.GetAIClient(ctx)
+}
+
 // GetRecommendationService builds the recommendation service from Gemini and the prebuilt meal dataset.
 func (a *App) GetRecommendationService(ctx context.Context) (interfaces.RecommendationService, error) {
 	if a.recommendationService != nil {
 		return a.recommendationService, nil
 	}
 
-	mealGenerator, err := newMealGenerator(ctx, a.GeminiAPIKey)
+	mealGenerator, err := a.GetAIClient(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -110,8 +163,7 @@ func (a *App) GetRecommendationService(ctx context.Context) (interfaces.Recommen
 		return nil, err
 	}
 
-	const prebuiltMealDatasetPath = "internal/data/prebuilt_meals.json"
-	prebuiltSearcher, err := newFoodSearcher(prebuiltMealDatasetPath)
+	prebuiltSearcher, err := a.GetCatalogFoodSearcher(ctx)
 	if err != nil {
 		return nil, err
 	}

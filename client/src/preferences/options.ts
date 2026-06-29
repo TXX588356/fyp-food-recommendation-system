@@ -46,43 +46,6 @@ export function parseMalaysiaCitiesCsv(csv: string): CityRow[] {
   })
 }
 
-// export const mealCategoryOptions = [
-//   { value: "american", label: "American" },
-//   { value: "basics", label: "Basics" },
-//   { value: "chinese", label: "Chinese" },
-//   { value: "condiments", label: "Condiments" },
-//   { value: "desserts", label: "Desserts" },
-//   { value: "drinks", label: "Drinks" },
-//   { value: "french", label: "French" },
-//   { value: "fruits", label: "Fruits" },
-//   { value: "grains", label: "Grains" },
-//   { value: "greek", label: "Greek" },
-//   { value: "healthy", label: "Healthy" },
-//   { value: "indian", label: "Indian" },
-//   { value: "italian", label: "Italian" },
-//   { value: "japanese", label: "Japanese" },
-//   { value: "korean", label: "Korean" },
-//   { value: "kuih", label: "Kuih" },
-//   { value: "legumes", label: "Legumes" },
-//   { value: "meat", label: "Meat" },
-//   { value: "mexican", label: "Mexican" },
-//   { value: "middle_eastern", label: "Middle Eastern" },
-//   { value: "noodles", label: "Noodles" },
-//   { value: "nuts", label: "Nuts" },
-//   { value: "proteins", label: "Proteins" },
-//   { value: "rice", label: "Rice" },
-//   { value: "roti", label: "Roti" },
-//   { value: "seafood", label: "Seafood" },
-//   { value: "seeds", label: "Seeds" },
-//   { value: "snacks", label: "Snacks" },
-//   { value: "soups", label: "Soups" },
-//   { value: "spanish", label: "Spanish" },
-//   { value: "thai", label: "Thai" },
-//   { value: "vegetables", label: "Vegetables" },
-//   { value: "vietnamese", label: "Vietnamese" },
-//   { value: "western", label: "Western" }
-// ]
-
 export const mealCategoryOptions = [
   // Regional cuisines
   { value: 'malaysian', label: 'Malaysian' },
@@ -120,7 +83,6 @@ export const mealCategoryOptions = [
   { value: 'dumplings', label: 'Dumplings' },
   { value: 'snacks', label: 'Snacks' },
   { value: 'desserts', label: 'Desserts' },
-  { value: 'kuih', label: 'Kuih' },
   { value: 'beverages', label: 'Beverages' },
   { value: 'condiments_sauces', label: 'Condiments & Sauces' },
 

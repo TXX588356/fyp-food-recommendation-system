@@ -29,6 +29,17 @@ type recordingImageStorage struct {
 	deleteImageErr  error
 }
 
+type stubCustomMealAutocompleter struct {
+	response interfaces.CustomMealAutocompleteResponse
+	err      error
+	input    interfaces.CustomMealAutocompleteInput
+}
+
+func (s *stubCustomMealAutocompleter) AutocompleteCustomMeal(_ context.Context, input interfaces.CustomMealAutocompleteInput) (interfaces.CustomMealAutocompleteResponse, error) {
+	s.input = input
+	return s.response, s.err
+}
+
 func (s *recordingImageStorage) UploadMealImage(context.Context, io.Reader, int64, string) (string, string, error) {
 	return "", "", nil
 }
@@ -64,11 +75,12 @@ func generateCustomMealTestToken(userID uuid.UUID, jwtSecret string) string {
 }
 
 // registerCustomMealTestRoutes registers custom-meal routes using a mock service.
-func registerCustomMealTestRoutes(e *echo.Echo, customMealService interfaces.CustomMealService, preferenceService interfaces.PreferenceService, imageStorage interfaces.ImageStorage, jwtSecret string) {
+func registerCustomMealTestRoutes(e *echo.Echo, customMealService interfaces.CustomMealService, preferenceService interfaces.PreferenceService, imageStorage interfaces.ImageStorage, customMealAutocompleter interfaces.CustomMealAutocompleter, jwtSecret string) {
 	handler := &customMealHandler{
-		customMealService: customMealService,
-		preferenceService: preferenceService,
-		imageStorage:      imageStorage,
+		customMealService:       customMealService,
+		preferenceService:       preferenceService,
+		imageStorage:            imageStorage,
+		customMealAutocompleter: customMealAutocompleter,
 	}
 
 	customMeals := e.Group("/custom-meals", middleware.Auth(jwtSecret))
@@ -78,6 +90,7 @@ func registerCustomMealTestRoutes(e *echo.Echo, customMealService interfaces.Cus
 	customMeals.GET("/:id", handler.findVisibleCustomMealByID)
 	customMeals.PUT("/:id", handler.updateCustomMeal)
 	customMeals.DELETE("/:id", handler.deleteCustomMeal)
+	customMeals.POST("/autocomplete", handler.autocompleteCustomMeal)
 }
 
 // performCustomMealRequest executes an HTTP request against the test router.
@@ -113,6 +126,7 @@ var _ = Describe("Custom meal endpoints", func() {
 		e                 *echo.Echo
 		customMealService *mocks.CustomMealService
 		preferenceService *mocks.PreferenceService
+		autocompleter     *stubCustomMealAutocompleter
 
 		imageStorage *recordingImageStorage
 		userID       uuid.UUID
@@ -122,11 +136,59 @@ var _ = Describe("Custom meal endpoints", func() {
 	BeforeEach(func() {
 		e = echo.New()
 		customMealService = mocks.NewCustomMealService(GinkgoT())
+		preferenceService = mocks.NewPreferenceService(GinkgoT())
+		autocompleter = &stubCustomMealAutocompleter{}
 		imageStorage = &recordingImageStorage{}
 		userID = uuid.New()
 		token = generateCustomMealTestToken(userID, jwtSecret)
 
-		registerCustomMealTestRoutes(e, customMealService, preferenceService, imageStorage, jwtSecret)
+		registerCustomMealTestRoutes(e, customMealService, preferenceService, imageStorage, autocompleter, jwtSecret)
+	})
+
+	Describe("POST /custom-meals/autocomplete", func() {
+		It("should autocomplete meal details from a meaningful meal name", func() {
+			autocompleter.response = interfaces.CustomMealAutocompleteResponse{
+				Calories:               150,
+				FatG:                   3,
+				ProteinG:               5,
+				CarbsG:                 22,
+				DietaryRestrictionTags: []string{"vegetarian"},
+				MealCategoryTags:       []string{"korean", "vegetables"},
+			}
+
+			response := performCustomMealRequest(
+				e,
+				http.MethodPost,
+				"/custom-meals/autocomplete",
+				interfaces.CustomMealAutocompleteInput{Name: "Kimchi"},
+				token,
+			)
+
+			Expect(response.Code).To(Equal(http.StatusOK))
+			Expect(autocompleter.input.Name).To(Equal("Kimchi"))
+
+			var result interfaces.CustomMealAutocompleteResponse
+			Expect(json.Unmarshal(response.Body.Bytes(), &result)).
+				To(Succeed())
+
+			Expect(result.Calories).To(Equal(150.0))
+			Expect(result.MealCategoryTags).To(Equal([]string{"korean", "vegetables"}))
+		})
+
+		It("should return unable-to-generate message when AI cannot generate details", func() {
+			autocompleter.err = errors.New("unable to generate meal details")
+
+			response := performCustomMealRequest(
+				e,
+				http.MethodPost,
+				"/custom-meals/autocomplete",
+				interfaces.CustomMealAutocompleteInput{Name: "Kimchi"},
+				token,
+			)
+
+			Expect(response.Code).To(Equal(http.StatusInternalServerError))
+			Expect(response.Body.String()).To(ContainSubstring("unable to generate meal details"))
+		})
 	})
 
 	Describe("POST /custom-meals", func() {
@@ -207,10 +269,18 @@ var _ = Describe("Custom meal endpoints", func() {
 		})
 
 		It("should reject an invalid request body", func() {
+			consent := true
 			request := httptest.NewRequest(http.MethodPost, "/custom-meals", bytes.NewBufferString(`{"price": invalid}`))
 
 			request.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			request.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+
+			preferenceService.EXPECT().
+				GetByUserID(mock.Anything, userID).
+				Return(&interfaces.PreferenceResponse{
+					DataSharingConsent: &consent,
+				}, nil).
+				Once()
 
 			response := httptest.NewRecorder()
 			e.ServeHTTP(response, request)
@@ -220,7 +290,15 @@ var _ = Describe("Custom meal endpoints", func() {
 		})
 
 		It("should return bad request when creation fails", func() {
+			consent := true
 			input := interfaces.CustomMealInput{}
+
+			preferenceService.EXPECT().
+				GetByUserID(mock.Anything, userID).
+				Return(&interfaces.PreferenceResponse{
+					DataSharingConsent: &consent,
+				}, nil).
+				Once()
 
 			customMealService.EXPECT().
 				Create(mock.Anything, userID, input).

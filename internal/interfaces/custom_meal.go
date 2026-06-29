@@ -43,10 +43,27 @@ type CustomMealResponse struct {
 	IsShared bool `json:"isShared"`
 }
 
+type CustomMealAutocompleteInput struct {
+	Name string `json:"name"`
+}
+
+type CustomMealAutocompleteResponse struct {
+	Calories               float64  `json:"calories"`
+	FatG                   float64  `json:"fatG"`
+	ProteinG               float64  `json:"proteinG"`
+	CarbsG                 float64  `json:"carbsG"`
+	DietaryRestrictionTags []string `json:"dietaryRestrictionTags"`
+	MealCategoryTags       []string `json:"mealCategoryTags"`
+}
+
 type CustomMealService interface {
 	Create(ctx context.Context, userID uuid.UUID, input CustomMealInput) (*CustomMealResponse, error)
 	ListVisible(ctx context.Context, userID uuid.UUID, query string) ([]*CustomMealResponse, error)
 	FindVisibleByID(ctx context.Context, userID uuid.UUID, customMealID uuid.UUID) (*CustomMealResponse, error)
 	Update(ctx context.Context, userID uuid.UUID, customMealID uuid.UUID, input CustomMealInput) (*CustomMealResponse, error)
 	Delete(ctx context.Context, userID uuid.UUID, customMealID uuid.UUID) error
+}
+
+type CustomMealAutocompleter interface {
+	AutocompleteCustomMeal(ctx context.Context, input CustomMealAutocompleteInput) (CustomMealAutocompleteResponse, error)
 }

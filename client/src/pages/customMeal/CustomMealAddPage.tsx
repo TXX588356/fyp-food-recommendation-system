@@ -90,6 +90,15 @@ type CustomMealDraft = {
   mealCategoryTags: string[]
 }
 
+type CustomMealAutocompleteResponse = {
+  calories: number
+  fatG: number
+  proteinG: number
+  carbsG: number
+  dietaryRestrictionTags: string[]
+  mealCategoryTags: string[]
+}
+
 const mealTimeLabels: Record<MealTime, string> = {
   breakfast: 'Breakfast',
   lunch: 'Lunch',
@@ -444,6 +453,7 @@ export function CustomMealFormPage() {
   const [isConsentModalOpen, setIsConsentModalOpen] = useState(false)
   const [isCheckingConsent, setIsCheckingConsent] = useState(false)
   const [consentChoiceBeingSaved, setConsentChoiceBeingSaved] = useState<boolean | null>(null)
+  const [isAutocompleting, setIsAutocompleting] = useState(false)
 
   const token = localStorage.getItem('token')
   const restrictedMealCategoryTags = getRestrictedMealCategoryTags(draft.dietaryRestrictionTags)
@@ -453,6 +463,56 @@ export function CustomMealFormPage() {
       ...current,
       [key]: value,
     }))
+  }
+
+  const validateAutocompleteMealName = (name: string) => {
+    if (name.trim().length < 2) {
+      return 'Enter a meaningful name before using AI autocomplete'
+    }
+
+    return null
+  }
+
+  const autocompleteCustomMeal = async () => {
+    const validationError = validateAutocompleteMealName(draft.name)
+
+    if (validationError) {
+      setError(validationError)
+      return
+    }
+
+    setIsAutocompleting(true)
+    setError(null)
+
+    try {
+      const response = await axios.post<CustomMealAutocompleteResponse>(
+        `${API_BASE_URL}/custom-meals/autocomplete`,
+        { name: draft.name },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      )
+
+      setDraft((current) => ({
+        ...current,
+        calories: response.data.calories,
+        fatG: response.data.fatG,
+        proteinG: response.data.proteinG,
+        carbsG: response.data.carbsG,
+        dietaryRestrictionTags: response.data.dietaryRestrictionTags,
+        mealCategoryTags: filterRestrictedMealCategoryTags(
+          response.data.mealCategoryTags,
+          response.data.dietaryRestrictionTags,
+        )
+      }))
+    } catch (error) {
+      console.error("Failed to generate meal details: ", error)
+      setError('Could not generate meal details.')
+    } finally {
+      setIsAutocompleting(false)
+    }
   }
 
   const toggleDietaryTag = (tag: string) => {
@@ -797,7 +857,13 @@ export function CustomMealFormPage() {
                   onChange={(value) => updateDraft('proteinG', value === '' ? '' : Number(value))}
                 />
               </SimpleGrid>
-              <Text>Not sure? Let AI generate for you!</Text>
+              <Button
+                variant="outline"
+                loading={isAutocompleting}
+                onClick={autocompleteCustomMeal}
+              >
+                AI autocomplete
+              </Button>
             </Box>
           </Box>
 
