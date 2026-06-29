@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -8,16 +9,27 @@ import (
 	"github.com/spf13/viper"
 )
 
+var ErrMissingCatalogAdminToken = errors.New("CATALOG_ADMIN_TOKEN is required when CATALOG_ADMIN_ENABLED is true")
+
 type Config struct {
-	GeminiAPIKey   string
-	DatabaseURL    string
-	JWTSecret      string
-	MinIOEndpoint  string
-	MinIOAccessKey string
-	MinIOSecretKey string
-	MinIOBucket    string
-	MinIOUseSSL    bool
-	MinIOPublicURL string
+	GeminiAPIKey        string
+	DatabaseURL         string
+	JWTSecret           string
+	MinIOEndpoint       string
+	MinIOAccessKey      string
+	MinIOSecretKey      string
+	MinIOBucket         string
+	MinIOUseSSL         bool
+	MinIOPublicURL      string
+	CatalogAdminEnabled bool
+	CatalogAdminToken   string
+}
+
+func (c Config) Validate() error {
+	if c.CatalogAdminEnabled && strings.TrimSpace(c.CatalogAdminToken) == "" {
+		return ErrMissingCatalogAdminToken
+	}
+	return nil
 }
 
 func Load() Config {
@@ -32,15 +44,17 @@ func Load() Config {
 	_ = viper.ReadInConfig()
 
 	return Config{
-		GeminiAPIKey:   configString("GEMINI_API_KEY"),
-		DatabaseURL:    configString("DATABASE_URL"),
-		JWTSecret:      configString("SECURITY_JWT_SECRET"),
-		MinIOEndpoint:  configString("MINIO_ENDPOINT"),
-		MinIOAccessKey: configString("MINIO_ACCESS_KEY"),
-		MinIOSecretKey: configString("MINIO_SECRET_KEY"),
-		MinIOBucket:    configString("MINIO_BUCKET"),
-		MinIOUseSSL:    viper.GetBool("MINIO_USE_SSL"),
-		MinIOPublicURL: configString("MINIO_PUBLIC_URL"),
+		GeminiAPIKey:        configString("GEMINI_API_KEY"),
+		DatabaseURL:         configString("DATABASE_URL"),
+		JWTSecret:           configString("SECURITY_JWT_SECRET"),
+		MinIOEndpoint:       configString("MINIO_ENDPOINT"),
+		MinIOAccessKey:      configString("MINIO_ACCESS_KEY"),
+		MinIOSecretKey:      configString("MINIO_SECRET_KEY"),
+		MinIOBucket:         configString("MINIO_BUCKET"),
+		MinIOUseSSL:         viper.GetBool("MINIO_USE_SSL"),
+		MinIOPublicURL:      configString("MINIO_PUBLIC_URL"),
+		CatalogAdminEnabled: viper.GetBool("CATALOG_ADMIN_ENABLED"),
+		CatalogAdminToken:   configString("CATALOG_ADMIN_TOKEN"),
 	}
 }
 
