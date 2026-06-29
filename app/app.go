@@ -9,6 +9,7 @@ import (
 	catalogService "fyp/food-rs/internal/service/catalog"
 	customMealService "fyp/food-rs/internal/service/custommeal"
 	"fyp/food-rs/internal/service/llm"
+	"fyp/food-rs/internal/service/meallog"
 	"fyp/food-rs/internal/service/mealsearch"
 	preferenceService "fyp/food-rs/internal/service/preference"
 	recommendationService "fyp/food-rs/internal/service/recommendation"
@@ -26,6 +27,7 @@ type App struct {
 	PostgresDB            *gorm.DB
 	ImageStorage          interfaces.ImageStorage
 	authService           interfaces.AuthService
+	mealLogService        interfaces.MealLogService
 	JWTSecret             string
 	GeminiAPIKey          string
 	preferenceService     interfaces.PreferenceService
@@ -76,6 +78,33 @@ func (a *App) GetCatalogService(_ context.Context) (*catalogService.Service, err
 	a.catalogService = catalogService.NewService(repository, resolver)
 
 	return a.catalogService, nil
+}
+
+func (a *App) GetMealLogService(ctx context.Context) (interfaces.MealLogService, error) {
+	if a.mealLogService != nil {
+		return a.mealLogService, nil
+	}
+
+	mealLogRepo := postgres.NewMealLogPostgresRepository(a.PostgresDB)
+
+	customMealService, err := a.GetCustomMealService(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	catalogService, err := a.GetCatalogService(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	preferenceService, err := a.GetPreferenceService(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	a.mealLogService = meallog.NewService(mealLogRepo, customMealService, catalogService, preferenceService)
+
+	return a.mealLogService, nil
 }
 
 func (a *App) GetCatalogFoodSearcher(ctx context.Context) (interfaces.FoodSearcher, error) {
