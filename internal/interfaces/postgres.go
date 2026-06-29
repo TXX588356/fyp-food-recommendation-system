@@ -3,6 +3,7 @@ package interfaces
 import (
 	"context"
 	"fyp/food-rs/types/model"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -34,4 +35,9 @@ type CustomMealRepository interface {
 	FindVisibleByID(ctx context.Context, userID uuid.UUID, customMealID uuid.UUID) (*model.CustomMealItem, error)
 	UpdateOwned(ctx context.Context, userID uuid.UUID, meal *model.CustomMealItem) (*model.CustomMealItem, error)
 	DeleteOwned(ctx context.Context, userID uuid.UUID, customMealID uuid.UUID) error
+}
+
+type MealLogRespository interface {
+	Create(ctx context.Context, mealLog *model.MealLog) (*model.MealLog, error)
+	ListByUserAndMonth(ctx context.Context, userID uuid.UUID, start time.Time, end time.Time) ([]model.MealLog, error)
 }
