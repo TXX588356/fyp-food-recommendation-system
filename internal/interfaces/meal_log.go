@@ -48,5 +48,5 @@ type MealLogMonthResponse struct {
 
 type MealLogService interface {
 	Create(ctx context.Context, userID uuid.UUID, input MealLogInput) (*MealLogResponse, error)
-	GetMonth(ctx context.Context, userID uuid.UUID, month string) (*MealLogResponse, error)
+	GetMonth(ctx context.Context, userID uuid.UUID, month string) (*MealLogMonthResponse, error)
 }

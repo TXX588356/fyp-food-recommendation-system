@@ -37,7 +37,7 @@ type CustomMealRepository interface {
 	DeleteOwned(ctx context.Context, userID uuid.UUID, customMealID uuid.UUID) error
 }
 
-type MealLogRespository interface {
+type MealLogRepository interface {
 	Create(ctx context.Context, mealLog *model.MealLog) (*model.MealLog, error)
 	ListByUserAndMonth(ctx context.Context, userID uuid.UUID, start time.Time, end time.Time) ([]model.MealLog, error)
 }

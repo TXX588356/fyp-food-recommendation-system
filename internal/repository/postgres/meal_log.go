@@ -14,7 +14,7 @@ type mealLogRepository struct {
 	db *gorm.DB
 }
 
-func NewMealLogPostgresRepository(db *gorm.DB) interfaces.MealLogRespository {
+func NewMealLogPostgresRepository(db *gorm.DB) interfaces.MealLogRepository {
 	return &mealLogRepository{db: db}
 }
 
