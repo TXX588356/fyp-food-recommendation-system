@@ -19,7 +19,11 @@ import axios from 'axios'
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 
-import { dietaryRestrictionOptions, mealCategoryOptions } from '@/preferences/options'
+import {
+  dietaryRestrictionOptions,
+  mealCategoryOptions,
+  restrictedMealCategories,
+} from '@/preferences/options'
 import './CustomMealAddPage.css'
 import {
   customMealCreatedNavigationState,
@@ -86,6 +90,15 @@ type CustomMealDraft = {
   mealCategoryTags: string[]
 }
 
+type CustomMealAutocompleteResponse = {
+  calories: number
+  fatG: number
+  proteinG: number
+  carbsG: number
+  dietaryRestrictionTags: string[]
+  mealCategoryTags: string[]
+}
+
 const mealTimeLabels: Record<MealTime, string> = {
   breakfast: 'Breakfast',
   lunch: 'Lunch',
@@ -114,8 +127,39 @@ const stateOptions = [
 
 const customMealDietaryOptions = dietaryRestrictionOptions.filter((option) => option.value !== 'none')
 
-const validateMealCategoryTags = (mealCategoryTags: string[]) =>
-  mealCategoryTags.length === 0 ? 'Please select at least one meal category.' : null
+const getRestrictedMealCategoryTags = (dietaryRestrictionTags: string[]) =>
+  new Set(
+    dietaryRestrictionTags.flatMap(
+      (restriction) => restrictedMealCategories[restriction] ?? [],
+    ),
+  )
+
+const filterRestrictedMealCategoryTags = (
+  mealCategoryTags: string[],
+  dietaryRestrictionTags: string[],
+) => {
+  const restrictedTags = getRestrictedMealCategoryTags(dietaryRestrictionTags)
+
+  return mealCategoryTags.filter((tag) => !restrictedTags.has(tag))
+}
+
+const validateMealCategoryTags = (
+  mealCategoryTags: string[],
+  dietaryRestrictionTags: string[],
+) => {
+  if (mealCategoryTags.length === 0) {
+    return 'Please select at least one meal category.'
+  }
+
+  const restrictedTags = getRestrictedMealCategoryTags(dietaryRestrictionTags)
+  const restrictedSelectedTag = mealCategoryTags.find((tag) => restrictedTags.has(tag))
+
+  if (restrictedSelectedTag) {
+    return 'Please remove meal category tags that conflict with selected dietary restrictions.'
+  }
+
+  return null
+}
 
 const emptyDraft: CustomMealDraft = {
   name: '',
@@ -221,6 +265,16 @@ export function CustomMealSearchPage() {
 
   const token = localStorage.getItem('token')
 
+  const updateSearchQuery = (nextQuery: string) => {
+    setQuery(nextQuery)
+
+    if (!nextQuery.trim()) {
+      setVisibleMeals([])
+      setIsLoading(false)
+      setError(null)
+    }
+  }
+
   useEffect(() => {
     if (!successMessage) {
       return
@@ -242,9 +296,6 @@ export function CustomMealSearchPage() {
     const normalizedQuery = query.trim()
 
     if (!normalizedQuery) {
-      setVisibleMeals([])
-      setIsLoading(false)
-      setError(null)
       return
     }
 
@@ -315,7 +366,7 @@ export function CustomMealSearchPage() {
               aria-label="Search meals"
               placeholder="Search"
               value={query}
-              onChange={(event) => setQuery(event.currentTarget.value)}
+              onChange={(event) => updateSearchQuery(event.currentTarget.value)}
             />
           </Box>
 
@@ -402,8 +453,10 @@ export function CustomMealFormPage() {
   const [isConsentModalOpen, setIsConsentModalOpen] = useState(false)
   const [isCheckingConsent, setIsCheckingConsent] = useState(false)
   const [consentChoiceBeingSaved, setConsentChoiceBeingSaved] = useState<boolean | null>(null)
+  const [isAutocompleting, setIsAutocompleting] = useState(false)
 
   const token = localStorage.getItem('token')
+  const restrictedMealCategoryTags = getRestrictedMealCategoryTags(draft.dietaryRestrictionTags)
 
   const updateDraft = <Key extends keyof CustomMealDraft>(key: Key, value: CustomMealDraft[Key]) => {
     setDraft((current) => ({
@@ -412,21 +465,82 @@ export function CustomMealFormPage() {
     }))
   }
 
+  const validateAutocompleteMealName = (name: string) => {
+    if (name.trim().length < 2) {
+      return 'Enter a meaningful name before using AI autocomplete'
+    }
+
+    return null
+  }
+
+  const autocompleteCustomMeal = async () => {
+    const validationError = validateAutocompleteMealName(draft.name)
+
+    if (validationError) {
+      setError(validationError)
+      return
+    }
+
+    setIsAutocompleting(true)
+    setError(null)
+
+    try {
+      const response = await axios.post<CustomMealAutocompleteResponse>(
+        `${API_BASE_URL}/custom-meals/autocomplete`,
+        { name: draft.name },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      )
+
+      setDraft((current) => ({
+        ...current,
+        calories: response.data.calories,
+        fatG: response.data.fatG,
+        proteinG: response.data.proteinG,
+        carbsG: response.data.carbsG,
+        dietaryRestrictionTags: response.data.dietaryRestrictionTags,
+        mealCategoryTags: filterRestrictedMealCategoryTags(
+          response.data.mealCategoryTags,
+          response.data.dietaryRestrictionTags,
+        )
+      }))
+    } catch (error) {
+      console.error("Failed to generate meal details: ", error)
+      setError('Could not generate meal details.')
+    } finally {
+      setIsAutocompleting(false)
+    }
+  }
+
   const toggleDietaryTag = (tag: string) => {
     setDraft((current) => {
       const hasTag = current.dietaryRestrictionTags.includes(tag)
+      const nextDietaryRestrictionTags = hasTag
+        ? current.dietaryRestrictionTags.filter((currentTag) => currentTag !== tag)
+        : [...current.dietaryRestrictionTags, tag]
 
       return {
         ...current,
-        dietaryRestrictionTags: hasTag
-          ? current.dietaryRestrictionTags.filter((currentTag) => currentTag !== tag)
-          : [...current.dietaryRestrictionTags, tag],
+        dietaryRestrictionTags: nextDietaryRestrictionTags,
+        mealCategoryTags: filterRestrictedMealCategoryTags(
+          current.mealCategoryTags,
+          nextDietaryRestrictionTags,
+        ),
       }
     })
   }
 
   const toggleMealCategoryTag = (tag: string) => {
     setDraft((current) => {
+      const restrictedTags = getRestrictedMealCategoryTags(current.dietaryRestrictionTags)
+
+      if (restrictedTags.has(tag)) {
+        return current
+      }
+
       const hasTag = current.mealCategoryTags.includes(tag)
 
       return {
@@ -458,6 +572,7 @@ export function CustomMealFormPage() {
 
     const categoryError = validateMealCategoryTags(
       draft.mealCategoryTags,
+      draft.dietaryRestrictionTags,
     )
 
     if (categoryError) {
@@ -742,7 +857,13 @@ export function CustomMealFormPage() {
                   onChange={(value) => updateDraft('proteinG', value === '' ? '' : Number(value))}
                 />
               </SimpleGrid>
-              <Text>Not sure? Let AI generate for you!</Text>
+              <Button
+                variant="outline"
+                loading={isAutocompleting}
+                onClick={autocompleteCustomMeal}
+              >
+                AI autocomplete
+              </Button>
             </Box>
           </Box>
 
@@ -774,14 +895,20 @@ export function CustomMealFormPage() {
                 <Text size="sm" c="dimmed">Select at least one.</Text>
               </Box>
               <SimpleGrid cols={{ base: 1, xs: 2, sm: 3 }} spacing="sm">
-                {mealCategoryOptions.map((option) => (
-                  <Checkbox
-                    key={option.value}
-                    label={option.label}
-                    checked={draft.mealCategoryTags.includes(option.value)}
-                    onChange={() => toggleMealCategoryTag(option.value)}
-                  />
-                ))}
+                {mealCategoryOptions.map((option) => {
+                  const isRestricted = restrictedMealCategoryTags.has(option.value)
+
+                  return (
+                    <Checkbox
+                      key={option.value}
+                      label={option.label}
+                      description={isRestricted ? 'Blocked by selected dietary restriction' : undefined}
+                      disabled={isRestricted}
+                      checked={draft.mealCategoryTags.includes(option.value)}
+                      onChange={() => toggleMealCategoryTag(option.value)}
+                    />
+                  )
+                })}
               </SimpleGrid>
             </Box>
 

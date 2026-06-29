@@ -72,6 +72,83 @@ var _ = Describe("Gemini meal generation", func() {
 		})
 	})
 
+	Describe("ParseCustomMealAutocomplete", func() {
+		It("accepts a valid autocomplete response", func() {
+			response := `{
+				"calories": 150,
+				"fatG": 3,
+				"proteinG": 5,
+				"carbsG": 22,
+				"dietaryRestrictionTags": ["vegetarian"],
+				"mealCategoryTags": ["korean", "vegetables"]
+			}`
+
+			result, err := ParseCustomMealAutocomplete(response)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result.Calories).To(Equal(150.0))
+			Expect(result.FatG).To(Equal(3.0))
+			Expect(result.ProteinG).To(Equal(5.0))
+			Expect(result.CarbsG).To(Equal(22.0))
+			Expect(result.DietaryRestrictionTags).To(Equal([]string{"vegetarian"}))
+			Expect(result.MealCategoryTags).To(Equal([]string{"korean", "vegetables"}))
+		})
+
+		It("rejects wrong schema keys instead of silently accepting zero macros", func() {
+			response := `{
+				"mealName": "Grilled Chicken Salad",
+				"calories": 350,
+				"carbs": 12,
+				"fat": 14,
+				"protein": 42,
+				"dietaryRestrictionTags": ["gluten-free"],
+				"mealCategoryTags": ["lunch"]
+			}`
+
+			_, err := ParseCustomMealAutocomplete(response)
+
+			Expect(err).To(MatchError(ContainSubstring("unknown field")))
+		})
+
+		It("rejects unsupported tags", func() {
+			response := `{
+				"calories": 150,
+				"fatG": 3,
+				"proteinG": 5,
+				"carbsG": 22,
+				"dietaryRestrictionTags": ["gluten-free"],
+				"mealCategoryTags": ["korean"]
+			}`
+
+			_, err := ParseCustomMealAutocomplete(response)
+
+			Expect(err).To(MatchError(ContainSubstring("unsupported dietary restriction tag")))
+		})
+
+		It("rejects missing meal category tags", func() {
+			response := `{
+				"calories": 150,
+				"fatG": 3,
+				"proteinG": 5,
+				"carbsG": 22,
+				"dietaryRestrictionTags": [],
+				"mealCategoryTags": []
+			}`
+
+			_, err := ParseCustomMealAutocomplete(response)
+
+			Expect(err).To(MatchError(ContainSubstring("meal category tags are required")))
+		})
+
+		It("returns the AI unable-to-generate message", func() {
+			response := `{"error":"unable to generate meal details"}`
+
+			_, err := ParseCustomMealAutocomplete(response)
+
+			Expect(err).To(MatchError("unable to generate meal details"))
+		})
+	})
+
 	Describe("ValidateMeals", func() {
 		It("rejects an invalid price range", func() {
 			response := validResponse()
@@ -146,6 +223,31 @@ var _ = Describe("Gemini meal generation", func() {
 				"Lunch can include more filling meals with higher calories, carbohydrates, and digestive load",
 				"Dinner should be lighter than lunch",
 				"lower calories, lower carbohydrates, and easier digestion",
+			}
+
+			for _, expected := range expectedValues {
+				Expect(strings.Contains(prompt, expected)).To(
+					BeTrue(),
+					"expected prompt to contain %q",
+					expected,
+				)
+			}
+		})
+	})
+
+	Describe("BuildCustomMealAutocompletePrompt", func() {
+		It("includes the meal name, exact schema, and supported tag values", func() {
+			prompt := BuildCustomMealAutocompletePrompt("Kimchi")
+
+			expectedValues := []string{
+				"Meal name: Kimchi",
+				`"fatG": 0`,
+				`"proteinG": 0`,
+				`"carbsG": 0`,
+				`{"error":"unable to generate meal details"}`,
+				"gluten-free is not valid",
+				"korean",
+				"vegetables",
 			}
 
 			for _, expected := range expectedValues {

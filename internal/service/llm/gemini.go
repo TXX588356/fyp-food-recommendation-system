@@ -1,6 +1,7 @@
 package llm
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -22,6 +23,69 @@ var healthFlags = map[string]bool{
 	"SAFE":    true,
 	"CAUTION": true,
 	"AVOID":   true,
+}
+
+var supportedAutocompleteDietaryTags = map[string]bool{
+	"non_beef":     true,
+	"halal":        true,
+	"vegetarian":   true,
+	"vegan":        true,
+	"seafood_free": true,
+	"nut_free":     true,
+	"low_sugar":    true,
+	"low_salt":     true,
+	"low_fat":      true,
+}
+
+var supportedAutocompleteMealCategoryTags = map[string]bool{
+	"malaysian":         true,
+	"singaporean":       true,
+	"indonesian":        true,
+	"chinese":           true,
+	"indian":            true,
+	"thai":              true,
+	"vietnamese":        true,
+	"japanese":          true,
+	"korean":            true,
+	"middle_eastern":    true,
+	"american":          true,
+	"mexican":           true,
+	"italian":           true,
+	"french":            true,
+	"greek":             true,
+	"spanish":           true,
+	"western":           true,
+	"breakfast":         true,
+	"rice_dishes":       true,
+	"noodle_dishes":     true,
+	"soups":             true,
+	"stews":             true,
+	"curries":           true,
+	"stir_fries":        true,
+	"grilled_roasted":   true,
+	"fried_foods":       true,
+	"salads":            true,
+	"sandwiches_wraps":  true,
+	"breads_flatbreads": true,
+	"porridge":          true,
+	"dumplings":         true,
+	"snacks":            true,
+	"desserts":          true,
+	"beverages":         true,
+	"condiments_sauces": true,
+	"poultry":           true,
+	"beef":              true,
+	"pork":              true,
+	"lamb":              true,
+	"seafood":           true,
+	"eggs":              true,
+	"tofu_soy":          true,
+	"legumes":           true,
+	"vegetables":        true,
+	"fruits":            true,
+	"grains":            true,
+	"dairy":             true,
+	"nuts_seeds":        true,
 }
 
 type Client struct {
@@ -48,6 +112,46 @@ func (c Client) GenerateMeals(ctx context.Context, input interfaces.MealPromptIn
 	}
 
 	return ParseMeals(result.Text(), input.HealthConcerns)
+}
+
+func (c Client) AutocompleteCustomMeal(ctx context.Context, input interfaces.CustomMealAutocompleteInput) (interfaces.CustomMealAutocompleteResponse, error) {
+	prompt := BuildCustomMealAutocompletePrompt(input.Name)
+
+	result, err := c.client.Models.GenerateContent(ctx, c.model, genai.Text(prompt), nil)
+	if err != nil {
+		return interfaces.CustomMealAutocompleteResponse{}, err
+	}
+
+	return ParseCustomMealAutocomplete(result.Text())
+}
+
+func BuildCustomMealAutocompletePrompt(input string) string {
+	return fmt.Sprintf(`You are generating custom meal detail for a user.
+Meal name: %s
+
+Estimate nutrition for one typical serving of exactly this meal.
+Return only valid JSON. Do not include markdown or explanation.
+Use exactly this JSON shape and these field names:
+{
+  "calories": 0,
+  "fatG": 0,
+  "proteinG": 0,
+  "carbsG": 0,
+  "dietaryRestrictionTags": [],
+  "mealCategoryTags": []
+}
+
+Rules:
+- If you cannot estimate credible meal details for the provided meal name, return exactly {"error":"unable to generate meal details"}.
+- Do not return mealName, carbs, fat, or protein keys.
+- fatG, proteinG, and carbsG are grams.
+- dietaryRestrictionTags is optional and may be empty.
+- mealCategoryTags must contain at least one supported value.
+- Use only these dietaryRestrictionTags: non_beef, halal, vegetarian, vegan, seafood_free, nut_free, low_sugar, low_salt, low_fat.
+- Use only these mealCategoryTags: malaysian, singaporean, indonesian, chinese, indian, thai, vietnamese, japanese, korean, middle_eastern, american, mexican, italian, french, greek, spanish, western, breakfast, rice_dishes, noodle_dishes, soups, stews, curries, stir_fries, grilled_roasted, fried_foods, salads, sandwiches_wraps, breads_flatbreads, porridge, dumplings, snacks, desserts, beverages, condiments_sauces, poultry, beef, pork, lamb, seafood, eggs, tofu_soy, legumes, vegetables, fruits, grains, dairy, nuts_seeds.
+- Use app tag codes exactly. gluten-free is not valid; dairy-free is not valid; lunch and dinner are not valid mealCategoryTags.
+- If the meal is Kimchi, use Korean/vegetable-style tags such as korean and vegetables, not lunch or dinner.
+`, strings.TrimSpace(input))
 }
 
 // BuildMealRecommendationPrompt formats the user context and output rules into the prompt
@@ -167,6 +271,70 @@ func ParseMeals(text string, expectedHealthConcerns []string) (interfaces.Gemini
 	}
 
 	return response, nil
+}
+
+func ParseCustomMealAutocomplete(text string) (interfaces.CustomMealAutocompleteResponse, error) {
+	cleaned := strings.TrimSpace(text)
+	cleaned = strings.TrimPrefix(cleaned, "```json")
+	cleaned = strings.TrimPrefix(cleaned, "```")
+	cleaned = strings.TrimSuffix(cleaned, "```")
+	cleaned = strings.TrimSpace(cleaned)
+
+	var errorResponse struct {
+		Error string `json:"error"`
+	}
+	if err := json.Unmarshal([]byte(cleaned), &errorResponse); err == nil && strings.TrimSpace(errorResponse.Error) != "" {
+		return interfaces.CustomMealAutocompleteResponse{}, fmt.Errorf("%s", strings.TrimSpace(errorResponse.Error))
+	}
+
+	var response interfaces.CustomMealAutocompleteResponse
+	decoder := json.NewDecoder(bytes.NewReader([]byte(cleaned)))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&response); err != nil {
+		return interfaces.CustomMealAutocompleteResponse{}, fmt.Errorf("parse AI autocomplete response: %w", err)
+	}
+
+	if err := ValidateCustomMealAutocomplete(response); err != nil {
+		return interfaces.CustomMealAutocompleteResponse{}, fmt.Errorf("validate AI autocomplete response: %w", err)
+	}
+
+	return response, nil
+}
+
+func ValidateCustomMealAutocomplete(response interfaces.CustomMealAutocompleteResponse) error {
+	if response.Calories <= 0 || response.Calories > 3000 {
+		return fmt.Errorf("calories must be greater than 0 and no more than 3000")
+	}
+
+	if response.FatG < 0 || response.FatG > 500 {
+		return fmt.Errorf("fatG must be between 0 and 500")
+	}
+
+	if response.ProteinG < 0 || response.ProteinG > 500 {
+		return fmt.Errorf("proteinG must be between 0 and 500")
+	}
+
+	if response.CarbsG < 0 || response.CarbsG > 500 {
+		return fmt.Errorf("carbsG must be between 0 and 500")
+	}
+
+	for _, tag := range response.DietaryRestrictionTags {
+		if !supportedAutocompleteDietaryTags[tag] {
+			return fmt.Errorf("unsupported dietary restriction tag: %s", tag)
+		}
+	}
+
+	if len(response.MealCategoryTags) == 0 {
+		return fmt.Errorf("meal category tags are required")
+	}
+
+	for _, tag := range response.MealCategoryTags {
+		if !supportedAutocompleteMealCategoryTags[tag] {
+			return fmt.Errorf("unsupported meal category tag: %s", tag)
+		}
+	}
+
+	return nil
 }
 
 // ValidateMeals checks response-level constraints and validates each generated

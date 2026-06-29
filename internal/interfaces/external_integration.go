@@ -17,6 +17,9 @@ type MealPromptInput struct {
 	CurrentMonthSpent float64
 	RemainingBudget   float64
 	PerMealBudget     float64
+
+	PriceMarketLocation     string
+	PriceMarketLocationType string // "weekday" or "weekend"
 }
 
 type PriceRange struct {

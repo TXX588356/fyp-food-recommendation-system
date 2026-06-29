@@ -25,9 +25,10 @@ const (
 )
 
 type customMealHandler struct {
-	customMealService interfaces.CustomMealService
-	preferenceService interfaces.PreferenceService
-	imageStorage      interfaces.ImageStorage
+	customMealService       interfaces.CustomMealService
+	preferenceService       interfaces.PreferenceService
+	imageStorage            interfaces.ImageStorage
+	customMealAutocompleter interfaces.CustomMealAutocompleter
 }
 
 func RegisterCustomMealRoutes(ctx context.Context, e *echo.Echo) {
@@ -48,10 +49,16 @@ func RegisterCustomMealRoutes(ctx context.Context, e *echo.Echo) {
 		log.Fatal("failed to get preference service", "error", err)
 	}
 
+	customMealAutocompleter, err := a.GetCustomMealAutocompleter(ctx)
+	if err != nil {
+		log.Fatal("failed to get custom meal autocompleter", "error", err)
+	}
+
 	h := &customMealHandler{
-		customMealService: customMealService,
-		preferenceService: preferenceService,
-		imageStorage:      a.ImageStorage,
+		customMealService:       customMealService,
+		preferenceService:       preferenceService,
+		imageStorage:            a.ImageStorage,
+		customMealAutocompleter: customMealAutocompleter,
 	}
 
 	customMeal := e.Group("/custom-meals", middleware.Auth(a.JWTSecret))
@@ -60,6 +67,7 @@ func RegisterCustomMealRoutes(ctx context.Context, e *echo.Echo) {
 	customMeal.GET("/:id", h.findVisibleCustomMealByID)
 	customMeal.PUT("/:id", h.updateCustomMeal)
 	customMeal.DELETE("/:id", h.deleteCustomMeal)
+	customMeal.POST("/autocomplete", h.autocompleteCustomMeal)
 }
 
 // createCustomMeal validates the request body and creates a custom meal owned
@@ -290,6 +298,21 @@ func (h *customMealHandler) deleteCustomMeal(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{
 		"message": "custom meal deleted",
 	})
+}
+
+func (h *customMealHandler) autocompleteCustomMeal(c *echo.Context) error {
+	var input interfaces.CustomMealAutocompleteInput
+
+	if err := c.Bind(&input); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+	}
+
+	result, err := h.customMealAutocompleter.AutocompleteCustomMeal(c.Request().Context(), input)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "unable to generate meal details"})
+	}
+
+	return c.JSON(http.StatusOK, result)
 }
 
 func detectMealImageContentType(file multipart.File) (string, error) {
