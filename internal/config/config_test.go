@@ -77,3 +77,26 @@ func TestLoadReadsRuntimeConfig(t *testing.T) {
 		t.Fatalf("expected JWTSecret to be read and trimmed")
 	}
 }
+
+func TestLoadReadsCatalogAdminConfig(t *testing.T) {
+	viper.Reset()
+	t.Cleanup(viper.Reset)
+	t.Setenv("CATALOG_ADMIN_ENABLED", "true")
+	t.Setenv("CATALOG_ADMIN_TOKEN", "  catalog-secret  ")
+
+	cfg := Load()
+
+	if !cfg.CatalogAdminEnabled {
+		t.Fatal("expected catalogue admin routes to be enabled")
+	}
+	if cfg.CatalogAdminToken != "catalog-secret" {
+		t.Fatalf("expected trimmed token, got %q", cfg.CatalogAdminToken)
+	}
+}
+
+func TestValidateRejectsEnabledCatalogAdminWithoutToken(t *testing.T) {
+	cfg := Config{CatalogAdminEnabled: true}
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("expected missing catalogue admin token to be rejected")
+	}
+}
