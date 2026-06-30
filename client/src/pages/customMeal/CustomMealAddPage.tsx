@@ -30,6 +30,8 @@ import {
   getCustomMealSuccessMessage,
 } from './customMealNavigation'
 import type { PreferenceData } from '@/preferences/types'
+import LogMealModal from '../mealLog/LogMealModal'
+import type { LoggableMeal } from '../mealLog/mealLogTypes'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
@@ -240,7 +242,7 @@ function MainNav({ active }: { active: 'recommendation' | 'log' | 'preferences' 
 
 function toExistingMeal(meal: MealSearchResult): ExistingMeal {
   return {
-    id: `${meal.source}-${meal.id}`,
+    id: meal.id,
     name: meal.name,
     calories: meal.calories,
     priceLabel: meal.price === undefined ? 'Prebuilt data' : formatRM(meal.price),
@@ -259,6 +261,7 @@ export function CustomMealSearchPage() {
   const [visibleMeals, setVisibleMeals] = useState<ExistingMeal[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [mealToLog, setMealToLog] = useState<LoggableMeal | null>(null)
   const [successMessage, setSuccessMessage] = useState(() =>
     getCustomMealSuccessMessage(location.state),
   )
@@ -339,6 +342,15 @@ export function CustomMealSearchPage() {
     return () => request.abort()
   }, [query, token])
 
+  const openLogModal = (meal: ExistingMeal) => {
+    setMealToLog({
+      source: meal.source,
+      mealId: meal.id,
+      name: meal.name,
+      calories: meal.calories,
+    })
+  }
+
   return (
     <Box className="ui-settings-page ui-meal-add-page">
       {successMessage && (
@@ -351,6 +363,13 @@ export function CustomMealSearchPage() {
           <Text fw={900}>{successMessage}</Text>
         </Box>
       )}
+
+      <LogMealModal
+        opened={mealToLog !== null}
+        meal={mealToLog}
+        onClose={() => setMealToLog(null)}
+        onLogged={() => setMealToLog(null)}
+      />
 
       <Box component="main" className="ui-settings-frame">
         <MainNav active="recommendation" />
@@ -400,7 +419,7 @@ export function CustomMealSearchPage() {
           ) : (
             <Box className="ui-meal-add-list">
               {visibleMeals.map((meal) => (
-                <Box className="ui-meal-card ui-card" key={meal.id}>
+                <Box className="ui-meal-card ui-card" key={`${meal.source}-${meal.id}`}>
                   <Box className="ui-meal-photo" aria-hidden={!meal.imageUrl}>
                     {meal.imageUrl ? (
                       <img src={meal.imageUrl} alt={meal.name} loading="lazy" />
@@ -420,7 +439,11 @@ export function CustomMealSearchPage() {
                     <Text className="ui-meal-price">{meal.priceLabel}</Text>
                   </Box>
 
-                  <Button className="ui-meal-log-button" variant="subtle">
+                  <Button 
+                    className="ui-meal-log-button" 
+                    variant="subtle"
+                    onClick={() => openLogModal(meal)}
+                    >
                     Log
                   </Button>
                 </Box>

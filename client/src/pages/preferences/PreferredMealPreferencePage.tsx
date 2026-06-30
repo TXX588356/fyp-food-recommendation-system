@@ -53,6 +53,7 @@ export default function PreferredMealPreferencePage() {
 
 		if (draft.preferredMealTags.length === 0) {
 			setError("Please select at least one option.")
+			setIsSaving(false)
 			return
 		}
 
@@ -77,7 +78,10 @@ export default function PreferredMealPreferencePage() {
 			navigate("/preferences")
 		} catch (error) {
 			console.error("Failed to update preferred meals", error)
-			setError("Could not update preferred meal")
+			const serverError = axios.isAxiosError(error)
+				? error.response?.data?.error
+				: undefined
+			setError(serverError || "Could not update preferred meal")
 		} finally {
 			setIsSaving(false)
 		}
