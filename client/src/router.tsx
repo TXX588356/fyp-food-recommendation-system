@@ -13,6 +13,7 @@ import PreferredMealPreferencePage from './pages/preferences/PreferredMealPrefer
 import BudgetLocationPreferencePage from './pages/preferences/BudgetLocationPreferencePage'
 import ConsentPreferencePage from './pages/preferences/ConsentPreferencePage'
 import { CustomMealFormPage, CustomMealSearchPage } from './pages/customMeal/CustomMealAddPage'
+import MealLogPage from './pages/mealLog/MealLogPage'
 
 export const router = createBrowserRouter([
   {path: '/', element: <HomeRedirect />,},
@@ -72,5 +73,10 @@ export const router = createBrowserRouter([
     <OnboardingRoute>
       <PreferencesOnboardingPage />
     </OnboardingRoute>
+  )},
+  {path: '/meal-logs', element: (
+    <ProtectedRoute>
+      <MealLogPage />
+    </ProtectedRoute>
   )}
 ])

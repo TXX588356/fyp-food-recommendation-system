@@ -1,0 +1,75 @@
+import type { MealLogItem } from "./mealLogTypes"
+
+export const formatRM = (value: number) => `RM ${value.toFixed(2)}`
+export const formatKcal = (value: number) => `${Math.round(value)} kcal`
+
+export const toMonthKey = (date: Date) => {
+    const year = date.getFullYear()
+    const month = `${date.getMonth() + 1}`.padStart(2, '0')
+    return `${year}-${month}`
+}
+
+export const parseMonthKey = (monthKey: string) => {
+    const [year, month] = monthKey.split('-').map(Number)
+    return new Date(year, month - 1, 1)
+}
+
+export const formatMonthTitle = (monthKey: string) => {
+    const date = parseMonthKey(monthKey)
+
+    return date.toLocaleDateString('en-US', {
+        month: 'long',
+        year: 'numeric',
+    })
+}
+
+export const getPreviousMonthKey = (monthKey: string) => {
+    const date = parseMonthKey(monthKey)
+    date.setMonth(date.getMonth() - 1)
+    return toMonthKey(date)
+} 
+
+export const getNextMonthKey = (monthKey: string) => {
+    const date = parseMonthKey(monthKey)
+    date.setMonth(date.getMonth() + 1)
+    return toMonthKey(date)
+}
+
+export const toDateTimeLocalValue = (date: Date) => {
+    const year = date.getFullYear()
+    const month = `${date.getMonth() + 1}`.padStart(2, '0')
+    const day = `${date.getDate()}`.padStart(2, '0') 
+    const hour = `${date.getHours()}`.padStart(2, '0') 
+    const minute = `${date.getMinutes()}`.padStart(2, '0') 
+
+    return `${year}-${month}-${day}T${hour}:${minute}`
+}
+
+export const fromDateTimeLocalValue = (value: string) => {
+    const date = new Date(value)
+
+    return date.toISOString()
+}
+
+export const groupLogsByDay = (items: MealLogItem[]) => {
+    return items.reduce<Record<string, MealLogItem[]>>((groups, item) => {
+        const day = new Date(item.eatenAt).getDate().toString()
+
+        return {
+            ...groups, 
+            [day]: [...(groups[day] ?? []), item],
+        }
+    }, {})
+}
+
+export const sumCalories = (items: MealLogItem[]) => 
+    items.reduce((total, item) => total + item.calories, 0)
+
+export const sumPrice = (items: MealLogItem[]) =>
+    items.reduce((total, item) => total + item.price, 0)
+
+export const formatMealTime = (value: string) => 
+    new Date(value).toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+    })

@@ -13,6 +13,8 @@ import { Link } from 'react-router-dom'
 
 import { useAuth } from '@/auth/useAuth'
 import './RecommendationPage.css'
+import type { LoggableMeal } from '../mealLog/mealLogTypes'
+import LogMealModal from '../mealLog/LogMealModal'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
@@ -262,7 +264,19 @@ export default function RecommendationPage() {
   const [generatedByCategory, setGeneratedByCategory] = useState<CategoryState<boolean>>(
     persistedRecommendations.generatedByCategory,
   )
+  
   const [errorsByCategory, setErrorsByCategory] = useState<CategoryState<string | null>>(emptyErrors)
+
+  const [mealToLog, setMealToLog] = useState<LoggableMeal | null>(null)
+
+  const openLogModal = (candidate: MatchedMealCandidate) => {
+    setMealToLog({
+      source: 'prebuilt',
+      mealId: candidate.food.id,
+      name: candidate.food.name,
+      calories: candidate.food.calories,
+    })
+  }
 
   const token = localStorage.getItem('token')
 
@@ -364,9 +378,22 @@ export default function RecommendationPage() {
         </Text>
       </Box>
 
-      <Button className="ui-meal-log-button" variant="subtle">
+      <Button 
+        className="ui-meal-log-button" 
+        variant="subtle"
+        onClick={() => openLogModal(candidate)}
+        >
         Log
       </Button>
+
+      <LogMealModal 
+        opened={mealToLog !== null}
+        meal={mealToLog}
+        onClose={() => setMealToLog(null)}
+        onLogged={() => {
+          setMealToLog(null)
+        }}
+      />
     </Box>
   )
 
