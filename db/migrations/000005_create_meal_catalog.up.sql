@@ -6,7 +6,6 @@ CREATE TABLE prebuilt_meals (
     normalized_name TEXT NOT NULL CHECK (btrim(normalized_name) <> ''),
     category_codes TEXT[] NOT NULL DEFAULT '{}'::text[],
     serving_description TEXT NOT NULL CHECK (btrim(serving_description) <> ''),
-    serving_gram_weight NUMERIC NOT NULL CHECK (serving_gram_weight > 0),
     calories NUMERIC CHECK (calories >= 0),
     protein_g NUMERIC CHECK (protein_g >= 0),
     carbs_g NUMERIC CHECK (carbs_g >= 0),
