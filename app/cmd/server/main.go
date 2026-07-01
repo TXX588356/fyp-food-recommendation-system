@@ -20,6 +20,9 @@ import (
 func Run(parent context.Context) error {
 	// Load config
 	cfg := config.Load()
+	if err := cfg.Validate(); err != nil {
+		return err
+	}
 
 	imageStorage, err := storage.NewMinIOImageStorage(parent, cfg.MinIOEndpoint, cfg.MinIOAccessKey, cfg.MinIOSecretKey, cfg.MinIOBucket, cfg.MinIOUseSSL, cfg.MinIOPublicURL)
 	if err != nil {
@@ -43,9 +46,18 @@ func Run(parent context.Context) error {
 	ctx, cancel := signal.NotifyContext(parent, os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
-	a := app.New(db, cfg.JWTSecret, cfg.GeminiAPIKey, imageStorage)
+	a := app.New(db, cfg.JWTSecret, cfg.GeminiAPIKey, imageStorage, cfg.MinIOPublicURL, cfg.MinIOBucket)
 	ctx = app.WithApp(ctx, a) // attach App instance to the context, allowing other codes to retrieve
 	endpoint.RegisterEndpoints(ctx, e)
+
+	catalogService, err := a.GetCatalogService(ctx)
+	if err != nil {
+		return err
+	}
+	endpoint.RegisterCatalogRoutes(e, catalogService, cfg.JWTSecret)
+	if cfg.CatalogAdminEnabled {
+		endpoint.RegisterCatalogAdminRoutes(e, catalogService, cfg.CatalogAdminToken)
+	}
 
 	// Start Echo
 	sc := echo.StartConfig{

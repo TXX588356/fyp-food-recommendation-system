@@ -14,13 +14,9 @@ import (
 	"github.com/labstack/echo/v5"
 )
 
-type prebuiltMealSearcher interface {
-	Search(ctx context.Context, query string) ([]mealdataset.PrebuiltMeal, error)
-}
-
 type mealSearchHandler struct {
 	customMealService interfaces.CustomMealService
-	prebuiltSearcher  prebuiltMealSearcher
+	catalogService    interfaces.CatalogService
 }
 
 type mealSearchResult struct {
@@ -49,14 +45,14 @@ func RegisterMealSearchRoutes(ctx context.Context, e *echo.Echo) {
 		log.Fatal("failed to get custom meal service", "error", err)
 	}
 
-	prebuiltSearcher, err := mealdataset.NewPrebuiltSearcher("internal/data/prebuilt_meals.json")
+	catalogService, err := a.GetCatalogService(ctx)
 	if err != nil {
-		log.Fatal("failed to load prebuilt meal searcher", "error", err)
+		log.Fatal("failed to get meal catalogue service", "error", err)
 	}
 
 	h := &mealSearchHandler{
 		customMealService: customMealService,
-		prebuiltSearcher:  prebuiltSearcher,
+		catalogService:    catalogService,
 	}
 
 	meals := e.Group("/meals", middleware.Auth(a.JWTSecret))
@@ -91,19 +87,22 @@ func (h *mealSearchHandler) searchMeals(c *echo.Context) error {
 		}
 	}
 
-	prebuiltMeals, err := h.prebuiltSearcher.Search(c.Request().Context(), query)
+	prebuiltPage, err := h.catalogService.SearchMeals(c.Request().Context(), interfaces.CatalogQuery{
+		Query: query,
+		Limit: 100,
+	})
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": err.Error(),
 		})
 	}
 
-	results := make([]mealSearchResult, 0, len(customMeals)+len(prebuiltMeals))
+	results := make([]mealSearchResult, 0, len(customMeals)+len(prebuiltPage.Items))
 	for _, meal := range customMeals {
 		results = append(results, customMealSearchResult(meal))
 	}
 
-	for _, meal := range prebuiltMeals {
+	for _, meal := range prebuiltPage.Items {
 		results = append(results, prebuiltMealSearchResult(meal))
 	}
 
@@ -141,18 +140,31 @@ func customMealSearchResult(meal *interfaces.CustomMealResponse) mealSearchResul
 	}
 }
 
-func prebuiltMealSearchResult(meal mealdataset.PrebuiltMeal) mealSearchResult {
+func prebuiltMealSearchResult(meal interfaces.CatalogMeal) mealSearchResult {
+	nutrition := meal.SelectedNutrition
+	imageURL := ""
+	if meal.Image != nil {
+		imageURL = meal.Image.URL
+	}
+
 	return mealSearchResult{
-		ID:       mealdataset.PrebuiltMealID(meal),
+		ID:       meal.ID.String(),
 		Name:     meal.Name,
 		Source:   "prebuilt",
-		Tags:     []string(meal.Category),
-		Calories: meal.Calories,
-		FatG:     meal.Fat,
-		ProteinG: meal.Protein,
-		CarbsG:   meal.Carbs,
-		ImageURL: meal.ImageURL,
+		Tags:     meal.Categories,
+		Calories: float64Value(nutrition.Calories),
+		FatG:     float64Value(nutrition.FatG),
+		ProteinG: float64Value(nutrition.ProteinG),
+		CarbsG:   float64Value(nutrition.CarbsG),
+		ImageURL: imageURL,
 	}
+}
+
+func float64Value(value *float64) float64 {
+	if value == nil {
+		return 0
+	}
+	return *value
 }
 
 func init() {

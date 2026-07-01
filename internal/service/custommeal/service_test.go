@@ -52,7 +52,7 @@ var _ = Describe("Custom meal service", func() {
 				"halal",
 			},
 			MealCategoryTags: []string{
-				"nuts",
+				"nuts_seeds",
 				"snacks",
 			},
 			ImageURL: "http://localhost:9000/images/custom-meals/test.jpg",
@@ -77,7 +77,7 @@ var _ = Describe("Custom meal service", func() {
 				{DietaryRestrictionTag: "halal"},
 			},
 			MealCategoryTags: []model.CustomMealCategoryTag{
-				{MealCategory: "nuts"},
+				{MealCategory: "nuts_seeds"},
 				{MealCategory: "snacks"},
 			},
 		}
@@ -107,7 +107,7 @@ var _ = Describe("Custom meal service", func() {
 			Expect(response.IsOwner).To(BeTrue())
 			Expect(response.IsShared).To(BeFalse())
 			Expect(response.DietaryRestrictionTags).To(Equal([]string{"halal"}))
-			Expect(response.MealCategoryTags).To(Equal([]string{"nuts", "snacks"}))
+			Expect(response.MealCategoryTags).To(Equal([]string{"nuts_seeds", "snacks"}))
 		})
 
 		It("should reject missing name", func() {
@@ -226,7 +226,7 @@ var _ = Describe("Custom meal service", func() {
 			Expect(response.IsOwner).To(BeTrue())
 			Expect(response.IsShared).To(BeFalse())
 			Expect(response.DietaryRestrictionTags).To(Equal([]string{"halal"}))
-			Expect(response.MealCategoryTags).To(Equal([]string{"nuts", "snacks"}))
+			Expect(response.MealCategoryTags).To(Equal([]string{"nuts_seeds", "snacks"}))
 		})
 	})
 
@@ -262,7 +262,7 @@ var _ = Describe("Custom meal service", func() {
 			Expect(response.IsOwner).To(BeTrue())
 			Expect(response.IsShared).To(BeFalse())
 			Expect(response.DietaryRestrictionTags).To(Equal([]string{"halal"}))
-			Expect(response.MealCategoryTags).To(Equal([]string{"nuts", "snacks"}))
+			Expect(response.MealCategoryTags).To(Equal([]string{"nuts_seeds", "snacks"}))
 		})
 
 		It("should reject invalid input before calling the repository", func() {

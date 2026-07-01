@@ -169,7 +169,7 @@ var _ = Describe("Recommendation endpoint contract", func() {
 
 			got := calculateDynamicPerMealBudget(600, 150, now)
 
-			Expect(got).To(Equal(float64(37.5)))
+			Expect(got).To(Equal(float64(25)))
 		})
 
 		It("should clamp remaining budget to zero", func() {

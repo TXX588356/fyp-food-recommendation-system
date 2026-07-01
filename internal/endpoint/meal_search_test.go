@@ -8,7 +8,7 @@ import (
 	"fyp/food-rs/internal/endpoint/middleware"
 	"fyp/food-rs/internal/interfaces"
 	"fyp/food-rs/internal/mocks"
-	"fyp/food-rs/internal/service/mealdataset"
+	"fyp/food-rs/types/model"
 	"net/http"
 	"net/http/httptest"
 	"time"
@@ -21,21 +21,39 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-type fakePrebuiltMealSearcher struct {
-	meals []mealdataset.PrebuiltMeal
+type fakeCatalogService struct {
+	meals []interfaces.CatalogMeal
 	err   error
 	query string
 }
 
-func (s *fakePrebuiltMealSearcher) Search(_ context.Context, query string) ([]mealdataset.PrebuiltMeal, error) {
-	s.query = query
-	return s.meals, s.err
+func (s *fakeCatalogService) SearchMeals(_ context.Context, query interfaces.CatalogQuery) (interfaces.CatalogMealPage, error) {
+	s.query = query.Query
+	return interfaces.CatalogMealPage{Items: s.meals}, s.err
+}
+func (*fakeCatalogService) GetMeal(context.Context, uuid.UUID) (interfaces.CatalogMeal, error) {
+	return interfaces.CatalogMeal{}, interfaces.ErrCatalogNotFound
+}
+func (*fakeCatalogService) ListCategories(context.Context) ([]interfaces.CatalogCategory, error) {
+	return nil, nil
+}
+func (*fakeCatalogService) CreateGeneratedMeal(context.Context, interfaces.GeneratedCatalogMealInput) (interfaces.CatalogMeal, error) {
+	return interfaces.CatalogMeal{}, nil
+}
+func (*fakeCatalogService) ListImages(context.Context, interfaces.CatalogImageQuery) ([]model.PrebuiltMealImage, string, error) {
+	return nil, "", nil
+}
+func (*fakeCatalogService) GetImage(context.Context, uuid.UUID) (*model.PrebuiltMealImage, error) {
+	return nil, interfaces.ErrCatalogNotFound
+}
+func (*fakeCatalogService) ApplyImageAction(context.Context, uuid.UUID, interfaces.CatalogImageAction) (*model.PrebuiltMealImage, error) {
+	return nil, interfaces.ErrCatalogNotFound
 }
 
-func registerMealSearchTestRoutes(e *echo.Echo, customMealService interfaces.CustomMealService, prebuiltSearcher prebuiltMealSearcher, jwtSecret string) {
+func registerMealSearchTestRoutes(e *echo.Echo, customMealService interfaces.CustomMealService, catalogService interfaces.CatalogService, jwtSecret string) {
 	handler := &mealSearchHandler{
 		customMealService: customMealService,
-		prebuiltSearcher:  prebuiltSearcher,
+		catalogService:    catalogService,
 	}
 
 	meals := e.Group("/meals", middleware.Auth(jwtSecret))
@@ -77,7 +95,7 @@ var _ = Describe("Meal search endpoints", func() {
 	var (
 		e                 *echo.Echo
 		customMealService *mocks.CustomMealService
-		prebuiltSearcher  *fakePrebuiltMealSearcher
+		catalogService    *fakeCatalogService
 		userID            uuid.UUID
 		token             string
 	)
@@ -85,11 +103,11 @@ var _ = Describe("Meal search endpoints", func() {
 	BeforeEach(func() {
 		e = echo.New()
 		customMealService = mocks.NewCustomMealService(GinkgoT())
-		prebuiltSearcher = &fakePrebuiltMealSearcher{}
+		catalogService = &fakeCatalogService{}
 		userID = uuid.New()
 		token = generateMealSearchTestToken(userID, jwtSecret)
 
-		registerMealSearchTestRoutes(e, customMealService, prebuiltSearcher, jwtSecret)
+		registerMealSearchTestRoutes(e, customMealService, catalogService, jwtSecret)
 	})
 
 	It("should return matching custom meals and prebuilt meals", func() {
@@ -109,16 +127,19 @@ var _ = Describe("Meal search endpoints", func() {
 				},
 			}, nil).
 			Once()
-		prebuiltSearcher.meals = []mealdataset.PrebuiltMeal{
+		calories, protein, carbs, fat := 607.0, 26.0, 75.0, 23.0
+		catalogService.meals = []interfaces.CatalogMeal{
 			{
-				ID:       "hainanese-chicken-rice",
-				Name:     "Hainanese Chicken Rice",
-				Calories: 607,
-				Protein:  26,
-				Carbs:    75,
-				Fat:      23,
-				Category: mealdataset.CategoryTags{"Rice"},
-				ImageURL: "https://example.com/chicken-rice.jpg",
+				ID:         uuid.New(),
+				Name:       "Hainanese Chicken Rice",
+				Categories: []string{"rice_dishes"},
+				SelectedNutrition: interfaces.CatalogNutrition{
+					Calories: &calories,
+					ProteinG: &protein,
+					CarbsG:   &carbs,
+					FatG:     &fat,
+				},
+				Image: &interfaces.CatalogImage{URL: "https://example.com/chicken-rice.jpg"},
 			},
 		}
 
