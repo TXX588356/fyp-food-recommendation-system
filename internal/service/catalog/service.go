@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"strings"
 
 	"fyp/food-rs/internal/interfaces"
 	"fyp/food-rs/types/model"
+
 	"github.com/google/uuid"
 )
 
@@ -79,7 +81,7 @@ func (s *Service) mapMeal(meal model.PrebuiltMeal) (interfaces.CatalogMeal, erro
 		SourceCode:        meal.SourceCode,
 		SourceRecordID:    meal.SourceRecordID,
 		Categories:        []string(meal.CategoryCodes),
-		SelectedPortion:   interfaces.CatalogPortion{Amount: 1, Description: meal.ServingDescription, GramWeight: meal.ServingGramWeight},
+		SelectedPortion:   interfaces.CatalogPortion{Amount: 1, Description: meal.ServingDescription},
 		SelectedNutrition: nutrition(meal),
 	}
 	if len(meal.Images) > 0 && meal.Images[0].MinioObjectKey != nil {
@@ -87,6 +89,36 @@ func (s *Service) mapMeal(meal model.PrebuiltMeal) (interfaces.CatalogMeal, erro
 		result.Image = &interfaces.CatalogImage{ID: image.ID, URL: s.urlResolver.Resolve(*image.MinioObjectKey), Attribution: value(image.AttributionText), SourceURL: value(image.CommonsPageURL), License: value(image.LicenseName), LicenseURL: value(image.LicenseURL)}
 	}
 	return result, nil
+}
+
+func (s *Service) CreateGeneratedMeal(ctx context.Context, input interfaces.GeneratedCatalogMealInput) (interfaces.CatalogMeal, error) {
+	if strings.TrimSpace(input.Name) == "" {
+		return interfaces.CatalogMeal{}, interfaces.ErrInvalidCatalogQuery
+	}
+	if len(input.CategoryCodes) == 0 {
+		return interfaces.CatalogMeal{}, interfaces.ErrInvalidCatalogQuery
+	}
+	if strings.TrimSpace(input.ServingDescription) == "" {
+		return interfaces.CatalogMeal{}, interfaces.ErrInvalidCatalogQuery
+	}
+	if input.Calories < 0 || input.ProteinG < 0 || input.FatG < 0 || input.CarbsG < 0 {
+		return interfaces.CatalogMeal{}, interfaces.ErrInvalidCatalogQuery
+	}
+
+	valid, err := s.repository.CategoryCodesExist(ctx, input.CategoryCodes)
+	if err != nil {
+		return interfaces.CatalogMeal{}, err
+	}
+	if !valid {
+		return interfaces.CatalogMeal{}, interfaces.ErrInvalidCatalogQuery
+	}
+
+	meal, err := s.repository.CreateGeneratedMeal(ctx, input)
+	if err != nil {
+		return interfaces.CatalogMeal{}, err
+	}
+
+	return s.mapMeal(*meal)
 }
 
 func nutrition(meal model.PrebuiltMeal) interfaces.CatalogNutrition {

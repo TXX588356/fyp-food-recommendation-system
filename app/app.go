@@ -192,6 +192,16 @@ func (a *App) GetRecommendationService(ctx context.Context) (interfaces.Recommen
 		return nil, err
 	}
 
+	customMealAutocompleter, err := a.GetCustomMealAutocompleter(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	catalogService, err := a.GetCatalogService(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	prebuiltSearcher, err := a.GetCatalogFoodSearcher(ctx)
 	if err != nil {
 		return nil, err
@@ -199,7 +209,7 @@ func (a *App) GetRecommendationService(ctx context.Context) (interfaces.Recommen
 
 	foodSearcher := mealsearch.NewCombinedSearcher(customMealService, prebuiltSearcher)
 
-	a.recommendationService = recommendationService.NewService(mealGenerator, foodSearcher)
+	a.recommendationService = recommendationService.NewService(mealGenerator, foodSearcher, catalogService, customMealAutocompleter)
 
 	return a.recommendationService, nil
 }

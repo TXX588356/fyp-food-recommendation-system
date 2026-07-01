@@ -11,19 +11,23 @@ import (
 )
 
 type service struct {
-	mealGenerator interfaces.MealGenerator
-	foodSearcher  interfaces.FoodSearcher
+	mealGenerator           interfaces.MealGenerator
+	foodSearcher            interfaces.FoodSearcher
+	catalogService          interfaces.CatalogService
+	customMealAutocompleter interfaces.CustomMealAutocompleter
 }
 
-func NewService(mealGenerator interfaces.MealGenerator, foodSearcher interfaces.FoodSearcher) interfaces.RecommendationService {
+func NewService(mealGenerator interfaces.MealGenerator, foodSearcher interfaces.FoodSearcher, catalogService interfaces.CatalogService, customMealAutocompleter interfaces.CustomMealAutocompleter) interfaces.RecommendationService {
 	return &service{
-		mealGenerator: mealGenerator,
-		foodSearcher:  foodSearcher,
+		mealGenerator:           mealGenerator,
+		foodSearcher:            foodSearcher,
+		catalogService:          catalogService,
+		customMealAutocompleter: customMealAutocompleter,
 	}
 }
 
 // GenerateCandidates requests meal suggestions from Gemini and enriches each
-// cancidate with factual macro nutrition data from the food searcher
+// candidate with factual macro nutrition data from the food searcher
 func (s *service) GenerateCandidates(ctx context.Context, userID uuid.UUID, input interfaces.MealPromptInput) ([]interfaces.MatchedMealCandidate, error) {
 	slog.Info("recommendation generation started",
 		"user_id", userID,
@@ -73,11 +77,19 @@ func (s *service) GenerateCandidates(ctx context.Context, userID uuid.UUID, inpu
 		}
 
 		if !found {
-			slog.Info("generated meal skipped: no dataset/custom match",
+			slog.Info("generated meal unmatched; attempting prebuilt catalog auto-create",
 				"user_id", userID,
 				"meal_name", meal.Name,
 			)
-			continue
+
+			candidate, err = s.createMissingGeneratedCatalogMeal(ctx, userID, meal)
+			if err != nil {
+				slog.Error("generated meal catalog auto-create failed",
+					"user_id", userID,
+					"meal_name", meal.Name,
+					"error", err)
+				continue
+			}
 		}
 
 		slog.Info("generated meal matched",
@@ -96,6 +108,36 @@ func (s *service) GenerateCandidates(ctx context.Context, userID uuid.UUID, inpu
 	)
 
 	return candidates, nil
+}
+
+func (s *service) createMissingGeneratedCatalogMeal(ctx context.Context, userID uuid.UUID, meal interfaces.GeneratedMeal) (interfaces.MatchedMealCandidate, error) {
+	details, err := s.customMealAutocompleter.AutocompleteCustomMeal(ctx, interfaces.CustomMealAutocompleteInput{
+		Name: meal.Name,
+	})
+
+	if err != nil {
+		return interfaces.MatchedMealCandidate{}, fmt.Errorf("autocomplete generated catalog meal %q: %w", meal.Name, err)
+	}
+
+	catalogMeal, err := s.catalogService.CreateGeneratedMeal(ctx, interfaces.GeneratedCatalogMealInput{
+		Name:               meal.Name,
+		CategoryCodes:      details.MealCategoryTags,
+		ServingDescription: "1 serving",
+		Calories:           details.Calories,
+		ProteinG:           details.ProteinG,
+		CarbsG:             details.CarbsG,
+		FatG:               details.FatG,
+	})
+
+	if err != nil {
+		return interfaces.MatchedMealCandidate{}, fmt.Errorf("create generated catalog meal %q: %w", meal.Name, err)
+	}
+
+	return interfaces.MatchedMealCandidate{
+		GeneratedMeal: meal,
+		MatchedQuery:  meal.Name,
+		Food:          catalogMealToFoodSearchResult(catalogMeal),
+	}, nil
 }
 
 // matchFood tries the normalized Gemini name first, followed by each fallback search term.
@@ -125,6 +167,31 @@ func (s *service) matchFood(ctx context.Context, userID uuid.UUID, meal interfac
 	}
 
 	return interfaces.MatchedMealCandidate{}, false, nil
+}
+
+func catalogMealToFoodSearchResult(meal interfaces.CatalogMeal) interfaces.FoodSearchResult {
+	result := interfaces.FoodSearchResult{
+		ID:   meal.ID.String(),
+		Name: meal.Name,
+		Tags: meal.Categories,
+	}
+	if meal.SelectedNutrition.Calories != nil {
+		result.Calories = *meal.SelectedNutrition.Calories
+	}
+	if meal.SelectedNutrition.FatG != nil {
+		result.FatG = *meal.SelectedNutrition.FatG
+	}
+	if meal.SelectedNutrition.ProteinG != nil {
+		result.ProteinG = *meal.SelectedNutrition.ProteinG
+	}
+	if meal.SelectedNutrition.CarbsG != nil {
+		result.CarbsG = *meal.SelectedNutrition.CarbsG
+	}
+	if meal.Image != nil {
+		result.ImageURL = meal.Image.URL
+	}
+
+	return result
 }
 
 // buildSearchTerms returns unique non-empty lookup terms in priority order.

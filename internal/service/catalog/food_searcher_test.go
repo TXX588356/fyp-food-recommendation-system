@@ -11,7 +11,7 @@ import (
 func TestFoodSearcherUsesDefaultPortionAndCompleteMacros(t *testing.T) {
 	id := uuid.New()
 	repo := &testRepository{meals: []model.PrebuiltMeal{{
-		ID: id, Name: "Soup", CategoryCodes: []string{"soups"}, ServingDescription: "bowl", ServingGramWeight: 300,
+		ID: id, Name: "Soup", CategoryCodes: []string{"soups"}, ServingDescription: "bowl",
 		Calories: float(240), ProteinG: float(12), CarbsG: float(30), FatG: float(6),
 	}}}
 	searcher := NewFoodSearcher(NewService(repo, testResolver{}))
