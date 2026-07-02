@@ -39,5 +39,6 @@ type CustomMealRepository interface {
 
 type MealLogRepository interface {
 	Create(ctx context.Context, mealLog *model.MealLog) (*model.MealLog, error)
-	ListByUserAndMonth(ctx context.Context, userID uuid.UUID, start time.Time, end time.Time) ([]model.MealLog, error)
+	ListByUserAndMonth(ctx context.Context, userID uuid.UUID, start, end time.Time) ([]model.MealLog, error)
+	ListByUserAndRange(ctx context.Context, userID uuid.UUID, start, end time.Time) ([]model.MealLog, error)
 }

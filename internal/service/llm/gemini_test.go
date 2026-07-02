@@ -45,6 +45,26 @@ func validResponse() interfaces.GeminiMealsResponse {
 	}
 }
 
+func TestBuildPromptWithRecentMealContext(t *testing.T) {
+	prompt := BuildMealRecommendationPrompt(interfaces.MealPromptInput{
+		Goal:         "eat_healthier",
+		MealCategory: "dinner",
+		History: interfaces.MealHistoryContext{
+			RecentMealNames:   []string{"Nasi Lemak", "Fried Chicken"},
+			RepeatedMealNames: []string{"Nasi Lemak"},
+		},
+	})
+
+	for _, expected := range []string{
+		"Recent meals: Nasi Lemak, Fried Chicken",
+		"Repeated meals to avoid: Nasi Lemak",
+	} {
+		if !strings.Contains(prompt, expected) {
+			t.Fatalf("expected prompt to contain %q: \n%s", expected, prompt)
+		}
+	}
+}
+
 var _ = Describe("Gemini meal generation", func() {
 	Describe("ParseMeals", func() {
 		It("accepts a valid JSON response", func() {

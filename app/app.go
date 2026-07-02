@@ -182,6 +182,8 @@ func (a *App) GetRecommendationService(ctx context.Context) (interfaces.Recommen
 		return a.recommendationService, nil
 	}
 
+	mealLogRepo := postgres.NewMealLogPostgresRepository(a.PostgresDB)
+
 	mealGenerator, err := a.GetAIClient(ctx)
 	if err != nil {
 		return nil, err
@@ -209,7 +211,7 @@ func (a *App) GetRecommendationService(ctx context.Context) (interfaces.Recommen
 
 	foodSearcher := mealsearch.NewCombinedSearcher(customMealService, prebuiltSearcher)
 
-	a.recommendationService = recommendationService.NewService(mealGenerator, foodSearcher, catalogService, customMealAutocompleter)
+	a.recommendationService = recommendationService.NewService(mealGenerator, foodSearcher, catalogService, customMealAutocompleter, mealLogRepo)
 
 	return a.recommendationService, nil
 }

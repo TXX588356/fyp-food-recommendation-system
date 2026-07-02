@@ -36,3 +36,14 @@ func (r *mealLogRepository) ListByUserAndMonth(ctx context.Context, userID uuid.
 
 	return logs, err
 }
+
+func (r *mealLogRepository) ListByUserAndRange(ctx context.Context, userID uuid.UUID, start, end time.Time) ([]model.MealLog, error) {
+	var logs []model.MealLog
+
+	err := r.db.WithContext(ctx).
+		Where("user_id = ?, AND eaten_at >= ? AND eaten_at < ? AND deleted_at IS NULL", userID, start, end).
+		Order("eaten_at DESC").
+		Find(&logs).Error
+
+	return logs, err
+}

@@ -177,6 +177,15 @@ func BuildMealRecommendationPrompt(input interfaces.MealPromptInput) string {
 	- Price market location: %s
 	- Location basis: weekday/work-school or weekend/home
 
+	USER RECENT MEAL HISTORY:
+	- Recent meals: %s
+	- Repeated meals to avoid: %s
+
+	HISTORY RULES: 
+	- Avoid recommending repeated meals unless they are strongly aligned with user goals.
+	- Prefer variety across meal names and meal categories.
+	- Do not use calorie totals to decide recommendations; calories are tracked separately in meal logs.
+
 	HEALTH CONCERN MAPPINGS:
 	- high_blood_pressure: focus on lower-sodium meals
 	- diabetes: focus on lower-sugar meals with moderate carbohydrates
@@ -249,6 +258,8 @@ func BuildMealRecommendationPrompt(input interfaces.MealPromptInput) string {
 		input.RemainingBudget,
 		input.PerMealBudget,
 		input.PriceMarketLocation,
+		displayHistoryList(input.History.RecentMealNames),
+		displayHistoryList(input.History.RepeatedMealNames),
 	)
 }
 
@@ -422,4 +433,11 @@ func displayValue(value string) string {
 		return "none"
 	}
 	return value
+}
+
+func displayHistoryList(values []string) string {
+	if len(values) == 0 {
+		return "none"
+	}
+	return strings.Join(values, ", ")
 }

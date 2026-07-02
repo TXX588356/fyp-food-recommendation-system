@@ -6,6 +6,7 @@ import (
 	"fyp/food-rs/internal/interfaces"
 	"log/slog"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -15,14 +16,18 @@ type service struct {
 	foodSearcher            interfaces.FoodSearcher
 	catalogService          interfaces.CatalogService
 	customMealAutocompleter interfaces.CustomMealAutocompleter
+	mealLogRepository       interfaces.MealLogRepository
+	now                     func() time.Time
 }
 
-func NewService(mealGenerator interfaces.MealGenerator, foodSearcher interfaces.FoodSearcher, catalogService interfaces.CatalogService, customMealAutocompleter interfaces.CustomMealAutocompleter) interfaces.RecommendationService {
+func NewService(mealGenerator interfaces.MealGenerator, foodSearcher interfaces.FoodSearcher, catalogService interfaces.CatalogService, customMealAutocompleter interfaces.CustomMealAutocompleter, mealLogRepository interfaces.MealLogRepository) interfaces.RecommendationService {
 	return &service{
 		mealGenerator:           mealGenerator,
 		foodSearcher:            foodSearcher,
 		catalogService:          catalogService,
 		customMealAutocompleter: customMealAutocompleter,
+		mealLogRepository:       mealLogRepository,
+		now:                     time.Now,
 	}
 }
 
@@ -39,6 +44,14 @@ func (s *service) GenerateCandidates(ctx context.Context, userID uuid.UUID, inpu
 		"user_id", userID,
 		"meal_category", input.MealCategory,
 	)
+
+	// Load history
+	historyStart := s.now().AddDate(0, 0, -30)
+	historyLogs, err := s.mealLogRepository.ListByUserAndRange(ctx, userID, historyStart, s.now().AddDate(0, 0, 1))
+	if err != nil {
+		return nil, fmt.Errorf("load recommendation history: %w", err)
+	}
+	input.History = buildMealHistoryContext(historyLogs, s.now())
 
 	response, err := s.mealGenerator.GenerateMeals(ctx, input)
 	if err != nil {

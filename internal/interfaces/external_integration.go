@@ -20,6 +20,7 @@ type MealPromptInput struct {
 
 	PriceMarketLocation     string
 	PriceMarketLocationType string // "weekday" or "weekend"
+	History                 MealHistoryContext
 }
 
 type PriceRange struct {
@@ -58,6 +59,13 @@ type FoodSearchResult struct {
 	ProteinG float64  `json:"protein_g"`
 	CarbsG   float64  `json:"carbs_g"`
 	ImageURL string   `json:"image_url,omitempty"`
+}
+
+type MealHistoryContext struct {
+	RecentMealNames      []string
+	RecentCategoryCounts map[string]int
+	RepeatedMealNames    []string
+	RecentlyEatenByName  map[string]int
 }
 
 type MealGenerator interface {
