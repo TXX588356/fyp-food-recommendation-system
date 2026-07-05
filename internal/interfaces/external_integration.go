@@ -61,11 +61,12 @@ type FoodSearchResult struct {
 	ImageURL string   `json:"image_url,omitempty"`
 }
 
+// MealHistoryContext shows the summary of user's meal log history
 type MealHistoryContext struct {
-	RecentMealNames      []string
-	RecentCategoryCounts map[string]int
-	RepeatedMealNames    []string
-	RecentlyEatenByName  map[string]int
+	RecentMealNames      []string       // List of recently eaten meal names
+	RecentCategoryCounts map[string]int // Appearance count for each meal category
+	RepeatedMealNames    []string       // Names that appears more than once in recent history
+	RecentlyEatenByName  map[string]int // Maps meal name to how many days ago it was last eaten (for scoring, ranking)
 }
 
 type MealGenerator interface {

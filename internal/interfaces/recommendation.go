@@ -7,9 +7,9 @@ import (
 )
 
 type MatchedMealCandidate struct {
-	GeneratedMeal GeneratedMeal    `json:"generated_meal"`
-	Food          FoodSearchResult `json:"food"`
-	MatchedQuery  string           `json:"matched_query"`
+	GeneratedMeal GeneratedMeal    `json:"generated_meal"` // Meal produced by Gemini
+	Food          FoodSearchResult `json:"food"`           // Matched food data from catalog / custom meal
+	MatchedQuery  string           `json:"matched_query"`  // Records of successfull matched with generated meals
 }
 
 type RecommendationService interface {

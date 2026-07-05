@@ -461,7 +461,7 @@ export default function RecommendationPage() {
                       {isLoading && (
                         <Box className="ui-recommendation-state ui-card">
                           <RecommendationIcon name="sparkle" size={28} />
-                          <Text fw={900}>Generating {option.label.toLowerCase()} meals...</Text>
+                          <Text fw={900}>Generating and sorting {option.label.toLowerCase()} meals...</Text>
                         </Box>
                       )}
 

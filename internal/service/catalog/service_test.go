@@ -8,6 +8,8 @@ import (
 	"fyp/food-rs/types/model"
 
 	"github.com/google/uuid"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 type testRepository struct {
@@ -70,112 +72,103 @@ func (testResolver) Resolve(key string) string { return "https://images.test/" +
 func float(value float64) *float64 { return &value }
 func str(value string) *string     { return &value }
 
-func TestGetMealReturnsStoredServingNutritionAndImageURL(t *testing.T) {
-	mealID, imageID := uuid.New(), uuid.New()
-	repo := &testRepository{meal: &model.PrebuiltMeal{
-		ID: mealID, Name: "Fried Rice", SourceCode: "usda_fndds", SourceRecordID: "270001",
-		CategoryCodes: []string{"rice_dishes", "indonesian"}, ServingDescription: "plate",
-		Calories: float(500), ProteinG: float(25), CarbsG: float(75), FatG: float(12.5),
-		Images: []model.PrebuiltMealImage{{ID: imageID, MinioObjectKey: str("catalog-meals/x.jpg"), IsPrimary: true}},
-	}}
-	service := NewService(repo, testResolver{})
-
-	got, err := service.GetMeal(context.Background(), mealID)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got.SelectedNutrition.Calories == nil || *got.SelectedNutrition.Calories != 500 {
-		t.Fatalf("expected 500 calories, got %#v", got.SelectedNutrition.Calories)
-	}
-	if got.SelectedPortion.Description != "plate" || got.SourceCode != "usda_fndds" {
-		t.Fatalf("unexpected flattened meal mapping: %#v", got)
-	}
-	if got.Image == nil || got.Image.URL != "https://images.test/catalog-meals/x.jpg" {
-		t.Fatalf("unexpected image: %#v", got.Image)
-	}
+func TestCatalogService(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Catalog Service Suite")
 }
 
-func TestSearchMealsRejectsExcessiveLimit(t *testing.T) {
-	service := NewService(&testRepository{}, testResolver{})
-	_, err := service.SearchMeals(context.Background(), interfaces.CatalogQuery{Limit: 101})
-	if err != interfaces.ErrInvalidCatalogQuery {
-		t.Fatalf("expected invalid query, got %v", err)
-	}
-}
+var _ = Describe("Catalog service", func() {
+	It("should return stored serving nutrition and image URL", func() {
+		mealID, imageID := uuid.New(), uuid.New()
+		repo := &testRepository{meal: &model.PrebuiltMeal{
+			ID: mealID, Name: "Fried Rice", SourceCode: "usda_fndds", SourceRecordID: "270001",
+			CategoryCodes: []string{"rice_dishes", "indonesian"}, ServingDescription: "plate",
+			Calories: float(500), ProteinG: float(25), CarbsG: float(75), FatG: float(12.5),
+			Images: []model.PrebuiltMealImage{{ID: imageID, MinioObjectKey: str("catalog-meals/x.jpg"), IsPrimary: true}},
+		}}
+		service := NewService(repo, testResolver{})
 
-func TestCreateGeneratedMealCreatesAndMapsCatalogMeal(t *testing.T) {
-	repo := &testRepository{categoriesOK: true}
-	service := NewService(repo, testResolver{})
+		got, err := service.GetMeal(context.Background(), mealID)
 
-	got, err := service.CreateGeneratedMeal(context.Background(), interfaces.GeneratedCatalogMealInput{
-		Name:               "Unknown Meal",
-		CategoryCodes:      []string{"rice_dishes"},
-		ServingDescription: "1 serving",
-		Calories:           500,
-		ProteinG:           24,
-		CarbsG:             62,
-		FatG:               18,
+		Expect(err).NotTo(HaveOccurred())
+		Expect(got.SelectedNutrition.Calories).NotTo(BeNil())
+		Expect(*got.SelectedNutrition.Calories).To(Equal(float64(500)))
+		Expect(got.SelectedPortion.Description).To(Equal("plate"))
+		Expect(got.SourceCode).To(Equal("usda_fndds"))
+		Expect(got.Image).NotTo(BeNil())
+		Expect(got.Image.URL).To(Equal("https://images.test/catalog-meals/x.jpg"))
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
 
-	if repo.createdInput == nil {
-		t.Fatal("expected repository CreateGeneratedMeal to be called")
-	}
-	if repo.createdInput.Name != "Unknown Meal" || repo.createdInput.CategoryCodes[0] != "rice_dishes" {
-		t.Fatalf("unexpected create input: %#v", repo.createdInput)
-	}
-	if got.SourceCode != "ai_generated" || got.SourceRecordID != "gemini:test-meal" {
-		t.Fatalf("unexpected generated source mapping: %#v", got)
-	}
-	if got.SelectedNutrition.Calories == nil || *got.SelectedNutrition.Calories != 500 {
-		t.Fatalf("expected generated calories to be mapped, got %#v", got.SelectedNutrition.Calories)
-	}
-	if got.SelectedPortion.Description != "1 serving" {
-		t.Fatalf("unexpected generated portion: %#v", got.SelectedPortion)
-	}
-}
+	It("should reject excessive search limits", func() {
+		service := NewService(&testRepository{}, testResolver{})
 
-func TestCreateGeneratedMealRejectsInvalidInput(t *testing.T) {
-	valid := interfaces.GeneratedCatalogMealInput{
-		Name:               "Unknown Meal",
-		CategoryCodes:      []string{"rice_dishes"},
-		ServingDescription: "1 serving",
-		Calories:           500,
-		ProteinG:           24,
-		CarbsG:             62,
-		FatG:               18,
-	}
+		_, err := service.SearchMeals(context.Background(), interfaces.CatalogQuery{Limit: 101})
 
-	for _, test := range []struct {
-		name         string
-		input        interfaces.GeneratedCatalogMealInput
-		categoriesOK bool
-	}{
-		{name: "empty category codes", input: func() interfaces.GeneratedCatalogMealInput {
-			input := valid
-			input.CategoryCodes = nil
-			return input
-		}(), categoriesOK: true},
-		{name: "unsupported category codes", input: valid, categoriesOK: false},
-		{name: "empty serving description", input: func() interfaces.GeneratedCatalogMealInput {
-			input := valid
-			input.ServingDescription = " "
-			return input
-		}(), categoriesOK: true},
-	} {
-		t.Run(test.name, func(t *testing.T) {
+		Expect(err).To(MatchError(interfaces.ErrInvalidCatalogQuery))
+	})
+
+	It("should create and map generated catalog meals", func() {
+		repo := &testRepository{categoriesOK: true}
+		service := NewService(repo, testResolver{})
+
+		got, err := service.CreateGeneratedMeal(context.Background(), interfaces.GeneratedCatalogMealInput{
+			Name:               "Unknown Meal",
+			CategoryCodes:      []string{"rice_dishes"},
+			ServingDescription: "1 serving",
+			Calories:           500,
+			ProteinG:           24,
+			CarbsG:             62,
+			FatG:               18,
+		})
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(repo.createdInput).NotTo(BeNil())
+		Expect(repo.createdInput.Name).To(Equal("Unknown Meal"))
+		Expect(repo.createdInput.CategoryCodes).To(Equal([]string{"rice_dishes"}))
+		Expect(got.SourceCode).To(Equal("ai_generated"))
+		Expect(got.SourceRecordID).To(Equal("gemini:test-meal"))
+		Expect(got.SelectedNutrition.Calories).NotTo(BeNil())
+		Expect(*got.SelectedNutrition.Calories).To(Equal(float64(500)))
+		Expect(got.SelectedPortion.Description).To(Equal("1 serving"))
+	})
+
+	It("should reject invalid generated meal input", func() {
+		valid := interfaces.GeneratedCatalogMealInput{
+			Name:               "Unknown Meal",
+			CategoryCodes:      []string{"rice_dishes"},
+			ServingDescription: "1 serving",
+			Calories:           500,
+			ProteinG:           24,
+			CarbsG:             62,
+			FatG:               18,
+		}
+
+		tests := []struct {
+			name         string
+			input        interfaces.GeneratedCatalogMealInput
+			categoriesOK bool
+		}{
+			{name: "empty category codes", input: func() interfaces.GeneratedCatalogMealInput {
+				input := valid
+				input.CategoryCodes = nil
+				return input
+			}(), categoriesOK: true},
+			{name: "unsupported category codes", input: valid, categoriesOK: false},
+			{name: "empty serving description", input: func() interfaces.GeneratedCatalogMealInput {
+				input := valid
+				input.ServingDescription = " "
+				return input
+			}(), categoriesOK: true},
+		}
+
+		for _, test := range tests {
 			repo := &testRepository{categoriesOK: test.categoriesOK}
 			service := NewService(repo, testResolver{})
 
 			_, err := service.CreateGeneratedMeal(context.Background(), test.input)
-			if err != interfaces.ErrInvalidCatalogQuery {
-				t.Fatalf("expected invalid catalog query, got %v", err)
-			}
-			if repo.createdInput != nil {
-				t.Fatalf("repository should not create invalid generated meal: %#v", repo.createdInput)
-			}
-		})
-	}
-}
+
+			Expect(err).To(MatchError(interfaces.ErrInvalidCatalogQuery), test.name)
+			Expect(repo.createdInput).To(BeNil(), test.name)
+		}
+	})
+})

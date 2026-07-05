@@ -1,20 +1,29 @@
 package storage
 
-import "testing"
+import (
+	"testing"
 
-func TestObjectURLResolverEscapesEachObjectKeySegment(t *testing.T) {
-	resolver := NewObjectURLResolver("http://localhost:9000/", "images")
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+)
 
-	got := resolver.Resolve("catalog meals/meal one/image #1.jpg")
-	want := "http://localhost:9000/images/catalog%20meals/meal%20one/image%20%231.jpg"
-	if got != want {
-		t.Fatalf("expected %q, got %q", want, got)
-	}
+func TestStorage(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Storage Suite")
 }
 
-func TestObjectURLResolverReturnsEmptyForEmptyKey(t *testing.T) {
-	resolver := NewObjectURLResolver("http://localhost:9000", "images")
-	if got := resolver.Resolve("  "); got != "" {
-		t.Fatalf("expected empty URL, got %q", got)
-	}
-}
+var _ = Describe("ObjectURLResolver", func() {
+	It("should escape each object key segment", func() {
+		resolver := NewObjectURLResolver("http://localhost:9000/", "images")
+
+		got := resolver.Resolve("catalog meals/meal one/image #1.jpg")
+
+		Expect(got).To(Equal("http://localhost:9000/images/catalog%20meals/meal%20one/image%20%231.jpg"))
+	})
+
+	It("should return empty for empty key", func() {
+		resolver := NewObjectURLResolver("http://localhost:9000", "images")
+
+		Expect(resolver.Resolve("  ")).To(BeEmpty())
+	})
+})

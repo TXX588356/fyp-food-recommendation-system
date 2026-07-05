@@ -5,98 +5,75 @@ import (
 	"path/filepath"
 	"testing"
 
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"github.com/spf13/viper"
 )
 
-func TestFindDotEnvWalksUpFromNestedDirectory(t *testing.T) {
-	originalDir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("failed to get working directory: %v", err)
-	}
-	t.Cleanup(func() {
-		if err := os.Chdir(originalDir); err != nil {
-			t.Fatalf("failed to restore working directory: %v", err)
-		}
+func TestConfig(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Config Suite")
+}
+
+var _ = Describe("Config", func() {
+	BeforeEach(func() {
+		viper.Reset()
+		DeferCleanup(viper.Reset)
 	})
 
-	root := t.TempDir()
-	nested := filepath.Join(root, "backend", "cmd", "server")
-	if err := os.MkdirAll(nested, 0o755); err != nil {
-		t.Fatalf("failed to create nested directory: %v", err)
-	}
-	envPath := filepath.Join(root, ".env")
-	if err := os.WriteFile(envPath, []byte("GEMINI_API_KEY=test\n"), 0o600); err != nil {
-		t.Fatalf("failed to create .env: %v", err)
-	}
-	if err := os.Chdir(nested); err != nil {
-		t.Fatalf("failed to change directory: %v", err)
-	}
+	It("should find .env by walking up from a nested directory", func() {
+		originalDir, err := os.Getwd()
+		Expect(err).NotTo(HaveOccurred())
+		DeferCleanup(func() {
+			Expect(os.Chdir(originalDir)).To(Succeed())
+		})
 
-	got, ok := findDotEnv()
-	if !ok {
-		t.Fatal("expected .env to be found")
-	}
-	if got != envPath {
-		t.Fatalf("expected %q, got %q", envPath, got)
-	}
-}
+		root := GinkgoT().TempDir()
+		nested := filepath.Join(root, "backend", "cmd", "server")
+		Expect(os.MkdirAll(nested, 0o755)).To(Succeed())
+		envPath := filepath.Join(root, ".env")
+		Expect(os.WriteFile(envPath, []byte("GEMINI_API_KEY=test\n"), 0o600)).To(Succeed())
+		Expect(os.Chdir(nested)).To(Succeed())
 
-func TestLoadReadsRuntimeConfig(t *testing.T) {
-	viper.Reset()
-	t.Cleanup(viper.Reset)
+		got, ok := findDotEnv()
 
-	originalDir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("failed to get working directory: %v", err)
-	}
-	t.Cleanup(func() {
-		if err := os.Chdir(originalDir); err != nil {
-			t.Fatalf("failed to restore working directory: %v", err)
-		}
+		Expect(ok).To(BeTrue())
+		Expect(got).To(Equal(envPath))
 	})
 
-	root := t.TempDir()
-	envPath := filepath.Join(root, ".env")
-	env := []byte("GEMINI_API_KEY= test-gemini-key \nDATABASE_URL= postgres://test \nSECURITY_JWT_SECRET= test-secret \n")
-	if err := os.WriteFile(envPath, env, 0o600); err != nil {
-		t.Fatalf("failed to create .env: %v", err)
-	}
-	if err := os.Chdir(root); err != nil {
-		t.Fatalf("failed to change directory: %v", err)
-	}
+	It("should load runtime config from .env", func() {
+		originalDir, err := os.Getwd()
+		Expect(err).NotTo(HaveOccurred())
+		DeferCleanup(func() {
+			Expect(os.Chdir(originalDir)).To(Succeed())
+		})
 
-	cfg := Load()
+		root := GinkgoT().TempDir()
+		envPath := filepath.Join(root, ".env")
+		env := []byte("GEMINI_API_KEY= test-gemini-key \nDATABASE_URL= postgres://test \nSECURITY_JWT_SECRET= test-secret \n")
+		Expect(os.WriteFile(envPath, env, 0o600)).To(Succeed())
+		Expect(os.Chdir(root)).To(Succeed())
 
-	if cfg.GeminiAPIKey != "test-gemini-key" {
-		t.Fatalf("expected GeminiAPIKey to be read and trimmed")
-	}
-	if cfg.DatabaseURL != "postgres://test" {
-		t.Fatalf("expected DatabaseURL to be read and trimmed")
-	}
-	if cfg.JWTSecret != "test-secret" {
-		t.Fatalf("expected JWTSecret to be read and trimmed")
-	}
-}
+		cfg := Load()
 
-func TestLoadReadsCatalogAdminConfig(t *testing.T) {
-	viper.Reset()
-	t.Cleanup(viper.Reset)
-	t.Setenv("CATALOG_ADMIN_ENABLED", "true")
-	t.Setenv("CATALOG_ADMIN_TOKEN", "  catalog-secret  ")
+		Expect(cfg.GeminiAPIKey).To(Equal("test-gemini-key"))
+		Expect(cfg.DatabaseURL).To(Equal("postgres://test"))
+		Expect(cfg.JWTSecret).To(Equal("test-secret"))
+	})
 
-	cfg := Load()
+	It("should load catalog admin config", func() {
+		GinkgoT().Setenv("CATALOG_ADMIN_ENABLED", "true")
+		GinkgoT().Setenv("CATALOG_ADMIN_TOKEN", "  catalog-secret  ")
 
-	if !cfg.CatalogAdminEnabled {
-		t.Fatal("expected catalogue admin routes to be enabled")
-	}
-	if cfg.CatalogAdminToken != "catalog-secret" {
-		t.Fatalf("expected trimmed token, got %q", cfg.CatalogAdminToken)
-	}
-}
+		cfg := Load()
 
-func TestValidateRejectsEnabledCatalogAdminWithoutToken(t *testing.T) {
-	cfg := Config{CatalogAdminEnabled: true}
-	if err := cfg.Validate(); err == nil {
-		t.Fatal("expected missing catalogue admin token to be rejected")
-	}
-}
+		Expect(cfg.CatalogAdminEnabled).To(BeTrue())
+		Expect(cfg.CatalogAdminToken).To(Equal("catalog-secret"))
+	})
+
+	It("should reject enabled catalog admin without token", func() {
+		cfg := Config{CatalogAdminEnabled: true}
+
+		Expect(cfg.Validate()).To(HaveOccurred())
+	})
+})

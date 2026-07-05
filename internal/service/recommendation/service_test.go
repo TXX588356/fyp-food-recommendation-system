@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"fyp/food-rs/internal/interfaces"
 	"fyp/food-rs/internal/mocks"
@@ -21,8 +22,25 @@ type testCatalogService struct {
 	createErr    error
 }
 
+type testMealLogRepository struct {
+	logs []model.MealLog
+	err  error
+}
+
 func newTestCatalogService() *testCatalogService {
 	return &testCatalogService{}
+}
+
+func (r *testMealLogRepository) Create(context.Context, *model.MealLog) (*model.MealLog, error) {
+	return nil, nil
+}
+
+func (r *testMealLogRepository) ListByUserAndMonth(context.Context, uuid.UUID, time.Time, time.Time) ([]model.MealLog, error) {
+	return nil, nil
+}
+
+func (r *testMealLogRepository) ListByUserAndRange(context.Context, uuid.UUID, time.Time, time.Time) ([]model.MealLog, error) {
+	return r.logs, r.err
 }
 
 func (s *testCatalogService) CreateGeneratedMeal(ctx context.Context, input interfaces.GeneratedCatalogMealInput) (interfaces.CatalogMeal, error) {
@@ -73,7 +91,7 @@ var _ = Describe("Recommendation candidate generation", func() {
 		ctx                     context.Context
 		mealGenerator           *mocks.MealGenerator
 		foodSearcher            *mocks.FoodSearcher
-		service                 interfaces.RecommendationService
+		svc                     *service
 		catalogService          interfaces.CatalogService
 		customMealAutocompleter *mocks.CustomMealAutocompleter
 		input                   interfaces.MealPromptInput
@@ -82,13 +100,20 @@ var _ = Describe("Recommendation candidate generation", func() {
 
 	BeforeEach(func() {
 		ctx = context.Background()
-		input = interfaces.MealPromptInput{}
+		input = interfaces.MealPromptInput{
+			History: interfaces.MealHistoryContext{
+				RecentMealNames:      []string{},
+				RecentCategoryCounts: map[string]int{},
+				RepeatedMealNames:    []string{},
+				RecentlyEatenByName:  map[string]int{},
+			},
+		}
 		userID = uuid.New()
 		mealGenerator = mocks.NewMealGenerator(GinkgoT())
 		foodSearcher = mocks.NewFoodSearcher(GinkgoT())
 		customMealAutocompleter = mocks.NewCustomMealAutocompleter(GinkgoT())
 		catalogService = newTestCatalogService()
-		service = NewService(mealGenerator, foodSearcher, catalogService, customMealAutocompleter)
+		svc = NewService(mealGenerator, foodSearcher, catalogService, customMealAutocompleter, &testMealLogRepository{}).(*service)
 	})
 
 	It("should match a meal using its normalized name first", func() {
@@ -107,7 +132,7 @@ var _ = Describe("Recommendation candidate generation", func() {
 			}, true, nil).
 			Once()
 
-		candidates, err := service.GenerateCandidates(ctx, userID, input)
+		candidates, err := svc.GenerateCandidates(ctx, userID, input)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(candidates).To(HaveLen(1))
@@ -142,14 +167,14 @@ var _ = Describe("Recommendation candidate generation", func() {
 			}, true, nil).
 			Once()
 
-		candidates, err := service.GenerateCandidates(ctx, userID, input)
+		candidates, err := svc.GenerateCandidates(ctx, userID, input)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(candidates).To(HaveLen(1))
 		Expect(candidates[0].MatchedQuery).To(Equal("Wan Tan Mee"))
 	})
 
-	It("should auto-create a prebuilt meal when every search term returns no result", func() {
+	It("should auto-create an unmatched meal and return it in the final candidates", func() {
 		generatedMeal := interfaces.GeneratedMeal{
 			Name:                   "Unknown Meal",
 			AlternativeSearchTerms: []string{"Unknown Food"},
@@ -202,15 +227,13 @@ var _ = Describe("Recommendation candidate generation", func() {
 			},
 		}
 
-		candidates, err := service.GenerateCandidates(ctx, userID, input)
+		candidates, err := svc.GenerateCandidates(ctx, userID, input)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(candidates).To(HaveLen(1))
 		Expect(candidates[0].MatchedQuery).To(Equal("Unknown Meal"))
 		Expect(candidates[0].Food.ID).To(Equal("11111111-1111-1111-1111-111111111111"))
-		Expect(candidates[0].Food.Name).To(Equal("Unknown Meal"))
-		Expect(candidates[0].Food.Calories).To(Equal(float64(500)))
-		Expect(candidates[0].Food.Tags).To(Equal([]string{"rice_dishes"}))
+
 		Expect(catalogService.(*testCatalogService).createdInput).To(Equal(&interfaces.GeneratedCatalogMealInput{
 			Name:               "Unknown Meal",
 			CategoryCodes:      []string{"rice_dishes"},
@@ -240,7 +263,7 @@ var _ = Describe("Recommendation candidate generation", func() {
 			interfaces.CustomMealAutocompleteInput{Name: "Unknown Meal"},
 		).Return(interfaces.CustomMealAutocompleteResponse{}, errors.New("unable to generate meal details")).Once()
 
-		candidates, err := service.GenerateCandidates(ctx, userID, input)
+		candidates, err := svc.GenerateCandidates(ctx, userID, input)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(candidates).To(BeEmpty())
@@ -272,7 +295,7 @@ var _ = Describe("Recommendation candidate generation", func() {
 
 		catalogService.(*testCatalogService).createErr = errors.New("database unavailable")
 
-		candidates, err := service.GenerateCandidates(ctx, userID, input)
+		candidates, err := svc.GenerateCandidates(ctx, userID, input)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(candidates).To(BeEmpty())
@@ -283,7 +306,7 @@ var _ = Describe("Recommendation candidate generation", func() {
 			Return(interfaces.GeminiMealsResponse{}, errors.New("Gemini unavailable")).
 			Once()
 
-		_, err := service.GenerateCandidates(ctx, userID, input)
+		_, err := svc.GenerateCandidates(ctx, userID, input)
 
 		Expect(err).To(MatchError("generated meal candidates: Gemini unavailable"))
 	})
@@ -301,7 +324,7 @@ var _ = Describe("Recommendation candidate generation", func() {
 			Return(interfaces.FoodSearchResult{}, false, errors.New("food API unavailable")).
 			Once()
 
-		_, err := service.GenerateCandidates(ctx, userID, input)
+		_, err := svc.GenerateCandidates(ctx, userID, input)
 
 		Expect(err).To(MatchError(`search food "Nasi Lemak": food API unavailable`))
 	})

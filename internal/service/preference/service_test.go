@@ -1,26 +1,35 @@
 package preference
 
-import "testing"
+import (
+	"testing"
 
-func TestValidateMealPreferencesAcceptsCurrentFrontendCategoryCodes(t *testing.T) {
-	tags := []string{
-		"singaporean",
-		"rice_dishes",
-		"noodle_dishes",
-		"condiments_sauces",
-		"poultry",
-		"tofu_soy",
-		"nuts_seeds",
-	}
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+)
 
-	if err := validateMealPreferences(tags); err != nil {
-		t.Fatalf("expected current frontend meal category codes to be accepted, got %v", err)
-	}
+func TestPreferenceService(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Preference Service Suite")
 }
 
-func TestValidateMealPreferencesAgainstDietaryRestrictionsUsesCurrentCategoryCodes(t *testing.T) {
-	err := validateMealPreferencesAgainstDietaryRestrictions([]string{"nuts_seeds"}, []string{"nut_free"})
-	if err == nil {
-		t.Fatal("expected nuts_seeds to conflict with nut_free")
-	}
-}
+var _ = Describe("meal preference validation", func() {
+	It("shoulf accept current frontend category codes", func() {
+		tags := []string{
+			"singaporean",
+			"rice_dishes",
+			"noodle_dishes",
+			"condiments_sauces",
+			"poultry",
+			"tofu_soy",
+			"nuts_seeds",
+		}
+
+		Expect(validateMealPreferences(tags)).To(Succeed())
+	})
+
+	It("should check dietary restrictions using current category codes", func() {
+		err := validateMealPreferencesAgainstDietaryRestrictions([]string{"nuts_seeds"}, []string{"nut_free"})
+
+		Expect(err).To(HaveOccurred())
+	})
+})

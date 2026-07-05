@@ -1,7 +1,6 @@
 package llm
 
 import (
-	"strings"
 	"testing"
 
 	"fyp/food-rs/internal/interfaces"
@@ -45,29 +44,25 @@ func validResponse() interfaces.GeminiMealsResponse {
 	}
 }
 
-func TestBuildPromptWithRecentMealContext(t *testing.T) {
-	prompt := BuildMealRecommendationPrompt(interfaces.MealPromptInput{
-		Goal:         "eat_healthier",
-		MealCategory: "dinner",
-		History: interfaces.MealHistoryContext{
-			RecentMealNames:   []string{"Nasi Lemak", "Fried Chicken"},
-			RepeatedMealNames: []string{"Nasi Lemak"},
-		},
+var _ = Describe("Gemini meal generation", func() {
+	Describe("BuildMealRecommendationPrompt", func() {
+		It("should include recent meal context", func() {
+			prompt := BuildMealRecommendationPrompt(interfaces.MealPromptInput{
+				Goal:         "eat_healthier",
+				MealCategory: "dinner",
+				History: interfaces.MealHistoryContext{
+					RecentMealNames:   []string{"Nasi Lemak", "Fried Chicken"},
+					RepeatedMealNames: []string{"Nasi Lemak"},
+				},
+			})
+
+			Expect(prompt).To(ContainSubstring("Recent meals: Nasi Lemak, Fried Chicken"))
+			Expect(prompt).To(ContainSubstring("Recently repeated meals: Nasi Lemak"))
+		})
 	})
 
-	for _, expected := range []string{
-		"Recent meals: Nasi Lemak, Fried Chicken",
-		"Repeated meals to avoid: Nasi Lemak",
-	} {
-		if !strings.Contains(prompt, expected) {
-			t.Fatalf("expected prompt to contain %q: \n%s", expected, prompt)
-		}
-	}
-}
-
-var _ = Describe("Gemini meal generation", func() {
 	Describe("ParseMeals", func() {
-		It("accepts a valid JSON response", func() {
+		It("should accept a valid JSON response", func() {
 			response := `{
 				"meals": [
 					{"name":"Nasi Lemak","alternative_search_terms":[],"estimated_price_range":{"min":5,"max":8},"sodium_level":"LOW","sugar_level":"MEDIUM","purine_risk":"LOW","health_flags":{"diabetes":"SAFE"}},
@@ -85,7 +80,7 @@ var _ = Describe("Gemini meal generation", func() {
 			Expect(result.Meals).To(HaveLen(6))
 		})
 
-		It("rejects invalid JSON", func() {
+		It("should reject invalid JSON", func() {
 			_, err := ParseMeals("not-json", nil)
 
 			Expect(err).To(HaveOccurred())
@@ -93,7 +88,7 @@ var _ = Describe("Gemini meal generation", func() {
 	})
 
 	Describe("ParseCustomMealAutocomplete", func() {
-		It("accepts a valid autocomplete response", func() {
+		It("should accept a valid autocomplete response", func() {
 			response := `{
 				"calories": 150,
 				"fatG": 3,
@@ -114,7 +109,7 @@ var _ = Describe("Gemini meal generation", func() {
 			Expect(result.MealCategoryTags).To(Equal([]string{"korean", "vegetables"}))
 		})
 
-		It("rejects wrong schema keys instead of silently accepting zero macros", func() {
+		It("should reject wrong schema keys instead of silently accepting zero macros", func() {
 			response := `{
 				"mealName": "Grilled Chicken Salad",
 				"calories": 350,
@@ -130,7 +125,7 @@ var _ = Describe("Gemini meal generation", func() {
 			Expect(err).To(MatchError(ContainSubstring("unknown field")))
 		})
 
-		It("rejects unsupported tags", func() {
+		It("should reject unsupported tags", func() {
 			response := `{
 				"calories": 150,
 				"fatG": 3,
@@ -145,7 +140,7 @@ var _ = Describe("Gemini meal generation", func() {
 			Expect(err).To(MatchError(ContainSubstring("unsupported dietary restriction tag")))
 		})
 
-		It("rejects missing meal category tags", func() {
+		It("should reject missing meal category tags", func() {
 			response := `{
 				"calories": 150,
 				"fatG": 3,
@@ -170,7 +165,7 @@ var _ = Describe("Gemini meal generation", func() {
 	})
 
 	Describe("ValidateMeals", func() {
-		It("rejects an invalid price range", func() {
+		It("should reject an invalid price range", func() {
 			response := validResponse()
 			response.Meals[0].EstimatedPriceRange = interfaces.PriceRange{
 				Min: 10,
@@ -182,7 +177,7 @@ var _ = Describe("Gemini meal generation", func() {
 			Expect(err).To(HaveOccurred())
 		})
 
-		It("rejects an invalid risk level", func() {
+		It("should reject an invalid risk level", func() {
 			response := validResponse()
 			response.Meals[0].SodiumLevel = "VERY_HIGH"
 
@@ -191,7 +186,7 @@ var _ = Describe("Gemini meal generation", func() {
 			Expect(err).To(HaveOccurred())
 		})
 
-		It("rejects an unexpected health flag", func() {
+		It("should reject an unexpected health flag", func() {
 			response := validResponse()
 			response.Meals[0].HealthFlags["gout"] = "SAFE"
 
@@ -202,7 +197,7 @@ var _ = Describe("Gemini meal generation", func() {
 	})
 
 	Describe("BuildMealRecommendationPrompt", func() {
-		It("includes the supplied user context", func() {
+		It("should include the supplied user context", func() {
 			prompt := BuildMealRecommendationPrompt(interfaces.MealPromptInput{
 				Goal:                "eat_healthier",
 				DietaryRestrictions: []string{"halal"},
@@ -226,11 +221,7 @@ var _ = Describe("Gemini meal generation", func() {
 			}
 
 			for _, expected := range expectedValues {
-				Expect(strings.Contains(prompt, expected)).To(
-					BeTrue(),
-					"expected prompt to contain %q",
-					expected,
-				)
+				Expect(prompt).To(ContainSubstring(expected))
 			}
 		})
 
@@ -246,11 +237,7 @@ var _ = Describe("Gemini meal generation", func() {
 			}
 
 			for _, expected := range expectedValues {
-				Expect(strings.Contains(prompt, expected)).To(
-					BeTrue(),
-					"expected prompt to contain %q",
-					expected,
-				)
+				Expect(prompt).To(ContainSubstring(expected))
 			}
 		})
 	})
@@ -271,11 +258,7 @@ var _ = Describe("Gemini meal generation", func() {
 			}
 
 			for _, expected := range expectedValues {
-				Expect(strings.Contains(prompt, expected)).To(
-					BeTrue(),
-					"expected prompt to contain %q",
-					expected,
-				)
+				Expect(prompt).To(ContainSubstring(expected))
 			}
 		})
 	})

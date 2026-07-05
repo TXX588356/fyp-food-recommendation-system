@@ -179,10 +179,10 @@ func BuildMealRecommendationPrompt(input interfaces.MealPromptInput) string {
 
 	USER RECENT MEAL HISTORY:
 	- Recent meals: %s
-	- Repeated meals to avoid: %s
+	- Recently repeated meals: %s
 
 	HISTORY RULES: 
-	- Avoid recommending repeated meals unless they are strongly aligned with user goals.
+	- Rank recently repeated meals lower unless they are strongly aligned with user goals.
 	- Prefer variety across meal names and meal categories.
 	- Do not use calorie totals to decide recommendations; calories are tracked separately in meal logs.
 

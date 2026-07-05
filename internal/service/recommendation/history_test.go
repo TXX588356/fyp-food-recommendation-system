@@ -2,29 +2,25 @@ package recommendation
 
 import (
 	"fyp/food-rs/types/model"
-	"testing"
 	"time"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
-func TestBuildMealHistoryContextDetectsRecentRepeatsAndCategoryCounts(t *testing.T) {
-	now := time.Date(2026, time.July, 15, 12, 0, 0, 0, time.UTC)
-	logs := []model.MealLog{
-		{MealName: "Nasi Lemak", MealCategory: []string{"rice_dishes", "malaysian"}, EatenAt: time.Date(2026, time.July, 14, 8, 0, 0, 0, time.UTC)},
-		{MealName: "Nasi Lemak", MealCategory: []string{"rice_dishes", "malaysian"}, EatenAt: time.Date(2026, time.July, 12, 8, 0, 0, 0, time.UTC)},
-		{MealName: "Chicken Soup", MealCategory: []string{"soups"}, EatenAt: time.Date(2026, time.July, 5, 22, 0, 0, 0, time.UTC)},
-	}
+var _ = Describe("BuildMealHistoryContext", func() {
+	It("detects recent repeats and category counts", func() {
+		now := time.Date(2026, time.July, 15, 12, 0, 0, 0, time.UTC)
+		logs := []model.MealLog{
+			{MealName: "Nasi Lemak", MealCategory: []string{"rice_dishes", "malaysian"}, EatenAt: time.Date(2026, time.July, 14, 8, 0, 0, 0, time.UTC)},
+			{MealName: "Nasi Lemak", MealCategory: []string{"rice_dishes", "malaysian"}, EatenAt: time.Date(2026, time.July, 12, 8, 0, 0, 0, time.UTC)},
+			{MealName: "Chicken Soup", MealCategory: []string{"soups"}, EatenAt: time.Date(2026, time.July, 5, 22, 0, 0, 0, time.UTC)},
+		}
 
-	got := buildMealHistoryContext(logs, now)
+		got := buildMealHistoryContext(logs, now)
 
-	if got.RecentMealNames[0] != "Nasi Lemak" {
-		t.Fatalf("expected most recent meal first, got %#v", got.RecentMealNames)
-	}
-
-	if len(got.RepeatedMealNames) != 1 || got.RepeatedMealNames[0] != "Nasi Lemak" {
-		t.Fatalf("expected repeated Nasi Lemak, got %#v", got.RepeatedMealNames)
-	}
-
-	if got.RecentCategoryCounts["rice_dishes"] != 2 {
-		t.Fatalf("expected rice_dishes count 2, got %#v", got.RecentCategoryCounts)
-	}
-}
+		Expect(got.RecentMealNames[0]).To(Equal("Nasi Lemak"))
+		Expect(got.RepeatedMealNames).To(Equal([]string{"Nasi Lemak"}))
+		Expect(got.RecentCategoryCounts).To(HaveKeyWithValue("rice_dishes", 2))
+	})
+})
