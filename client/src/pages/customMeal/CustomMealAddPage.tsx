@@ -14,6 +14,8 @@ import {
   Title,
   Modal,
   Stack,
+  MantineProvider,
+  createTheme,
 } from '@mantine/core'
 import axios from 'axios'
 import { useEffect, useState } from 'react'
@@ -100,6 +102,10 @@ type CustomMealAutocompleteResponse = {
   dietaryRestrictionTags: string[]
   mealCategoryTags: string[]
 }
+
+const theme = createTheme({
+  cursorType: 'pointer',
+});
 
 const mealTimeLabels: Record<MealTime, string> = {
   breakfast: 'Breakfast',
@@ -895,12 +901,15 @@ export function CustomMealFormPage() {
               <Text fw={900}>Dietary tags (optional)</Text>
               <SimpleGrid cols={{ base: 1, xs: 2, sm: 3 }} spacing="sm">
                 {customMealDietaryOptions.map((option) => (
+                  <MantineProvider theme={theme}>
                   <Checkbox
                     key={option.value}
                     label={option.label}
                     checked={draft.dietaryRestrictionTags.includes(option.value)}
                     onChange={() => toggleDietaryTag(option.value)}
                   />
+                  </MantineProvider>
+
                 ))}
               </SimpleGrid>
             </Box>
