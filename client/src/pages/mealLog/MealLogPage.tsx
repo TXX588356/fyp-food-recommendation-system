@@ -1,5 +1,6 @@
 import {
   Alert,
+  Badge,
   Box,
   Button,
   Group,
@@ -87,12 +88,15 @@ export default function MealLogPage() {
 		([left], [right]) => Number(right) - Number(left),
 	)
 
+	const date: Date = new Date()
+	const shortDay: string = date.toLocaleDateString('en-US', { weekday: 'short' })
+
 	return (
 		<Box className='ui-settings-page ui-meal-log-page'>
 			<Box component="main" className='ui-settings-frame'>
 				<nav className='ui-settings-nav ui-surface' aria-label="Main navigation">
 					<Link to="/recommendation">Recommendation</Link>
-					<Link to="/meal-logs" aria-current="page">Log</Link>
+					<Link to="/meal-logs" aria-current="page">Logs</Link>
 					<Link to="/preferences">Preferences</Link>
 				</nav>
 
@@ -163,9 +167,17 @@ export default function MealLogPage() {
 									{dayEntries.map(([day, items]) => (
 										<Box className='ui-meal-log-day' key={day}>
 											<Box className='ui-meal-log-day-header'>
-												<Text fw={900}>{day}</Text>
-												<Text fw={900}>{formatKcal(sumCalories(items))}</Text>
-												<Text fw={900}>{formatRM(sumPrice(items))}</Text>
+												<Box style={{
+													display: 'flex',
+													alignItems: 'center',
+													gap: '8px',
+												}}>
+												<Text fw={900} style={{fontSize: 20}}>{String(day).padStart(2, '0')}</Text>
+												<Badge variant='light' color='rgb(231, 139, 0)'>{shortDay}</Badge>
+												</Box>
+												<Text></Text>
+												<Text fw={900} style={{textAlign: 'left'}}>{formatKcal(sumCalories(items))}</Text>
+												<Text fw={900} style={{textAlign: 'right'}}>{formatRM(sumPrice(items))}</Text>
 											</Box>
 
 											{items.map((item) => (

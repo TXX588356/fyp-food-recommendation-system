@@ -224,14 +224,14 @@ function MealAddIcon({ name }: { name: 'search' | 'plus' | 'bowl' }) {
   )
 }
 
-function MainNav({ active }: { active: 'recommendation' | 'log' | 'preferences' }) {
+function MainNav({ active }: { active: 'recommendation' | 'logs' | 'preferences' }) {
   return (
     <nav className="ui-settings-nav ui-surface" aria-label="Main navigation">
       <Link to="/recommendation" aria-current={active === 'recommendation' ? 'page' : undefined}>
         Recommendations
       </Link>
-      <Link to="/meal-logs" aria-current={active === 'log' ? 'page' : undefined}>
-        Log
+      <Link to="/meal-logs" aria-current={active === 'logs' ? 'page' : undefined}>
+        Logs
       </Link>
       <Link to="/preferences" aria-current={active === 'preferences' ? 'page' : undefined}>
         Preferences
