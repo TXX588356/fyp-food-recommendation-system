@@ -9,6 +9,7 @@ import (
 	"fyp/food-rs/internal/interfaces"
 	"fyp/food-rs/internal/mocks"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -112,6 +113,25 @@ func performCustomMealRequest(e *echo.Echo, method, path string, body any, token
 	if token != "" {
 		request.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
 	}
+
+	response := httptest.NewRecorder()
+	e.ServeHTTP(response, request)
+
+	return response
+}
+
+func performMultipartCustomMealRequest(e *echo.Echo, path string, payload any, token string) *httptest.ResponseRecorder {
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+
+	encodedPayload, err := json.Marshal(payload)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(writer.WriteField("payload", string(encodedPayload))).To(Succeed())
+	Expect(writer.Close()).To(Succeed())
+
+	request := httptest.NewRequest(http.MethodPost, path, &body)
+	request.Header.Set(echo.HeaderContentType, writer.FormDataContentType())
+	request.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
 
 	response := httptest.NewRecorder()
 	e.ServeHTTP(response, request)
@@ -266,6 +286,68 @@ var _ = Describe("Custom meal endpoints", func() {
 			Expect(result.Name).To(Equal("Dubai Chocolate"))
 			Expect(result.IsOwner).To(BeTrue())
 			Expect(result.IsShared).To(BeFalse())
+		})
+
+		It("should create a custom meal from multipart payload when image is omitted", func() {
+			consent := true
+			mealID := uuid.New()
+
+			input := interfaces.CustomMealInput{
+				Name:           "Plain Oatmeal",
+				Price:          4.50,
+				Calories:       280,
+				FatG:           6,
+				ProteinG:       10,
+				CarbsG:         48,
+				State:          "Selangor",
+				District:       "Petaling",
+				RestaurantName: "Morning Cafe",
+				DietaryRestrictionTags: []string{
+					"vegetarian",
+				},
+				MealCategoryTags: []string{
+					"breakfast",
+					"grains",
+				},
+			}
+
+			expectedResponse := &interfaces.CustomMealResponse{
+				ID:             mealID.String(),
+				Name:           "Plain Oatmeal",
+				Price:          4.50,
+				Calories:       280,
+				FatG:           6,
+				ProteinG:       10,
+				CarbsG:         48,
+				State:          "Selangor",
+				District:       "Petaling",
+				RestaurantName: "Morning Cafe",
+				ImageURL:       "",
+				IsOwner:        true,
+			}
+
+			preferenceService.EXPECT().
+				GetByUserID(mock.Anything, userID).
+				Return(&interfaces.PreferenceResponse{
+					DataSharingConsent: &consent,
+				}, nil).
+				Once()
+
+			customMealService.EXPECT().
+				Create(mock.Anything, userID, input).
+				Return(expectedResponse, nil).
+				Once()
+
+			response := performMultipartCustomMealRequest(e, "/custom-meals", input, token)
+
+			Expect(response.Code).To(Equal(http.StatusCreated))
+
+			var result interfaces.CustomMealResponse
+			Expect(json.Unmarshal(response.Body.Bytes(), &result)).
+				To(Succeed())
+
+			Expect(result.ID).To(Equal(mealID.String()))
+			Expect(result.ImageURL).To(BeEmpty())
 		})
 
 		It("should reject an invalid request body", func() {

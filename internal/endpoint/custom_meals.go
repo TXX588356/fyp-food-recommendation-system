@@ -115,7 +115,7 @@ func (h *customMealHandler) createCustomMeal(c *echo.Context) error {
 		input.ImageURL = ""
 
 		imageHeader, err := c.FormFile("image")
-		if err != nil && errors.Is(err, http.ErrMissingFile) {
+		if err != nil && !errors.Is(err, http.ErrMissingFile) {
 			return c.JSON(http.StatusBadRequest, map[string]string{
 				"error": "invalid image upload",
 			})
