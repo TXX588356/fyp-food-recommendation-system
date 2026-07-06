@@ -12,6 +12,17 @@ type MatchedMealCandidate struct {
 	MatchedQuery  string           `json:"matched_query"`  // Records of successfull matched with generated meals
 }
 
+type RecommendationResult struct {
+	Candidates       []MatchedMealCandidate  `json:"candidates"`
+	FilteredOut      []FilteredMealCandidate `json:"filtered_out"`
+	FilteringApplied bool                    `json:"filtering_applied"`
+}
+
+type FilteredMealCandidate struct {
+	Candidate MatchedMealCandidate `json:"candidate"`
+	Reason    string               `json:"reason"`
+}
+
 type RecommendationService interface {
-	GenerateCandidates(ctx context.Context, userID uuid.UUID, input MealPromptInput) ([]MatchedMealCandidate, error)
+	GenerateRecommendationResult(ctx context.Context, userID uuid.UUID, input MealPromptInput) (RecommendationResult, error)
 }

@@ -39,24 +39,24 @@ func (_m *RecommendationService) EXPECT() *RecommendationService_Expecter {
 	return &RecommendationService_Expecter{mock: &_m.Mock}
 }
 
-// GenerateCandidates provides a mock function for the type RecommendationService
-func (_mock *RecommendationService) GenerateCandidates(ctx context.Context, userID uuid.UUID, input interfaces.MealPromptInput) ([]interfaces.MatchedMealCandidate, error) {
+// GenerateRecommendationResult provides a mock function for the type RecommendationService
+func (_mock *RecommendationService) GenerateRecommendationResult(ctx context.Context, userID uuid.UUID, input interfaces.MealPromptInput) (interfaces.RecommendationResult, error) {
 	ret := _mock.Called(ctx, userID, input)
 
 	if len(ret) == 0 {
-		panic("no return value specified for GenerateCandidates")
+		panic("no return value specified for GenerateRecommendationResult")
 	}
 
-	var r0 []interfaces.MatchedMealCandidate
+	var r0 interfaces.RecommendationResult
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, interfaces.MealPromptInput) ([]interfaces.MatchedMealCandidate, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, interfaces.MealPromptInput) (interfaces.RecommendationResult, error)); ok {
 		return returnFunc(ctx, userID, input)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, interfaces.MealPromptInput) []interfaces.MatchedMealCandidate); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, interfaces.MealPromptInput) interfaces.RecommendationResult); ok {
 		r0 = returnFunc(ctx, userID, input)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]interfaces.MatchedMealCandidate)
+			r0 = ret.Get(0).(interfaces.RecommendationResult)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, interfaces.MealPromptInput) error); ok {
@@ -67,20 +67,20 @@ func (_mock *RecommendationService) GenerateCandidates(ctx context.Context, user
 	return r0, r1
 }
 
-// RecommendationService_GenerateCandidates_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GenerateCandidates'
-type RecommendationService_GenerateCandidates_Call struct {
+// RecommendationService_GenerateRecommendationResult_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GenerateRecommendationResult'
+type RecommendationService_GenerateRecommendationResult_Call struct {
 	*mock.Call
 }
 
-// GenerateCandidates is a helper method to define mock.On call
+// GenerateRecommendationResult is a helper method to define mock.On call
 //   - ctx context.Context
 //   - userID uuid.UUID
 //   - input interfaces.MealPromptInput
-func (_e *RecommendationService_Expecter) GenerateCandidates(ctx interface{}, userID interface{}, input interface{}) *RecommendationService_GenerateCandidates_Call {
-	return &RecommendationService_GenerateCandidates_Call{Call: _e.mock.On("GenerateCandidates", ctx, userID, input)}
+func (_e *RecommendationService_Expecter) GenerateRecommendationResult(ctx interface{}, userID interface{}, input interface{}) *RecommendationService_GenerateRecommendationResult_Call {
+	return &RecommendationService_GenerateRecommendationResult_Call{Call: _e.mock.On("GenerateRecommendationResult", ctx, userID, input)}
 }
 
-func (_c *RecommendationService_GenerateCandidates_Call) Run(run func(ctx context.Context, userID uuid.UUID, input interfaces.MealPromptInput)) *RecommendationService_GenerateCandidates_Call {
+func (_c *RecommendationService_GenerateRecommendationResult_Call) Run(run func(ctx context.Context, userID uuid.UUID, input interfaces.MealPromptInput)) *RecommendationService_GenerateRecommendationResult_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -103,12 +103,12 @@ func (_c *RecommendationService_GenerateCandidates_Call) Run(run func(ctx contex
 	return _c
 }
 
-func (_c *RecommendationService_GenerateCandidates_Call) Return(matchedMealCandidates []interfaces.MatchedMealCandidate, err error) *RecommendationService_GenerateCandidates_Call {
-	_c.Call.Return(matchedMealCandidates, err)
+func (_c *RecommendationService_GenerateRecommendationResult_Call) Return(recommendationResult interfaces.RecommendationResult, err error) *RecommendationService_GenerateRecommendationResult_Call {
+	_c.Call.Return(recommendationResult, err)
 	return _c
 }
 
-func (_c *RecommendationService_GenerateCandidates_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID, input interfaces.MealPromptInput) ([]interfaces.MatchedMealCandidate, error)) *RecommendationService_GenerateCandidates_Call {
+func (_c *RecommendationService_GenerateRecommendationResult_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID, input interfaces.MealPromptInput) (interfaces.RecommendationResult, error)) *RecommendationService_GenerateRecommendationResult_Call {
 	_c.Call.Return(run)
 	return _c
 }

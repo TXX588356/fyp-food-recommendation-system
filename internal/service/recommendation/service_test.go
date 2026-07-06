@@ -132,11 +132,12 @@ var _ = Describe("Recommendation candidate generation", func() {
 			}, true, nil).
 			Once()
 
-		candidates, err := svc.GenerateCandidates(ctx, userID, input)
+		result, err := svc.GenerateRecommendationResult(ctx, userID, input)
 
 		Expect(err).NotTo(HaveOccurred())
-		Expect(candidates).To(HaveLen(1))
-		Expect(candidates[0].MatchedQuery).To(Equal("Nasi Lemak"))
+		Expect(result.Candidates).To(HaveLen(1))
+		Expect(result.Candidates[0].MatchedQuery).To(Equal("Nasi Lemak"))
+		Expect(result.FilteringApplied).To(BeTrue())
 	})
 
 	It("should try alternative search terms when the normalized name is not found", func() {
@@ -167,11 +168,11 @@ var _ = Describe("Recommendation candidate generation", func() {
 			}, true, nil).
 			Once()
 
-		candidates, err := svc.GenerateCandidates(ctx, userID, input)
+		result, err := svc.GenerateRecommendationResult(ctx, userID, input)
 
 		Expect(err).NotTo(HaveOccurred())
-		Expect(candidates).To(HaveLen(1))
-		Expect(candidates[0].MatchedQuery).To(Equal("Wan Tan Mee"))
+		Expect(result.Candidates).To(HaveLen(1))
+		Expect(result.Candidates[0].MatchedQuery).To(Equal("Wan Tan Mee"))
 	})
 
 	It("should auto-create an unmatched meal and return it in the final candidates", func() {
@@ -227,12 +228,12 @@ var _ = Describe("Recommendation candidate generation", func() {
 			},
 		}
 
-		candidates, err := svc.GenerateCandidates(ctx, userID, input)
+		result, err := svc.GenerateRecommendationResult(ctx, userID, input)
 
 		Expect(err).NotTo(HaveOccurred())
-		Expect(candidates).To(HaveLen(1))
-		Expect(candidates[0].MatchedQuery).To(Equal("Unknown Meal"))
-		Expect(candidates[0].Food.ID).To(Equal("11111111-1111-1111-1111-111111111111"))
+		Expect(result.Candidates).To(HaveLen(1))
+		Expect(result.Candidates[0].MatchedQuery).To(Equal("Unknown Meal"))
+		Expect(result.Candidates[0].Food.ID).To(Equal("11111111-1111-1111-1111-111111111111"))
 
 		Expect(catalogService.(*testCatalogService).createdInput).To(Equal(&interfaces.GeneratedCatalogMealInput{
 			Name:               "Unknown Meal",
@@ -243,6 +244,67 @@ var _ = Describe("Recommendation candidate generation", func() {
 			CarbsG:             62,
 			FatG:               18,
 		}))
+	})
+
+	It("should preserve Gemini order for equal-score matched and auto-created meals", func() {
+		input.PerMealBudget = 10
+		generatedMeals := []interfaces.GeneratedMeal{
+			{
+				Name:                "Unknown Meal",
+				EstimatedPriceRange: interfaces.PriceRange{Min: 5, Max: 5},
+			},
+			{
+				Name:                "Existing Meal",
+				EstimatedPriceRange: interfaces.PriceRange{Min: 5, Max: 5},
+			},
+		}
+
+		mealGenerator.EXPECT().GenerateMeals(mock.Anything, input).
+			Return(interfaces.GeminiMealsResponse{Meals: generatedMeals}, nil).
+			Once()
+
+		foodSearcher.EXPECT().SearchFood(mock.Anything, userID, "Unknown Meal").
+			Return(interfaces.FoodSearchResult{}, false, nil).
+			Once()
+		foodSearcher.EXPECT().SearchFood(mock.Anything, userID, "Existing Meal").
+			Return(interfaces.FoodSearchResult{
+				ID:       "existing",
+				Name:     "Existing Meal",
+				FatG:     10,
+				ProteinG: 20,
+				CarbsG:   40,
+			}, true, nil).
+			Once()
+
+		customMealAutocompleter.EXPECT().AutocompleteCustomMeal(
+			mock.Anything,
+			interfaces.CustomMealAutocompleteInput{Name: "Unknown Meal"},
+		).Return(interfaces.CustomMealAutocompleteResponse{
+			Calories:         400,
+			FatG:             10,
+			ProteinG:         20,
+			CarbsG:           40,
+			MealCategoryTags: []string{"rice_dishes"},
+		}, nil).Once()
+
+		catalogService.(*testCatalogService).createdMeal = interfaces.CatalogMeal{
+			ID:         uuid.MustParse("22222222-2222-2222-2222-222222222222"),
+			Name:       "Unknown Meal",
+			Categories: []string{},
+			SelectedNutrition: interfaces.CatalogNutrition{
+				Calories: testFloatPtr(400),
+				FatG:     testFloatPtr(10),
+				ProteinG: testFloatPtr(20),
+				CarbsG:   testFloatPtr(40),
+			},
+		}
+
+		result, err := svc.GenerateRecommendationResult(ctx, userID, input)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result.Candidates).To(HaveLen(2))
+		Expect(result.Candidates[0].Food.Name).To(Equal("Unknown Meal"))
+		Expect(result.Candidates[1].Food.Name).To(Equal("Existing Meal"))
 	})
 
 	It("should skip an unmatched meal when generated catalog details fail", func() {
@@ -263,10 +325,10 @@ var _ = Describe("Recommendation candidate generation", func() {
 			interfaces.CustomMealAutocompleteInput{Name: "Unknown Meal"},
 		).Return(interfaces.CustomMealAutocompleteResponse{}, errors.New("unable to generate meal details")).Once()
 
-		candidates, err := svc.GenerateCandidates(ctx, userID, input)
+		result, err := svc.GenerateRecommendationResult(ctx, userID, input)
 
 		Expect(err).NotTo(HaveOccurred())
-		Expect(candidates).To(BeEmpty())
+		Expect(result.Candidates).To(BeEmpty())
 	})
 
 	It("should skip an unmatched meal when saving the generated prebuilt meal fails", func() {
@@ -295,10 +357,10 @@ var _ = Describe("Recommendation candidate generation", func() {
 
 		catalogService.(*testCatalogService).createErr = errors.New("database unavailable")
 
-		candidates, err := svc.GenerateCandidates(ctx, userID, input)
+		result, err := svc.GenerateRecommendationResult(ctx, userID, input)
 
 		Expect(err).NotTo(HaveOccurred())
-		Expect(candidates).To(BeEmpty())
+		Expect(result.Candidates).To(BeEmpty())
 	})
 
 	It("should return a controlled error when Gemini fails", func() {
@@ -306,7 +368,7 @@ var _ = Describe("Recommendation candidate generation", func() {
 			Return(interfaces.GeminiMealsResponse{}, errors.New("Gemini unavailable")).
 			Once()
 
-		_, err := svc.GenerateCandidates(ctx, userID, input)
+		_, err := svc.GenerateRecommendationResult(ctx, userID, input)
 
 		Expect(err).To(MatchError("generated meal candidates: Gemini unavailable"))
 	})
@@ -324,9 +386,48 @@ var _ = Describe("Recommendation candidate generation", func() {
 			Return(interfaces.FoodSearchResult{}, false, errors.New("food API unavailable")).
 			Once()
 
-		_, err := svc.GenerateCandidates(ctx, userID, input)
+		_, err := svc.GenerateRecommendationResult(ctx, userID, input)
 
 		Expect(err).To(MatchError(`search food "Nasi Lemak": food API unavailable`))
+	})
+
+	It("should expose filtered-out meals with reasons in the recommendation result", func() {
+		input.DietaryRestrictions = []string{"halal"}
+
+		mealGenerator.EXPECT().GenerateMeals(mock.Anything, input).
+			Return(interfaces.GeminiMealsResponse{
+				Meals: []interfaces.GeneratedMeal{
+					{Name: "Vegetable Soup"},
+					{Name: "Pork Noodles"},
+				},
+			}, nil).
+			Once()
+
+		foodSearcher.EXPECT().SearchFood(mock.Anything, userID, "Vegetable Soup").
+			Return(interfaces.FoodSearchResult{
+				ID:   "safe",
+				Name: "Vegetable Soup",
+				Tags: []string{"vegetables", "soups"},
+			}, true, nil).
+			Once()
+
+		foodSearcher.EXPECT().SearchFood(mock.Anything, userID, "Pork Noodles").
+			Return(interfaces.FoodSearchResult{
+				ID:   "pork-food",
+				Name: "Pork Noodles",
+				Tags: []string{"pork", "noodle_dishes"},
+			}, true, nil).
+			Once()
+
+		result, err := svc.GenerateRecommendationResult(ctx, userID, input)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result.FilteringApplied).To(BeTrue())
+		Expect(result.Candidates).To(HaveLen(1))
+		Expect(result.Candidates[0].Food.ID).To(Equal("safe"))
+		Expect(result.FilteredOut).To(HaveLen(1))
+		Expect(result.FilteredOut[0].Candidate.Food.ID).To(Equal("pork-food"))
+		Expect(result.FilteredOut[0].Reason).To(ContainSubstring("halal"))
 	})
 
 	It("should remove duplicate and blank fallback search terms", func() {

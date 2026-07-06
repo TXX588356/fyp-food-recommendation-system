@@ -4,6 +4,7 @@ import {
   Badge,
   Box,
   Button,
+  SegmentedControl,
   Text,
   Title,
 } from '@mantine/core'
@@ -52,15 +53,28 @@ type MatchedMealCandidate = {
   matched_query: string
 }
 
+type FilteredMealCandidate = {
+  candidate: MatchedMealCandidate
+  reason: string
+}
+
 type GenerateRecommendationsResponse = {
   candidates: MatchedMealCandidate[]
+  filtered_out: FilteredMealCandidate[]
+  filtering_applied: boolean
 }
 
 type CategoryState<T> = Record<MealCategory, T>
 
+type VisibleRecommendationItem = {
+  candidate: MatchedMealCandidate
+  filteredReason: string | null
+}
+
 type PersistedRecommendationState = {
   generatedDate: string
   candidatesByCategory: CategoryState<MatchedMealCandidate[]>
+  filteredOutByCategory: CategoryState<FilteredMealCandidate[]>
   generatedByCategory: CategoryState<boolean>
 }
 
@@ -72,6 +86,13 @@ const mealCategoryOptions: Array<{ value: MealCategory; label: string;}> = [
 ]
 
 const emptyCandidates: CategoryState<MatchedMealCandidate[]> = {
+  breakfast: [],
+  lunch: [],
+  dinner: [],
+  snack: [],
+}
+
+const emptyFilteredOut: CategoryState<FilteredMealCandidate[]> = {
   breakfast: [],
   lunch: [],
   dinner: [],
@@ -114,12 +135,18 @@ const createEmptyPersistedRecommendations =
     dinner: [],
     snack: [],
   },
+  filteredOutByCategory: {
+    breakfast: [],
+    lunch: [],
+    dinner: [],
+    snack: [],
+  },
   generatedByCategory: {
     breakfast: false,
     lunch: false,
     dinner: false,
     snack: false,
-  }
+  },
 })
 
 const loadPersistedRecommendations = (storageKey: string): PersistedRecommendationState => {
@@ -144,6 +171,10 @@ const loadPersistedRecommendations = (storageKey: string): PersistedRecommendati
       candidatesByCategory: {
         ...emptyCandidates,
         ...parsedValue.candidatesByCategory,
+      },
+      filteredOutByCategory: {
+        ...emptyFilteredOut,
+        ...parsedValue.filteredOutByCategory,
       },
       generatedByCategory: {
         ...emptyGenerated,
@@ -264,7 +295,13 @@ export default function RecommendationPage() {
   const [generatedByCategory, setGeneratedByCategory] = useState<CategoryState<boolean>>(
     persistedRecommendations.generatedByCategory,
   )
-  
+
+  const [filteredOutByCategory, setFilteredOutByCategory] = useState<CategoryState<FilteredMealCandidate[]>>(
+    persistedRecommendations.filteredOutByCategory,
+  )
+
+  const [displayMode, setDisplayMode] = useState<'filtered' | 'all'>('filtered')
+
   const [errorsByCategory, setErrorsByCategory] = useState<CategoryState<string | null>>(emptyErrors)
 
   const [mealToLog, setMealToLog] = useState<LoggableMeal | null>(null)
@@ -283,8 +320,11 @@ export default function RecommendationPage() {
   const persistRecommendationCategory = (
     mealCategory: MealCategory,
     candidates: MatchedMealCandidate[],
+    filteredOut: FilteredMealCandidate[],
   ) => {
     const persistedRecommendations = loadPersistedRecommendations(recommendationStorageKey)
+
+    // Create new updated copies of recommendation state for one meal category
     const nextCandidatesByCategory = {
       ...persistedRecommendations.candidatesByCategory,
       [mealCategory]: candidates,
@@ -293,10 +333,15 @@ export default function RecommendationPage() {
       ...persistedRecommendations.generatedByCategory,
       [mealCategory]: true,
     }
+    const nextFilteredOutByCategory = {
+      ...persistedRecommendations.filteredOutByCategory,
+      [mealCategory]: filteredOut,
+    }
 
     savePersistedRecommendations(recommendationStorageKey, {
       generatedDate: getLocalDateKey(),
       candidatesByCategory: nextCandidatesByCategory,
+      filteredOutByCategory: nextFilteredOutByCategory,
       generatedByCategory: nextGeneratedByCategory,
     })
 
@@ -307,6 +352,10 @@ export default function RecommendationPage() {
     setGeneratedByCategory((current) => ({
       ...current,
       [mealCategory]: true,
+    }))
+    setFilteredOutByCategory((current) => ({
+      ...current,
+      [mealCategory]: filteredOut,
     }))
   }
 
@@ -333,7 +382,7 @@ export default function RecommendationPage() {
         },
       )
 
-      persistRecommendationCategory(mealCategory, response.data.candidates ?? [])
+      persistRecommendationCategory(mealCategory, response.data.candidates ?? [], response.data.filtered_out ?? [])
     } catch (error) {
       console.error(`Failed to generate ${mealCategory} recommendations`, error)
 
@@ -360,8 +409,11 @@ export default function RecommendationPage() {
     }
   }
 
-  const renderCandidateCard = (candidate: MatchedMealCandidate, index: number) => (
-    <Box className="ui-meal-card ui-card" key={`${candidate.food.id}-${candidate.matched_query}-${index}`}>
+  const renderCandidateCard = (item: VisibleRecommendationItem, index: number) => {
+    const { candidate, filteredReason } = item
+
+    return (
+    <Box className={`ui-meal-card ui-card ${filteredReason ? 'ui-meal-card-filtered' : ''}`} key={`${candidate.food.id}-${candidate.matched_query}-${index}`}>
       <Box className="ui-meal-photo" aria-hidden={!candidate.food.image_url}>
         {candidate.food.image_url ? (
           <img src={candidate.food.image_url} alt={candidate.food.name} loading="lazy" />
@@ -376,11 +428,17 @@ export default function RecommendationPage() {
         <Text className="ui-meal-price">
           {formatRM(candidate.generated_meal.estimated_price_range.min)} - {formatRM(candidate.generated_meal.estimated_price_range.max)}
         </Text>
+        {filteredReason && (
+          <Badge color="red" className="ui-meal-filtered-badge">
+            Reason: {filteredReason}
+          </Badge>
+        )}
       </Box>
 
       <Button 
         className="ui-meal-log-button" 
         variant="subtle"
+        disabled={filteredReason !== null}
         onClick={() => openLogModal(candidate)}
         >
         Log
@@ -395,7 +453,8 @@ export default function RecommendationPage() {
         }}
       />
     </Box>
-  )
+    )
+  }
 
   const today = new Date()
   const options = {
@@ -433,9 +492,28 @@ export default function RecommendationPage() {
             >
               {mealCategoryOptions.map((option) => {
                 const candidates = candidatesByCategory[option.value]
+                const filteredOut = filteredOutByCategory[option.value]
                 const isLoading = loadingByCategory[option.value]
                 const hasGenerated = generatedByCategory[option.value]
                 const error = errorsByCategory[option.value]
+                const visibleItems =
+                  displayMode === 'filtered'
+                    ? candidates.map((candidate) => ({
+                        candidate,
+                        filteredReason: null,
+                      }))
+                    : [
+                        ...candidates.map((candidate) => ({
+                          candidate,
+                          filteredReason: null,
+                        })),
+                        ...filteredOut.map((item) => ({
+                          candidate: item.candidate,
+                          filteredReason: item.reason,
+                        })),
+                      ]
+
+                
 
                 return (
                   <Accordion.Item value={option.value} key={option.value} className="ui-meal-accordion-item">
@@ -457,7 +535,18 @@ export default function RecommendationPage() {
                           {error}
                         </Alert>
                       )}
-
+                      
+                      <Box className="ui-recommendation-filter-row">
+                        <SegmentedControl
+                          className="ui-recommendation-filter-toggle"
+                          value={displayMode}
+                          onChange={(value) => setDisplayMode(value as 'filtered' | 'all')}
+                          data={[
+                            { label: 'Show recommended only', value: 'filtered' },
+                            { label: 'Show all results', value: 'all' },
+                          ]}
+                        />
+                      </Box>
                       {isLoading && (
                         <Box className="ui-recommendation-state ui-card">
                           <RecommendationIcon name="sparkle" size={28} />
@@ -465,7 +554,7 @@ export default function RecommendationPage() {
                         </Box>
                       )}
 
-                      {!isLoading && hasGenerated && candidates.length === 0 && (
+                      {!isLoading && hasGenerated && visibleItems.length === 0 && (
                         <Box className="ui-recommendation-state ui-card">
                           <RecommendationIcon name="bowl" size={30} />
                           <Text fw={900}>No dataset matches found.</Text>
@@ -482,9 +571,9 @@ export default function RecommendationPage() {
                         </Box>
                       )}
 
-                      {!isLoading && candidates.length > 0 && (
+                      {!isLoading && visibleItems.length > 0 && (
                         <Box className="ui-recommendation-grid">
-                          {candidates.map(renderCandidateCard)}
+                          {visibleItems.map(renderCandidateCard)}
                         </Box>
                       )}
 

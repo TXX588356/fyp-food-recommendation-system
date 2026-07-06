@@ -67,7 +67,7 @@ func dietaryConflictReason(candidate interfaces.MatchedMealCandidate, restrictio
 func healthConflictReason(candidate interfaces.MatchedMealCandidate, concerns []string) string {
 	for _, concern := range concerns {
 		if candidate.GeneratedMeal.HealthFlags[concern] == "AVOID" {
-			return "health flag is AVOID for " + concern
+			return "AVOID for " + concern
 		}
 	}
 	return ""

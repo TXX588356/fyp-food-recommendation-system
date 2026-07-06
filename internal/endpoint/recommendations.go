@@ -27,10 +27,6 @@ type generateRecommendationRequest struct {
 	PerMealBudget     float64 `json:"perMealBudget"`
 }
 
-type generateRecommendationsResponse struct {
-	Candidates []interfaces.MatchedMealCandidate `json:"candidates"`
-}
-
 var allowedRecommendationMealCategories = map[string]bool{
 	"breakfast": true,
 	"lunch":     true,
@@ -129,7 +125,7 @@ func (h *recommendationHandler) generateRecommendations(c *echo.Context) error {
 		"per_meal_budget", input.PerMealBudget,
 	)
 
-	candidates, err := h.recommendationService.GenerateCandidates(c.Request().Context(), userID, input)
+	result, err := h.recommendationService.GenerateRecommendationResult(c.Request().Context(), userID, input)
 	if err != nil {
 		slog.Error("recommendation request failed: generate candidates",
 			"user_id", userID,
@@ -144,12 +140,11 @@ func (h *recommendationHandler) generateRecommendations(c *echo.Context) error {
 	slog.Info("recommendation request completed",
 		"user_id", userID,
 		"meal_category", input.MealCategory,
-		"candidate_count", len(candidates),
+		"candidate_count", len(result.Candidates),
+		"filtered_out_count", len(result.FilteredOut),
 	)
 
-	return c.JSON(http.StatusOK, generateRecommendationsResponse{
-		Candidates: candidates,
-	})
+	return c.JSON(http.StatusOK, result)
 }
 
 func validateGenerateRecommendationRequest(input generateRecommendationRequest) error {

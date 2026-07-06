@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"fyp/food-rs/internal/interfaces"
 	"log/slog"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -25,8 +26,19 @@ type service struct {
 
 type generatedMealCreateResult struct {
 	index     int
+	mealName  string
 	candidate interfaces.MatchedMealCandidate
 	err       error
+}
+
+type generatedMealCreateInput struct {
+	index int
+	meal  interfaces.GeneratedMeal
+}
+
+type indexedMealCandidate struct {
+	index     int
+	candidate interfaces.MatchedMealCandidate
 }
 
 func NewService(mealGenerator interfaces.MealGenerator, foodSearcher interfaces.FoodSearcher, catalogService interfaces.CatalogService, customMealAutocompleter interfaces.CustomMealAutocompleter, mealLogRepository interfaces.MealLogRepository) interfaces.RecommendationService {
@@ -41,9 +53,9 @@ func NewService(mealGenerator interfaces.MealGenerator, foodSearcher interfaces.
 	}
 }
 
-// GenerateCandidates requests meal suggestions from Gemini and enriches each
-// candidate with factual macro nutrition data from the food searcher
-func (s *service) GenerateCandidates(ctx context.Context, userID uuid.UUID, input interfaces.MealPromptInput) ([]interfaces.MatchedMealCandidate, error) {
+// GenerateRecommendationResult requests meal suggestions from Gemini, enriches
+// them with catalog data, filters unsuitable meals, and ranks the valid results.
+func (s *service) GenerateRecommendationResult(ctx context.Context, userID uuid.UUID, input interfaces.MealPromptInput) (interfaces.RecommendationResult, error) {
 	slog.Info("recommendation generation started",
 		"user_id", userID,
 		"meal_category", input.MealCategory,
@@ -58,16 +70,19 @@ func (s *service) GenerateCandidates(ctx context.Context, userID uuid.UUID, inpu
 	started := time.Now()
 
 	historyStartTime := time.Now()
+
 	// Load history
 	historyStart := s.now().AddDate(0, 0, -30)
 	historyLogs, err := s.mealLogRepository.ListByUserAndRange(ctx, userID, historyStart, s.now().AddDate(0, 0, 1))
 	if err != nil {
-		return nil, fmt.Errorf("load recommendation history: %w", err)
+		return interfaces.RecommendationResult{}, fmt.Errorf("load recommendation history: %w", err)
 	}
 	slog.Info("recommendation timing", "stage", "load_history", "duration_ms", time.Since(historyStartTime).Milliseconds())
 	input.History = buildMealHistoryContext(historyLogs, s.now())
 
 	geminiStart := time.Now()
+
+	// Call Gemini
 	response, err := s.mealGenerator.GenerateMeals(ctx, input)
 	if err != nil {
 		slog.Error("Gemini meal generation failed",
@@ -75,7 +90,7 @@ func (s *service) GenerateCandidates(ctx context.Context, userID uuid.UUID, inpu
 			"meal_category", input.MealCategory,
 			"error", err,
 		)
-		return nil, fmt.Errorf("generated meal candidates: %w", err)
+		return interfaces.RecommendationResult{}, fmt.Errorf("generated meal candidates: %w", err)
 	}
 
 	slog.Info("recommendation timing", "stage", "gemini_generate_meals", "duration_ms", time.Since(geminiStart).Milliseconds(), "generated_count", len(response.Meals))
@@ -86,8 +101,8 @@ func (s *service) GenerateCandidates(ctx context.Context, userID uuid.UUID, inpu
 		"generated_count", len(response.Meals),
 	)
 
-	candidates := make([]interfaces.MatchedMealCandidate, 0, len(response.Meals))
-	missingMeals := make([]interfaces.GeneratedMeal, 0)
+	candidates := make([]indexedMealCandidate, 0, len(response.Meals))
+	missingMeals := make([]generatedMealCreateInput, 0)
 
 	for index, meal := range response.Meals {
 		matchStart := time.Now()
@@ -99,6 +114,7 @@ func (s *service) GenerateCandidates(ctx context.Context, userID uuid.UUID, inpu
 			"alternative_terms_count", len(meal.AlternativeSearchTerms),
 		)
 
+		// Match Gemini response with existing meals
 		candidate, found, err := s.matchFood(ctx, userID, meal)
 		if err != nil {
 			slog.Error("generated meal matching failed",
@@ -106,7 +122,7 @@ func (s *service) GenerateCandidates(ctx context.Context, userID uuid.UUID, inpu
 				"meal_name", meal.Name,
 				"error", err,
 			)
-			return nil, err
+			return interfaces.RecommendationResult{}, err
 		}
 
 		slog.Info("recommendation timing", "stage", "match_food", "index", index, "meal_name", meal.Name, "found", found, "duration_ms", time.Since(matchStart).Milliseconds())
@@ -117,11 +133,17 @@ func (s *service) GenerateCandidates(ctx context.Context, userID uuid.UUID, inpu
 				"meal_name", meal.Name,
 			)
 
-			missingMeals = append(missingMeals, meal)
+			missingMeals = append(missingMeals, generatedMealCreateInput{
+				index: index,
+				meal:  meal,
+			})
 			continue
 		}
 
-		candidates = append(candidates, candidate)
+		candidates = append(candidates, indexedMealCandidate{
+			index:     index,
+			candidate: candidate,
+		})
 		slog.Info("generated meal matched",
 			"user_id", userID,
 			"meal_name", meal.Name,
@@ -130,38 +152,65 @@ func (s *service) GenerateCandidates(ctx context.Context, userID uuid.UUID, inpu
 		)
 	}
 
+	// concurrently create missing generated meals
 	createResults := s.createMissingGeneratedCatalogMealsConcurrently(ctx, userID, missingMeals)
 	for _, result := range createResults {
 		if result.err != nil {
 			slog.Error("generated meal auto-create failed",
 				"user_id", userID,
 				"index", result.index,
-				"meal_name", missingMeals[result.index].Name,
+				"meal_name", result.mealName,
 				"error", result.err,
 			)
 			continue
 		}
 
-		candidates = append(candidates, result.candidate)
+		candidates = append(candidates, indexedMealCandidate{
+			index:     result.index,
+			candidate: result.candidate,
+		})
+	}
+
+	sort.SliceStable(candidates, func(i, j int) bool {
+		return candidates[i].index < candidates[j].index
+	})
+	matchedCandidates := make([]interfaces.MatchedMealCandidate, 0, len(candidates))
+	for _, candidate := range candidates {
+		matchedCandidates = append(matchedCandidates, candidate.candidate)
 	}
 
 	filterStart := time.Now()
-	filterResult := filterCandidates(candidates, input)
-	slog.Info("recommendation timing", "stage", "filter_candidates", "candidate_count", len(candidates), "duration_ms", time.Since(filterStart).Milliseconds())
+
+	// filter
+	filterResult := filterCandidates(matchedCandidates, input)
+	slog.Info("recommendation timing", "stage", "filter_candidates", "candidate_count", len(matchedCandidates), "duration_ms", time.Since(filterStart).Milliseconds())
 
 	rankStart := time.Now()
+
+	// rank
 	rankedCandidates := rankCandidates(filterResult.Filtered, input, input.History)
 	slog.Info("recommendation timing", "stage", "rank_candidates", "candidate_count", len(filterResult.Filtered), "duration_ms", time.Since(rankStart).Milliseconds())
+	filteredOut := make([]interfaces.FilteredMealCandidate, 0, len(filterResult.Removed))
+	for _, removed := range filterResult.Removed {
+		filteredOut = append(filteredOut, interfaces.FilteredMealCandidate{
+			Candidate: removed.Candidate,
+			Reason:    removed.Reason,
+		})
+	}
 
 	slog.Info("recommendation generation completed",
 		"user_id", userID,
 		"meal_category", input.MealCategory,
-		"candidate_count", len(candidates),
+		"candidate_count", len(matchedCandidates),
 	)
 
 	slog.Info("recommendation timing", "stage", "total", "duration_ms", time.Since(started).Milliseconds())
 
-	return rankedCandidates, nil
+	return interfaces.RecommendationResult{
+		Candidates:       rankedCandidates,
+		FilteredOut:      filteredOut,
+		FilteringApplied: true,
+	}, nil
 }
 
 func (s *service) createMissingGeneratedCatalogMeal(ctx context.Context, userID uuid.UUID, meal interfaces.GeneratedMeal) (interfaces.MatchedMealCandidate, error) {
@@ -248,13 +297,13 @@ func catalogMealToFoodSearchResult(meal interfaces.CatalogMeal) interfaces.FoodS
 	return result
 }
 
-func (s *service) createMissingGeneratedCatalogMealsConcurrently(ctx context.Context, userID uuid.UUID, meals []interfaces.GeneratedMeal) []generatedMealCreateResult {
+func (s *service) createMissingGeneratedCatalogMealsConcurrently(ctx context.Context, userID uuid.UUID, meals []generatedMealCreateInput) []generatedMealCreateResult {
 	results := make([]generatedMealCreateResult, len(meals))
 	var wg sync.WaitGroup
 
-	for index, meal := range meals {
-		index := index
-		meal := meal
+	for resultIndex, input := range meals {
+		resultIndex := resultIndex
+		input := input
 
 		wg.Add(1)
 		go func() {
@@ -264,21 +313,26 @@ func (s *service) createMissingGeneratedCatalogMealsConcurrently(ctx context.Con
 			case s.autoCreateLimiter <- struct{}{}:
 				defer func() { <-s.autoCreateLimiter }()
 			case <-ctx.Done():
-				results[index] = generatedMealCreateResult{index: index, err: ctx.Err()}
+				results[resultIndex] = generatedMealCreateResult{
+					index:    input.index,
+					mealName: input.meal.Name,
+					err:      ctx.Err(),
+				}
 				return
 			}
 
 			createStart := time.Now()
-			candidate, err := s.createMissingGeneratedCatalogMeal(ctx, userID, meal)
+			candidate, err := s.createMissingGeneratedCatalogMeal(ctx, userID, input.meal)
 			slog.Info("recommendation timing",
 				"stage", "auto_create_generated_meal",
-				"index", index,
-				"meal_name", meal.Name,
+				"index", input.index,
+				"meal_name", input.meal.Name,
 				"duration_ms", time.Since(createStart).Milliseconds(),
 			)
 
-			results[index] = generatedMealCreateResult{
-				index:     index,
+			results[resultIndex] = generatedMealCreateResult{
+				index:     input.index,
+				mealName:  input.meal.Name,
 				candidate: candidate,
 				err:       err,
 			}

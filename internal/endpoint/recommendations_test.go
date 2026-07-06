@@ -282,13 +282,33 @@ var _ = Describe("Recommendation endpoint contract", func() {
 					MatchedQuery: "Nasi Lemak",
 				},
 			}
+			filteredOut := []interfaces.FilteredMealCandidate{
+				{
+					Candidate: interfaces.MatchedMealCandidate{
+						GeneratedMeal: interfaces.GeneratedMeal{
+							Name: "Pork Noodles",
+						},
+						Food: interfaces.FoodSearchResult{
+							ID:   "pork-food",
+							Name: "Pork Noodles",
+							Tags: []string{"pork"},
+						},
+						MatchedQuery: "Pork Noodles",
+					},
+					Reason: "contains pork, not suitable for halal restriction",
+				},
+			}
 
 			preferenceService.EXPECT().GetByUserID(mock.Anything, userID).
 				Return(preferences, nil).
 				Once()
 
-			recommendationService.EXPECT().GenerateCandidates(mock.Anything, userID, expectedInput).
-				Return(candidates, nil).
+			recommendationService.EXPECT().GenerateRecommendationResult(mock.Anything, userID, expectedInput).
+				Return(interfaces.RecommendationResult{
+					Candidates:       candidates,
+					FilteredOut:      filteredOut,
+					FilteringApplied: true,
+				}, nil).
 				Once()
 
 			response := performRecommendationRequest(e, generateRecommendationRequest{
@@ -299,6 +319,9 @@ var _ = Describe("Recommendation endpoint contract", func() {
 
 			Expect(response.Code).To(Equal(http.StatusOK))
 			Expect(response.Body.String()).To(ContainSubstring(`"candidates"`))
+			Expect(response.Body.String()).To(ContainSubstring(`"filtered_out"`))
+			Expect(response.Body.String()).To(ContainSubstring(`"filtering_applied":true`))
+			Expect(response.Body.String()).To(ContainSubstring(`"reason":"contains pork, not suitable for halal restriction"`))
 			Expect(response.Body.String()).To(ContainSubstring(`"Nasi Lemak"`))
 			Expect(response.Body.String()).To(ContainSubstring(`"matched_query":"Nasi Lemak"`))
 		})
@@ -326,8 +349,8 @@ var _ = Describe("Recommendation endpoint contract", func() {
 				Return(preferences, nil).
 				Once()
 
-			recommendationService.EXPECT().GenerateCandidates(mock.Anything, userID, mock.Anything).
-				Return(nil, errors.New("Gemini unavailable")).
+			recommendationService.EXPECT().GenerateRecommendationResult(mock.Anything, userID, mock.Anything).
+				Return(interfaces.RecommendationResult{}, errors.New("Gemini unavailable")).
 				Once()
 
 			response := performRecommendationRequest(e, generateRecommendationRequest{
@@ -348,8 +371,12 @@ var _ = Describe("Recommendation endpoint contract", func() {
 				Return(preferences, nil).
 				Once()
 
-			recommendationService.EXPECT().GenerateCandidates(mock.Anything, userID, mock.Anything).
-				Return([]interfaces.MatchedMealCandidate{}, nil).
+			recommendationService.EXPECT().GenerateRecommendationResult(mock.Anything, userID, mock.Anything).
+				Return(interfaces.RecommendationResult{
+					Candidates:       []interfaces.MatchedMealCandidate{},
+					FilteredOut:      []interfaces.FilteredMealCandidate{},
+					FilteringApplied: true,
+				}, nil).
 				Once()
 
 			response := performRecommendationRequest(e, generateRecommendationRequest{

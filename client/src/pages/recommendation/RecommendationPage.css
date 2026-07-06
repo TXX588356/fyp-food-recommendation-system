@@ -5,6 +5,58 @@
 .ui-recommendation-grid { display: grid; gap: 16px; }
 .ui-recommendation-regenerate { width: 100%; min-height: 52px; margin-top: 16px; font-size: 15px; }
 .ui-recommendation-add-meal { width: 100%; min-height: 50px; margin-top: 10px; }
+.ui-recommendation-filter-row {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+}
+.ui-recommendation-filter-toggle {
+  width: min(100%, 390px);
+  min-height: 44px;
+  margin: 0 0 16px;
+  padding: 4px;
+  border: 1px solid rgba(15, 107, 67, 0.18);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(255, 251, 239, 0.96), rgba(238, 227, 199, 0.78));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72), var(--shadow-sm);
+}
+.ui-recommendation-filter-toggle .mantine-SegmentedControl-indicator {
+  border-radius: 999px;
+  background: var(--green);
+  box-shadow: 0 10px 22px rgba(15, 107, 67, 0.26);
+}
+.ui-recommendation-filter-toggle .mantine-SegmentedControl-control {
+  border: 0;
+}
+.ui-recommendation-filter-toggle .mantine-SegmentedControl-label {
+  min-height: 34px;
+  padding: 7px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.15;
+  transition: color 160ms ease, background 160ms ease;
+}
+.ui-recommendation-filter-toggle .mantine-SegmentedControl-label:hover {
+  background: rgba(15, 107, 67, 0.07);
+  color: var(--green-dark);
+}
+.ui-recommendation-filter-toggle .mantine-SegmentedControl-control[data-active] .mantine-SegmentedControl-label {
+  color: #fff8e8;
+}
+.ui-recommendation-filter-toggle:focus-within {
+  box-shadow: var(--focus), var(--shadow-sm);
+}
+.ui-meal-filtered-badge {
+  width: fit-content;
+  max-width: 100%;
+  white-space: normal;
+  line-height: 1.25;
+}
 
 .ui-meal-accordion { display: grid; gap: 14px; }
 .ui-meal-accordion-item {
@@ -50,4 +102,33 @@
   }
   .ui-meal-accordion-icon { width: 40px; height: 40px; }
   .ui-meal-accordion-panel { padding: 0 14px 16px; }
+  .ui-recommendation-filter-row { justify-content: stretch; }
+  .ui-recommendation-filter-toggle { width: 100%; }
+  .ui-recommendation-filter-toggle .mantine-SegmentedControl-label {
+    padding-inline: 10px;
+    font-size: 12px;
+  }
+}
+
+.ui-meal-card-filtered {
+  opacity: 0.7;
+  background: rgba(235, 235, 235, 0.78);
+  border-color: rgba(90, 90, 90, 0.18);
+  cursor: not-allowed;
+}
+
+.ui-meal-card-filtered .ui-meal-photo {
+  background: rgba(120, 120, 120, 0.12);
+}
+
+.ui-meal-card-filtered .ui-meal-log-button {
+  pointer-events: none;
+}
+
+.ui-meal-card-filtered .ui-meal-filtered-badge {
+  opacity: 1;
+  filter: none;
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
 }
