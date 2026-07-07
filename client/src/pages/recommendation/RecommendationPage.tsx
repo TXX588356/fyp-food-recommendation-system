@@ -443,15 +443,6 @@ export default function RecommendationPage() {
         >
         Log
       </Button>
-
-      <LogMealModal 
-        opened={mealToLog !== null}
-        meal={mealToLog}
-        onClose={() => setMealToLog(null)}
-        onLogged={() => {
-          setMealToLog(null)
-        }}
-      />
     </Box>
     )
   }
@@ -602,6 +593,12 @@ export default function RecommendationPage() {
           </Box>
         </Box>
       </Box>
+      <LogMealModal
+        opened={mealToLog !== null}
+        meal={mealToLog}
+        onClose={() => setMealToLog(null)}
+        onLogged={() => setMealToLog(null)}
+      />
     </Box>
   )
 }
