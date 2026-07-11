@@ -14,8 +14,15 @@ import (
 )
 
 type service struct {
-	mealGenerator           interfaces.MealGenerator
-	foodSearcher            interfaces.FoodSearcher
+	mealGenerator interfaces.MealGenerator
+
+	// candidateSearcher returns up to N ranked backend-owned candidates for one
+	// generated meal.
+	candidateSearcher interfaces.FoodCandidateSearcher
+
+	// matchAdjudicator resolves ambiguous candidate groups in one batched LLM
+	// call. Exact match skips this dependency.
+	matchAdjudicator        interfaces.MealMatchAdjudicator
 	catalogService          interfaces.CatalogService
 	customMealAutocompleter interfaces.CustomMealAutocompleter
 	mealLogRepository       interfaces.MealLogRepository
@@ -41,10 +48,11 @@ type indexedMealCandidate struct {
 	candidate interfaces.MatchedMealCandidate
 }
 
-func NewService(mealGenerator interfaces.MealGenerator, foodSearcher interfaces.FoodSearcher, catalogService interfaces.CatalogService, customMealAutocompleter interfaces.CustomMealAutocompleter, mealLogRepository interfaces.MealLogRepository) interfaces.RecommendationService {
+func NewService(mealGenerator interfaces.MealGenerator, candidateSearcher interfaces.FoodCandidateSearcher, matchAdjudicator interfaces.MealMatchAdjudicator, catalogService interfaces.CatalogService, customMealAutocompleter interfaces.CustomMealAutocompleter, mealLogRepository interfaces.MealLogRepository) interfaces.RecommendationService {
 	return &service{
 		mealGenerator:           mealGenerator,
-		foodSearcher:            foodSearcher,
+		candidateSearcher:       candidateSearcher,
+		matchAdjudicator:        matchAdjudicator,
 		catalogService:          catalogService,
 		customMealAutocompleter: customMealAutocompleter,
 		mealLogRepository:       mealLogRepository,
@@ -104,6 +112,9 @@ func (s *service) GenerateRecommendationResult(ctx context.Context, userID uuid.
 	candidates := make([]indexedMealCandidate, 0, len(response.Meals))
 	missingMeals := make([]generatedMealCreateInput, 0)
 
+	// Ambiguous meals are collected first, then resolved in one LLM call.
+	matchTasks := make([]interfaces.MealMatchTask, 0)
+
 	for index, meal := range response.Meals {
 		matchStart := time.Now()
 
@@ -114,22 +125,37 @@ func (s *service) GenerateRecommendationResult(ctx context.Context, userID uuid.
 			"alternative_terms_count", len(meal.AlternativeSearchTerms),
 		)
 
-		// Match Gemini response with existing meals
-		candidate, found, err := s.matchFood(ctx, userID, meal)
+		// Build the same unique search terms: generated name first, then
+		// alternative_search_terms.
+		searchTerms := buildSearchTerms(meal)
+
+		// Ask the new candidate searcher for several ranked options instead of
+		// one first result. This is the core fuzzy-search upgrade.
+		foodCandidates, err := s.candidateSearcher.SearchFoodCandidates(ctx, userID, searchTerms, 5)
 		if err != nil {
-			slog.Error("generated meal matching failed",
+			slog.Error("generated meal candidate search failed",
 				"user_id", userID,
+				"index", index,
 				"meal_name", meal.Name,
 				"error", err,
 			)
-			return interfaces.RecommendationResult{}, err
+			return interfaces.RecommendationResult{}, fmt.Errorf("search generated meal candidates %q: %w", meal.Name, err)
 		}
 
-		slog.Info("recommendation timing", "stage", "match_food", "index", index, "meal_name", meal.Name, "found", found, "duration_ms", time.Since(matchStart).Milliseconds())
+		slog.Info("recommendation_timing",
+			"stage", "search_food_candidates",
+			"index", index,
+			"meal_name", meal.Name,
+			"candidate_count", len(foodCandidates),
+			"duration_ms", time.Since(matchStart).Milliseconds(),
+		)
 
-		if !found {
-			slog.Info("generated meal unmatched; attempting prebuilt catalog auto-create",
+		// If no backend candidates exist, keep existing behavior: auto-create a
+		// generated catalog meal later.
+		if len(foodCandidates) == 0 {
+			slog.Info("generated meal has no candidates; attempting generated catalog auto-create",
 				"user_id", userID,
+				"index", index,
 				"meal_name", meal.Name,
 			)
 
@@ -140,16 +166,103 @@ func (s *service) GenerateRecommendationResult(ctx context.Context, userID uuid.
 			continue
 		}
 
-		candidates = append(candidates, indexedMealCandidate{
-			index:     index,
-			candidate: candidate,
-		})
-		slog.Info("generated meal matched",
+		// Unique exact match fast path:
+		//
+		// if exactly one exact-name/exact-alias candidate exists, accept it
+		// locally without calling Gemini again.
+		if exactCandidate, ok := classifyCandidates(foodCandidates); ok {
+			candidates = append(candidates, indexedMealCandidate{
+				index:     index,
+				candidate: matchedMealCandidateFromFoodCandidate(meal, exactCandidate),
+			})
+
+			slog.Info("generated meal exact matched",
+				"user_id", userID,
+				"index", index,
+				"meal_name", meal.Name,
+				"matched_query", exactCandidate.MatchedTerm,
+				"matched_food", exactCandidate.Food.Name,
+			)
+			continue
+		}
+
+		// Multiple plausible candidates, or only fuzzy/partial candidates, remain
+		// ambiguous. Defer them into one batched adjudication call.
+		task := buildMatchTask(index, meal, foodCandidates)
+		matchTasks = append(matchTasks, task)
+
+		slog.Info("generated meal requires adjudication",
 			"user_id", userID,
+			"index", index,
 			"meal_name", meal.Name,
-			"matched_query", candidate.MatchedQuery,
-			"matched_food", candidate.Food.Name,
+			"candidate_count", len(foodCandidates),
 		)
+	}
+
+	// Resolve all ambiguous meals in at most one additional LLM call.
+	if len(matchTasks) > 0 {
+		adjudicationStart := time.Now()
+
+		decisions, err := s.matchAdjudicator.ResolveMatches(ctx, matchTasks)
+		if err != nil {
+			// Adjudication failure should not accept fuzzy matches and should not
+			// fail the whole recommendation request. Treat ambiguous meals as
+			// unmatched so the auto-create path can handle them.
+			slog.Error("meal match adjudication failed; ambiguous meals will be auto-generated",
+				"user_id", userID,
+				"task_count", len(matchTasks),
+				"error", err,
+				"duration_ms", time.Since(adjudicationStart).Milliseconds(),
+			)
+
+			for _, task := range matchTasks {
+				missingMeals = append(missingMeals, generatedMealCreateInput{
+					index: task.MealIndex,
+					meal:  task.GeneratedMeal,
+				})
+			}
+		} else {
+			// Validate every Gemini decision against the backend-owned candidates
+			// that were supplied for that exact meal index.
+			validatedMatches := validateDecisions(matchTasks, decisions)
+
+			slog.Info("meal match adjudication completed",
+				"user_id", userID,
+				"task_count", len(matchTasks),
+				"decision_count", len(decisions),
+				"valid_match_count", len(validatedMatches),
+				"duration_ms", time.Since(adjudicationStart).Milliseconds(),
+			)
+
+			for _, task := range matchTasks {
+				matchedCandidate, ok := validatedMatches[task.MealIndex]
+				if !ok {
+					// NO_MATCH, invalid decision, missing decision, duplicate
+					// decision, or invented/cross-meal candidate ID all land here.
+					missingMeals = append(missingMeals, generatedMealCreateInput{
+						index: task.MealIndex,
+						meal:  task.GeneratedMeal,
+					})
+					continue
+				}
+
+				candidates = append(candidates, indexedMealCandidate{
+					index: task.MealIndex,
+					candidate: matchedMealCandidateFromFoodCandidate(
+						task.GeneratedMeal,
+						matchedCandidate,
+					),
+				})
+
+				slog.Info("generated meal adjudicated matched",
+					"user_id", userID,
+					"index", task.MealIndex,
+					"meal_name", task.GeneratedMeal.Name,
+					"matched_query", matchedCandidate.MatchedTerm,
+					"matched_food", matchedCandidate.Food.Name,
+				)
+			}
+		}
 	}
 
 	// concurrently create missing generated meals
@@ -241,35 +354,6 @@ func (s *service) createMissingGeneratedCatalogMeal(ctx context.Context, userID 
 		MatchedQuery:  meal.Name,
 		Food:          catalogMealToFoodSearchResult(catalogMeal),
 	}, nil
-}
-
-// matchFood tries the normalized Gemini name first, followed by each fallback search term.
-// A meal is discarded if every exact lookup returns no match.
-func (s *service) matchFood(ctx context.Context, userID uuid.UUID, meal interfaces.GeneratedMeal) (interfaces.MatchedMealCandidate, bool, error) {
-	searchTerms := buildSearchTerms(meal)
-
-	for _, query := range searchTerms {
-		slog.Info("searching meal candidate",
-			"user_id", userID,
-			"generated_meal", meal.Name,
-			"query", query,
-		)
-
-		food, found, err := s.foodSearcher.SearchFood(ctx, userID, query)
-		if err != nil {
-			return interfaces.MatchedMealCandidate{}, false, fmt.Errorf("search food %q: %w", query, err)
-		}
-
-		if found {
-			return interfaces.MatchedMealCandidate{
-				GeneratedMeal: meal,
-				Food:          food,
-				MatchedQuery:  query,
-			}, true, nil
-		}
-	}
-
-	return interfaces.MatchedMealCandidate{}, false, nil
 }
 
 func catalogMealToFoodSearchResult(meal interfaces.CatalogMeal) interfaces.FoodSearchResult {
@@ -368,4 +452,21 @@ func buildSearchTerms(meal interfaces.GeneratedMeal) []string {
 	}
 
 	return searchTerms
+}
+
+// matchedMealCandidateFromFoodCandidate converts an accepted FoodMatchCandidate
+// into the public recommendation candidate shape.
+//
+// The accepted candidate must already be backend-owned and validated:
+// - exact fast path candidates come from FoodCandidateSearcher
+// - adjudicated candidates come from validateDecisions
+func matchedMealCandidateFromFoodCandidate(meal interfaces.GeneratedMeal, candidate interfaces.FoodMatchCandidate) interfaces.MatchedMealCandidate {
+	return interfaces.MatchedMealCandidate{
+		GeneratedMeal: meal,
+		Food:          candidate.Food,
+
+		// Preserve backward-compatible MatchedQuery behavior by using the term
+		// that actually produced the accepted candidate.
+		MatchedQuery: candidate.MatchedTerm,
+	}
 }

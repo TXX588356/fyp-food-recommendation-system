@@ -61,6 +61,25 @@ type FoodSearchResult struct {
 	ImageURL string   `json:"image_url,omitempty"`
 }
 
+// FoodMatchKind explains why a food candidate matched generated meal terms.
+// Recommendation matching uses this to accept one exact match locally and send
+// fuzzy or ambiguous matches to adjudication.
+type FoodMatchKind string
+
+const (
+	FoodMatchExactName  FoodMatchKind = "exact_name"
+	FoodMatchExactAlias FoodMatchKind = "exact_alias"
+	FoodMatchFuzzy      FoodMatchKind = "fuzzy"
+	FoodMatchPartial    FoodMatchKind = "partial"
+)
+
+type FoodMatchCandidate struct {
+	Food        FoodSearchResult `json:"food"`
+	MatchKind   FoodMatchKind    `json:"matched_kind"`
+	MatchedTerm string           `json:"matched_term"`
+	Score       float64          `json:"score"`
+}
+
 // MealHistoryContext shows the summary of user's meal log history
 type MealHistoryContext struct {
 	RecentMealNames      []string       // List of recently eaten meal names
@@ -73,6 +92,16 @@ type MealGenerator interface {
 	GenerateMeals(ctx context.Context, input MealPromptInput) (GeminiMealsResponse, error)
 }
 
+// FoodSearcher returns the single best food match for a query.
+// Use this for manual search and existing simple lookup flows where callers
+// need one accepted result or a not-found response.
 type FoodSearcher interface {
 	SearchFood(ctx context.Context, userID uuid.UUID, query string) (FoodSearchResult, bool, error)
+}
+
+// FoodCandidateSearcher returns ranked match candidates for generated meal terms.
+// Use this only for recommendation matching, where ambiguous results must be
+// compared, adjudicated, and validated instead of accepting the first match.
+type FoodCandidateSearcher interface {
+	SearchFoodCandidates(ctx context.Context, userID uuid.UUID, queries []string, limit int) ([]FoodMatchCandidate, error)
 }

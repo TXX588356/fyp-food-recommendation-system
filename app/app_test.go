@@ -19,6 +19,10 @@ func (stubMealGenerator) AutocompleteCustomMeal(ctx context.Context, input inter
 	return interfaces.CustomMealAutocompleteResponse{}, nil
 }
 
+func (stubMealGenerator) ResolveMatches(ctx context.Context, tasks []interfaces.MealMatchTask) ([]interfaces.MealMatchDecision, error) {
+	return nil, nil
+}
+
 func TestApp(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "App Suite")

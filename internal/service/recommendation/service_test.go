@@ -3,6 +3,7 @@ package recommendation
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -25,6 +26,48 @@ type testCatalogService struct {
 type testMealLogRepository struct {
 	logs []model.MealLog
 	err  error
+}
+
+type testCandidateSearchCall struct {
+	userID  uuid.UUID
+	queries []string
+	limit   int
+}
+
+type testCandidateSearcher struct {
+	candidatesByQuery map[string][]interfaces.FoodMatchCandidate
+	err               error
+	calls             []testCandidateSearchCall
+}
+
+func (s *testCandidateSearcher) SearchFoodCandidates(ctx context.Context, userID uuid.UUID, queries []string, limit int) ([]interfaces.FoodMatchCandidate, error) {
+	s.calls = append(s.calls, testCandidateSearchCall{
+		userID:  userID,
+		queries: append([]string(nil), queries...),
+		limit:   limit,
+	})
+
+	if s.err != nil {
+		return nil, s.err
+	}
+
+	return s.candidatesByQuery[strings.Join(queries, "|")], nil
+}
+
+type testMatchAdjudicator struct {
+	decisions []interfaces.MealMatchDecision
+	err       error
+	calls     [][]interfaces.MealMatchTask
+}
+
+func (a *testMatchAdjudicator) ResolveMatches(ctx context.Context, tasks []interfaces.MealMatchTask) ([]interfaces.MealMatchDecision, error) {
+	a.calls = append(a.calls, append([]interfaces.MealMatchTask(nil), tasks...))
+
+	if a.err != nil {
+		return nil, a.err
+	}
+
+	return a.decisions, nil
 }
 
 func newTestCatalogService() *testCatalogService {
@@ -90,7 +133,8 @@ var _ = Describe("Recommendation candidate generation", func() {
 	var (
 		ctx                     context.Context
 		mealGenerator           *mocks.MealGenerator
-		foodSearcher            *mocks.FoodSearcher
+		candidateSearcher       *testCandidateSearcher
+		matchAdjudicator        *testMatchAdjudicator
 		svc                     *service
 		catalogService          interfaces.CatalogService
 		customMealAutocompleter *mocks.CustomMealAutocompleter
@@ -110,13 +154,16 @@ var _ = Describe("Recommendation candidate generation", func() {
 		}
 		userID = uuid.New()
 		mealGenerator = mocks.NewMealGenerator(GinkgoT())
-		foodSearcher = mocks.NewFoodSearcher(GinkgoT())
+		candidateSearcher = &testCandidateSearcher{
+			candidatesByQuery: map[string][]interfaces.FoodMatchCandidate{},
+		}
+		matchAdjudicator = &testMatchAdjudicator{}
 		customMealAutocompleter = mocks.NewCustomMealAutocompleter(GinkgoT())
 		catalogService = newTestCatalogService()
-		svc = NewService(mealGenerator, foodSearcher, catalogService, customMealAutocompleter, &testMealLogRepository{}).(*service)
+		svc = NewService(mealGenerator, candidateSearcher, matchAdjudicator, catalogService, customMealAutocompleter, &testMealLogRepository{}).(*service)
 	})
 
-	It("should match a meal using its normalized name first", func() {
+	It("should accept one exact candidate without adjudication", func() {
 		mealGenerator.EXPECT().GenerateMeals(mock.Anything, input).
 			Return(interfaces.GeminiMealsResponse{
 				Meals: []interfaces.GeneratedMeal{
@@ -125,22 +172,21 @@ var _ = Describe("Recommendation candidate generation", func() {
 			}, nil).
 			Once()
 
-		foodSearcher.EXPECT().SearchFood(mock.Anything, userID, "Nasi Lemak").
-			Return(interfaces.FoodSearchResult{
-				ID:   "food-1",
-				Name: "Nasi Lemak",
-			}, true, nil).
-			Once()
+		candidateSearcher.candidatesByQuery["Nasi Lemak"] = []interfaces.FoodMatchCandidate{
+			serviceFoodCandidate("food-1", "Nasi Lemak", interfaces.FoodMatchExactName, "Nasi Lemak", 1),
+		}
 
 		result, err := svc.GenerateRecommendationResult(ctx, userID, input)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(result.Candidates).To(HaveLen(1))
+		Expect(result.Candidates[0].Food.ID).To(Equal("food-1"))
 		Expect(result.Candidates[0].MatchedQuery).To(Equal("Nasi Lemak"))
 		Expect(result.FilteringApplied).To(BeTrue())
+		Expect(matchAdjudicator.calls).To(BeEmpty())
 	})
 
-	It("should try alternative search terms when the normalized name is not found", func() {
+	It("should pass generated name and alternative search terms to candidate search", func() {
 		mealGenerator.EXPECT().GenerateMeals(mock.Anything, input).
 			Return(interfaces.GeminiMealsResponse{
 				Meals: []interfaces.GeneratedMeal{
@@ -155,24 +201,18 @@ var _ = Describe("Recommendation candidate generation", func() {
 			}, nil).
 			Once()
 
-		foodSearcher.EXPECT().SearchFood(mock.Anything, userID, "Wantan Mee").
-			Return(interfaces.FoodSearchResult{}, false, nil).
-			Once()
-		foodSearcher.EXPECT().SearchFood(mock.Anything, userID, "Wonton Mee").
-			Return(interfaces.FoodSearchResult{}, false, nil).
-			Once()
-		foodSearcher.EXPECT().SearchFood(mock.Anything, userID, "Wan Tan Mee").
-			Return(interfaces.FoodSearchResult{
-				ID:   "food-2",
-				Name: "Wantan Mee",
-			}, true, nil).
-			Once()
+		candidateSearcher.candidatesByQuery["Wantan Mee|Wonton Mee|Wan Tan Mee"] = []interfaces.FoodMatchCandidate{
+			serviceFoodCandidate("food-2", "Wantan Mee", interfaces.FoodMatchExactAlias, "Wan Tan Mee", 0.98),
+		}
 
 		result, err := svc.GenerateRecommendationResult(ctx, userID, input)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(result.Candidates).To(HaveLen(1))
 		Expect(result.Candidates[0].MatchedQuery).To(Equal("Wan Tan Mee"))
+		Expect(candidateSearcher.calls).To(HaveLen(1))
+		Expect(candidateSearcher.calls[0].queries).To(Equal([]string{"Wantan Mee", "Wonton Mee", "Wan Tan Mee"}))
+		Expect(candidateSearcher.calls[0].limit).To(Equal(5))
 	})
 
 	It("should auto-create an unmatched meal and return it in the final candidates", func() {
@@ -189,13 +229,6 @@ var _ = Describe("Recommendation candidate generation", func() {
 			Return(interfaces.GeminiMealsResponse{
 				Meals: []interfaces.GeneratedMeal{generatedMeal},
 			}, nil).
-			Once()
-
-		foodSearcher.EXPECT().SearchFood(mock.Anything, userID, "Unknown Meal").
-			Return(interfaces.FoodSearchResult{}, false, nil).
-			Once()
-		foodSearcher.EXPECT().SearchFood(mock.Anything, userID, "Unknown Food").
-			Return(interfaces.FoodSearchResult{}, false, nil).
 			Once()
 
 		customMealAutocompleter.EXPECT().AutocompleteCustomMeal(
@@ -263,18 +296,9 @@ var _ = Describe("Recommendation candidate generation", func() {
 			Return(interfaces.GeminiMealsResponse{Meals: generatedMeals}, nil).
 			Once()
 
-		foodSearcher.EXPECT().SearchFood(mock.Anything, userID, "Unknown Meal").
-			Return(interfaces.FoodSearchResult{}, false, nil).
-			Once()
-		foodSearcher.EXPECT().SearchFood(mock.Anything, userID, "Existing Meal").
-			Return(interfaces.FoodSearchResult{
-				ID:       "existing",
-				Name:     "Existing Meal",
-				FatG:     10,
-				ProteinG: 20,
-				CarbsG:   40,
-			}, true, nil).
-			Once()
+		candidateSearcher.candidatesByQuery["Existing Meal"] = []interfaces.FoodMatchCandidate{
+			serviceFoodCandidate("existing", "Existing Meal", interfaces.FoodMatchExactName, "Existing Meal", 1),
+		}
 
 		customMealAutocompleter.EXPECT().AutocompleteCustomMeal(
 			mock.Anything,
@@ -316,10 +340,6 @@ var _ = Describe("Recommendation candidate generation", func() {
 			}, nil).
 			Once()
 
-		foodSearcher.EXPECT().SearchFood(mock.Anything, userID, "Unknown Meal").
-			Return(interfaces.FoodSearchResult{}, false, nil).
-			Once()
-
 		customMealAutocompleter.EXPECT().AutocompleteCustomMeal(
 			mock.Anything,
 			interfaces.CustomMealAutocompleteInput{Name: "Unknown Meal"},
@@ -338,10 +358,6 @@ var _ = Describe("Recommendation candidate generation", func() {
 			Return(interfaces.GeminiMealsResponse{
 				Meals: []interfaces.GeneratedMeal{generatedMeal},
 			}, nil).
-			Once()
-
-		foodSearcher.EXPECT().SearchFood(mock.Anything, userID, "Unknown Meal").
-			Return(interfaces.FoodSearchResult{}, false, nil).
 			Once()
 
 		customMealAutocompleter.EXPECT().AutocompleteCustomMeal(
@@ -363,6 +379,131 @@ var _ = Describe("Recommendation candidate generation", func() {
 		Expect(result.Candidates).To(BeEmpty())
 	})
 
+	It("should adjudicate ambiguous candidates once", func() {
+		mealGenerator.EXPECT().GenerateMeals(mock.Anything, input).
+			Return(interfaces.GeminiMealsResponse{
+				Meals: []interfaces.GeneratedMeal{
+					{Name: "Chicken Sausage"},
+					{Name: "Fried Rice"},
+				},
+			}, nil).
+			Once()
+
+		candidateSearcher.candidatesByQuery["Chicken Sausage"] = []interfaces.FoodMatchCandidate{
+			serviceFoodCandidate("sausage-1", "Chicken Breakfast Sausage", interfaces.FoodMatchFuzzy, "Chicken Sausage", 0.83),
+			serviceFoodCandidate("sausage-2", "Grilled Chicken Sausage", interfaces.FoodMatchFuzzy, "Chicken Sausage", 0.83),
+		}
+		candidateSearcher.candidatesByQuery["Fried Rice"] = []interfaces.FoodMatchCandidate{
+			serviceFoodCandidate("rice-1", "Fried Rice", interfaces.FoodMatchFuzzy, "Fried Rice", 0.85),
+		}
+
+		matchAdjudicator.decisions = []interfaces.MealMatchDecision{
+			{MealIndex: 0, Decision: matchDecisionMatch, CandidateID: "sausage-1"},
+			{MealIndex: 1, Decision: matchDecisionMatch, CandidateID: "rice-1"},
+		}
+
+		result, err := svc.GenerateRecommendationResult(ctx, userID, input)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(matchAdjudicator.calls).To(HaveLen(1))
+		Expect(matchAdjudicator.calls[0]).To(HaveLen(2))
+		Expect(result.Candidates).To(HaveLen(2))
+		Expect(result.Candidates[0].Food.ID).To(Equal("sausage-1"))
+		Expect(result.Candidates[1].Food.ID).To(Equal("rice-1"))
+	})
+
+	It("should auto-create a meal when adjudication returns NO_MATCH", func() {
+		generatedMeal := interfaces.GeneratedMeal{Name: "Unknown Sausage"}
+
+		mealGenerator.EXPECT().GenerateMeals(mock.Anything, input).
+			Return(interfaces.GeminiMealsResponse{
+				Meals: []interfaces.GeneratedMeal{generatedMeal},
+			}, nil).
+			Once()
+
+		candidateSearcher.candidatesByQuery["Unknown Sausage"] = []interfaces.FoodMatchCandidate{
+			serviceFoodCandidate("candidate-1", "Chicken Sausage", interfaces.FoodMatchFuzzy, "Unknown Sausage", 0.80),
+		}
+
+		matchAdjudicator.decisions = []interfaces.MealMatchDecision{
+			{MealIndex: 0, Decision: matchDecisionNoMatch},
+		}
+
+		customMealAutocompleter.EXPECT().AutocompleteCustomMeal(
+			mock.Anything,
+			interfaces.CustomMealAutocompleteInput{Name: "Unknown Sausage"},
+		).Return(interfaces.CustomMealAutocompleteResponse{
+			Calories:         500,
+			FatG:             18,
+			ProteinG:         24,
+			CarbsG:           62,
+			MealCategoryTags: []string{"rice_dishes"},
+		}, nil).Once()
+
+		catalogService.(*testCatalogService).createdMeal = interfaces.CatalogMeal{
+			ID:         uuid.MustParse("33333333-3333-3333-3333-333333333333"),
+			Name:       "Unknown Sausage",
+			Categories: []string{"rice_dishes"},
+			SelectedNutrition: interfaces.CatalogNutrition{
+				Calories: testFloatPtr(500),
+				FatG:     testFloatPtr(18),
+				ProteinG: testFloatPtr(24),
+				CarbsG:   testFloatPtr(62),
+			},
+		}
+
+		result, err := svc.GenerateRecommendationResult(ctx, userID, input)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result.Candidates).To(HaveLen(1))
+		Expect(result.Candidates[0].Food.ID).To(Equal("33333333-3333-3333-3333-333333333333"))
+	})
+
+	It("should auto-create ambiguous meals when adjudication fails", func() {
+		generatedMeal := interfaces.GeneratedMeal{Name: "Ambiguous Meal"}
+
+		mealGenerator.EXPECT().GenerateMeals(mock.Anything, input).
+			Return(interfaces.GeminiMealsResponse{
+				Meals: []interfaces.GeneratedMeal{generatedMeal},
+			}, nil).
+			Once()
+
+		candidateSearcher.candidatesByQuery["Ambiguous Meal"] = []interfaces.FoodMatchCandidate{
+			serviceFoodCandidate("candidate-1", "Ambiguous Meal A", interfaces.FoodMatchFuzzy, "Ambiguous Meal", 0.80),
+		}
+		matchAdjudicator.err = errors.New("adjudication unavailable")
+
+		customMealAutocompleter.EXPECT().AutocompleteCustomMeal(
+			mock.Anything,
+			interfaces.CustomMealAutocompleteInput{Name: "Ambiguous Meal"},
+		).Return(interfaces.CustomMealAutocompleteResponse{
+			Calories:         400,
+			FatG:             10,
+			ProteinG:         20,
+			CarbsG:           40,
+			MealCategoryTags: []string{"rice_dishes"},
+		}, nil).Once()
+
+		catalogService.(*testCatalogService).createdMeal = interfaces.CatalogMeal{
+			ID:         uuid.MustParse("44444444-4444-4444-4444-444444444444"),
+			Name:       "Ambiguous Meal",
+			Categories: []string{"rice_dishes"},
+			SelectedNutrition: interfaces.CatalogNutrition{
+				Calories: testFloatPtr(400),
+				FatG:     testFloatPtr(10),
+				ProteinG: testFloatPtr(20),
+				CarbsG:   testFloatPtr(40),
+			},
+		}
+
+		result, err := svc.GenerateRecommendationResult(ctx, userID, input)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(matchAdjudicator.calls).To(HaveLen(1))
+		Expect(result.Candidates).To(HaveLen(1))
+		Expect(result.Candidates[0].Food.ID).To(Equal("44444444-4444-4444-4444-444444444444"))
+	})
+
 	It("should return a controlled error when Gemini fails", func() {
 		mealGenerator.EXPECT().GenerateMeals(mock.Anything, input).
 			Return(interfaces.GeminiMealsResponse{}, errors.New("Gemini unavailable")).
@@ -373,7 +514,7 @@ var _ = Describe("Recommendation candidate generation", func() {
 		Expect(err).To(MatchError("generated meal candidates: Gemini unavailable"))
 	})
 
-	It("should return a controlled error when food search fails", func() {
+	It("should return a controlled error when candidate search fails", func() {
 		mealGenerator.EXPECT().GenerateMeals(mock.Anything, input).
 			Return(interfaces.GeminiMealsResponse{
 				Meals: []interfaces.GeneratedMeal{
@@ -382,13 +523,11 @@ var _ = Describe("Recommendation candidate generation", func() {
 			}, nil).
 			Once()
 
-		foodSearcher.EXPECT().SearchFood(mock.Anything, userID, "Nasi Lemak").
-			Return(interfaces.FoodSearchResult{}, false, errors.New("food API unavailable")).
-			Once()
+		candidateSearcher.err = errors.New("candidate search unavailable")
 
 		_, err := svc.GenerateRecommendationResult(ctx, userID, input)
 
-		Expect(err).To(MatchError(`search food "Nasi Lemak": food API unavailable`))
+		Expect(err).To(MatchError(ContainSubstring("candidate search unavailable")))
 	})
 
 	It("should expose filtered-out meals with reasons in the recommendation result", func() {
@@ -403,21 +542,12 @@ var _ = Describe("Recommendation candidate generation", func() {
 			}, nil).
 			Once()
 
-		foodSearcher.EXPECT().SearchFood(mock.Anything, userID, "Vegetable Soup").
-			Return(interfaces.FoodSearchResult{
-				ID:   "safe",
-				Name: "Vegetable Soup",
-				Tags: []string{"vegetables", "soups"},
-			}, true, nil).
-			Once()
-
-		foodSearcher.EXPECT().SearchFood(mock.Anything, userID, "Pork Noodles").
-			Return(interfaces.FoodSearchResult{
-				ID:   "pork-food",
-				Name: "Pork Noodles",
-				Tags: []string{"pork", "noodle_dishes"},
-			}, true, nil).
-			Once()
+		candidateSearcher.candidatesByQuery["Vegetable Soup"] = []interfaces.FoodMatchCandidate{
+			serviceFoodCandidateWithTags("safe", "Vegetable Soup", []string{"vegetables", "soups"}, interfaces.FoodMatchExactName, "Vegetable Soup", 1),
+		}
+		candidateSearcher.candidatesByQuery["Pork Noodles"] = []interfaces.FoodMatchCandidate{
+			serviceFoodCandidateWithTags("pork-food", "Pork Noodles", []string{"pork", "noodle_dishes"}, interfaces.FoodMatchExactName, "Pork Noodles", 1),
+		}
 
 		result, err := svc.GenerateRecommendationResult(ctx, userID, input)
 
@@ -446,3 +576,24 @@ var _ = Describe("Recommendation candidate generation", func() {
 		}))
 	})
 })
+
+func serviceFoodCandidate(id string, name string, kind interfaces.FoodMatchKind, matchedTerm string, score float64) interfaces.FoodMatchCandidate {
+	return serviceFoodCandidateWithTags(id, name, []string{"test_category"}, kind, matchedTerm, score)
+}
+
+func serviceFoodCandidateWithTags(id string, name string, tags []string, kind interfaces.FoodMatchKind, matchedTerm string, score float64) interfaces.FoodMatchCandidate {
+	return interfaces.FoodMatchCandidate{
+		Food: interfaces.FoodSearchResult{
+			ID:       id,
+			Name:     name,
+			Tags:     tags,
+			Calories: 500,
+			FatG:     15,
+			ProteinG: 25,
+			CarbsG:   60,
+		},
+		MatchKind:   kind,
+		MatchedTerm: matchedTerm,
+		Score:       score,
+	}
+}

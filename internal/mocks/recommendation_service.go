@@ -55,9 +55,7 @@ func (_mock *RecommendationService) GenerateRecommendationResult(ctx context.Con
 	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, interfaces.MealPromptInput) interfaces.RecommendationResult); ok {
 		r0 = returnFunc(ctx, userID, input)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(interfaces.RecommendationResult)
-		}
+		r0 = ret.Get(0).(interfaces.RecommendationResult)
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, interfaces.MealPromptInput) error); ok {
 		r1 = returnFunc(ctx, userID, input)

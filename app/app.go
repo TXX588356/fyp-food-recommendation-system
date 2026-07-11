@@ -43,6 +43,7 @@ type App struct {
 type AIClient interface {
 	interfaces.MealGenerator
 	interfaces.CustomMealAutocompleter
+	interfaces.MealMatchAdjudicator
 }
 
 var newMealGenerator = func(ctx context.Context, apiKey string) (AIClient, error) {
@@ -199,19 +200,15 @@ func (a *App) GetRecommendationService(ctx context.Context) (interfaces.Recommen
 		return nil, err
 	}
 
-	catalogService, err := a.GetCatalogService(ctx)
+	catalogSvc, err := a.GetCatalogService(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	prebuiltSearcher, err := a.GetCatalogFoodSearcher(ctx)
-	if err != nil {
-		return nil, err
-	}
+	catalogCandidateSearcher := catalogService.NewCandidateSearcher(catalogSvc)
+	candidateSearcher := mealsearch.NewCandidateSearcher(customMealService, catalogCandidateSearcher)
 
-	foodSearcher := mealsearch.NewCombinedSearcher(customMealService, prebuiltSearcher)
-
-	a.recommendationService = recommendationService.NewService(mealGenerator, foodSearcher, catalogService, customMealAutocompleter, mealLogRepo)
+	a.recommendationService = recommendationService.NewService(mealGenerator, candidateSearcher, mealGenerator, catalogSvc, customMealAutocompleter, mealLogRepo)
 
 	return a.recommendationService, nil
 }
