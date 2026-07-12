@@ -9,11 +9,12 @@ import {
   Title,
 } from '@mantine/core'
 import axios from 'axios'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { useAuth } from '@/auth/useAuth'
 import './RecommendationPage.css'
+import '@/App.css'
 import type { LoggableMeal } from '../mealLog/mealLogTypes'
 import LogMealModal from '../mealLog/LogMealModal'
 
@@ -305,6 +306,19 @@ export default function RecommendationPage() {
   const [errorsByCategory, setErrorsByCategory] = useState<CategoryState<string | null>>(emptyErrors)
 
   const [mealToLog, setMealToLog] = useState<LoggableMeal | null>(null)
+  const [successMeassage, setSuccessMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!successMeassage) {
+      return 
+    }
+
+    const dismissTimer = window.setTimeout(() => {
+      setSuccessMessage(null)
+    }, 4000)
+
+    return () => window.clearTimeout(dismissTimer)
+  }, [successMeassage])
 
   const openLogModal = (candidate: MatchedMealCandidate) => {
     setMealToLog({
@@ -421,6 +435,16 @@ export default function RecommendationPage() {
           <RecommendationIcon name="bowl" size={24} />
         )}
       </Box>
+      {successMeassage && (
+        <Box
+          className='ui-success-toast'
+          role="status"
+          aria-live='polite'
+        >
+          <span aria-hidden="true">✓</span>
+          <Text fw={900}>{successMeassage}</Text>
+        </Box>
+      )}
 
       <Box className="ui-meal-summary">
         <Title order={2}>{candidate.food.name}</Title>
@@ -597,7 +621,10 @@ export default function RecommendationPage() {
         opened={mealToLog !== null}
         meal={mealToLog}
         onClose={() => setMealToLog(null)}
-        onLogged={() => setMealToLog(null)}
+        onLogged={() => {
+          setSuccessMessage(`${mealToLog?.name ?? 'Meal'} logged successfully`)
+          setMealToLog(null)
+        }}
       />
     </Box>
   )

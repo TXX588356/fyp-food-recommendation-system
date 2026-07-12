@@ -27,6 +27,7 @@ import {
   restrictedMealCategories,
 } from '@/preferences/options'
 import './CustomMealAddPage.css'
+import '@/App.css'
 import {
   customMealCreatedNavigationState,
   getCustomMealSuccessMessage,
@@ -361,7 +362,7 @@ export function CustomMealSearchPage() {
     <Box className="ui-settings-page ui-meal-add-page">
       {successMessage && (
         <Box
-          className="ui-custom-meal-success-toast"
+          className="ui-success-toast"
           role="status"
           aria-live="polite"
         >
@@ -374,7 +375,10 @@ export function CustomMealSearchPage() {
         opened={mealToLog !== null}
         meal={mealToLog}
         onClose={() => setMealToLog(null)}
-        onLogged={() => setMealToLog(null)}
+        onLogged={() => {
+          setSuccessMessage(`${mealToLog?.name ?? 'Meal'} logged successfully`)
+          setMealToLog(null)
+        }}
       />
 
       <Box component="main" className="ui-settings-frame">

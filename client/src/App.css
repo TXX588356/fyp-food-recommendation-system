@@ -184,6 +184,26 @@
 }
 .ui-dark-button:hover { background: var(--ink-2); border-color: var(--ink-2); }
 
+.ui-success-toast {
+  position: fixed; z-index: 1000; top: 24px; right: 24px; max-width: min(420px, calc(100vw - 32px));
+  padding: 15px 18px; display: flex; align-items: center; gap: 12px; border-radius: 16px;
+  color: #fffbee; background: #24533f; border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 18px 48px rgba(20, 50, 38, 0.28); animation: ui-success-toast-in 220ms ease-out both;
+}
+.ui-success-toast > span {
+  width: 28px; height: 28px; flex: 0 0 auto; display: grid; place-items: center;
+  border-radius: 999px; color: #24533f; background: #f4d77f; font-weight: 900;
+}
+
+@keyframes ui-success-toast-in {
+  from { opacity: 0; transform: translateY(-10px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-success-toast { animation: none; }
+}
+
 @media (max-width: 960px) {
   .ui-feature-panel { min-height: inherit; border-radius: 24px; }
   .ui-settings-layout { grid-template-columns: minmax(0, 1fr); }
@@ -205,6 +225,7 @@
 }
 
 @media (max-width: 680px) {
+  .ui-success-toast { top: 16px; left: 16px; right: 16px; max-width: none; }
   .ui-split-shell { grid-template-rows: minmax(130px, 24vh) minmax(0, 1fr); }
   .ui-centered-content { padding: 12px; }
   .ui-form-card { max-height: calc(76vh - 24px); padding: 18px; border-radius: 20px; }
