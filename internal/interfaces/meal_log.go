@@ -46,7 +46,14 @@ type MealLogMonthResponse struct {
 	Items   []MealLogResponse   `json:"items"`
 }
 
+type MealLogUpdateInput struct {
+	Price   float64   `json:"price"`
+	EatenAt time.Time `json:"eatenAt"`
+}
+
 type MealLogService interface {
 	Create(ctx context.Context, userID uuid.UUID, input MealLogInput) (*MealLogResponse, error)
 	GetMonth(ctx context.Context, userID uuid.UUID, month string) (*MealLogMonthResponse, error)
+	Update(ctx context.Context, userID uuid.UUID, logID uuid.UUID, input MealLogUpdateInput) (*MealLogResponse, error)
+	Delete(ctx context.Context, id, logID uuid.UUID) error
 }

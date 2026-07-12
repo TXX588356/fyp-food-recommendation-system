@@ -62,6 +62,36 @@ func (s *service) Create(ctx context.Context, userID uuid.UUID, input interfaces
 	return buildMealLogResponse(saved), nil
 }
 
+func (s *service) Update(ctx context.Context, userID, logID uuid.UUID, input interfaces.MealLogUpdateInput) (*interfaces.MealLogResponse, error) {
+	if err := validateMealLogUpdateInput(input); err != nil {
+		return nil, err
+	}
+
+	log, err := s.mealLogRepo.FindByIDAndUser(ctx, logID, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Price = input.Price
+	log.EatenAt = input.EatenAt
+
+	updated, err := s.mealLogRepo.Update(ctx, log)
+	if err != nil {
+		return nil, err
+	}
+
+	return buildMealLogResponse(updated), nil
+}
+
+func (s *service) Delete(ctx context.Context, userID, logID uuid.UUID) error {
+	// Ownership check to prevent deleting other user's meal log
+	if _, err := s.mealLogRepo.FindByIDAndUser(ctx, logID, userID); err != nil {
+		return err
+	}
+
+	return s.mealLogRepo.Delete(ctx, logID, userID)
+}
+
 func (s *service) buildCustomMealLog(ctx context.Context, userID uuid.UUID, mealID uuid.UUID, input interfaces.MealLogInput) (*model.MealLog, error) {
 	meal, err := s.customMealService.FindVisibleByID(ctx, userID, mealID)
 	if err != nil {
@@ -133,26 +163,6 @@ func (s *service) GetMonth(ctx context.Context, userID uuid.UUID, month string) 
 		Summary: summary,
 		Items:   buildMealLogResponses(logs),
 	}, nil
-}
-
-func validateMealLogInput(input interfaces.MealLogInput) error {
-	if input.Source != interfaces.MealLogSourceCustom && input.Source != interfaces.MealLogSourcePrebuilt {
-		return errors.New("unsupported meal log source")
-	}
-
-	if strings.TrimSpace(input.MealID) == "" {
-		return errors.New("meal id is required")
-	}
-
-	if input.Price < 0 {
-		return errors.New("price cannot be negative")
-	}
-
-	if input.EatenAt.IsZero() {
-		return errors.New("eaten time is required")
-	}
-
-	return nil
 }
 
 func parseMonth(value string) (time.Time, time.Time, error) {
@@ -230,4 +240,36 @@ func buildMealLogResponses(logs []model.MealLog) []interfaces.MealLogResponse {
 	}
 
 	return responses
+}
+
+func validateMealLogUpdateInput(input interfaces.MealLogUpdateInput) error {
+	if input.Price < 0 {
+		return errors.New("price cannot be negative")
+	}
+
+	if input.EatenAt.IsZero() {
+		return errors.New("eaten time is required")
+	}
+
+	return nil
+}
+
+func validateMealLogInput(input interfaces.MealLogInput) error {
+	if input.Source != interfaces.MealLogSourceCustom && input.Source != interfaces.MealLogSourcePrebuilt {
+		return errors.New("unsupported meal log source")
+	}
+
+	if strings.TrimSpace(input.MealID) == "" {
+		return errors.New("meal id is required")
+	}
+
+	if input.Price < 0 {
+		return errors.New("price cannot be negative")
+	}
+
+	if input.EatenAt.IsZero() {
+		return errors.New("eaten time is required")
+	}
+
+	return nil
 }

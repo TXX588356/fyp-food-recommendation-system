@@ -7,6 +7,11 @@ export type MealLogInput = {
     eatenAt: string
 }
 
+export type MealLogUpdateInput = {
+    price: number
+    eatenAt: string
+}
+
 export type MealLogItem = {
     id: string
     customMealItemId?: string

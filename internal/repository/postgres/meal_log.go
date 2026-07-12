@@ -45,6 +45,35 @@ func (r *mealLogRepository) ListByUserAndRange(ctx context.Context, userID uuid.
 	return logs, err
 }
 
+func (r *mealLogRepository) FindByIDAndUser(ctx context.Context, id uuid.UUID, userID uuid.UUID) (*model.MealLog, error) {
+	var log model.MealLog
+
+	err := r.db.WithContext(ctx).
+		Where("id = ? AND user_id = ? AND deleted_at IS NULL", id, userID).
+		First(&log).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &log, nil
+}
+
+func (r *mealLogRepository) Update(ctx context.Context, mealLog *model.MealLog) (*model.MealLog, error) {
+	if err := r.db.WithContext(ctx).Save(mealLog).Error; err != nil {
+		return nil, err
+	}
+
+	return mealLog, nil
+}
+
+func (r *mealLogRepository) Delete(ctx context.Context, id uuid.UUID, userID uuid.UUID) error {
+	return r.db.WithContext(ctx).
+		Where("id = ? AND user_id = ?", id, userID).
+		Delete(&model.MealLog{}).
+		Error
+}
+
 func mealLogsByUserAndRange(db *gorm.DB, userID uuid.UUID, start, end time.Time) *gorm.DB {
 	return db.
 		Where("user_id = ? AND eaten_at >= ? AND eaten_at < ? AND deleted_at IS NULL", userID, start, end).

@@ -86,6 +86,18 @@ func (r *testMealLogRepository) ListByUserAndRange(context.Context, uuid.UUID, t
 	return r.logs, r.err
 }
 
+func (r *testMealLogRepository) FindByIDAndUser(context.Context, uuid.UUID, uuid.UUID) (*model.MealLog, error) {
+	return nil, nil
+}
+
+func (r *testMealLogRepository) Update(context.Context, *model.MealLog) (*model.MealLog, error) {
+	return nil, nil
+}
+
+func (r *testMealLogRepository) Delete(context.Context, uuid.UUID, uuid.UUID) error {
+	return nil
+}
+
 func (s *testCatalogService) CreateGeneratedMeal(ctx context.Context, input interfaces.GeneratedCatalogMealInput) (interfaces.CatalogMeal, error) {
 	s.createdInput = &input
 	if s.createErr != nil {

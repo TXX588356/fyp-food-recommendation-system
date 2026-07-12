@@ -41,4 +41,8 @@ type MealLogRepository interface {
 	Create(ctx context.Context, mealLog *model.MealLog) (*model.MealLog, error)
 	ListByUserAndMonth(ctx context.Context, userID uuid.UUID, start, end time.Time) ([]model.MealLog, error)
 	ListByUserAndRange(ctx context.Context, userID uuid.UUID, start, end time.Time) ([]model.MealLog, error)
+
+	FindByIDAndUser(ctx context.Context, id uuid.UUID, userID uuid.UUID) (*model.MealLog, error)
+	Update(ctx context.Context, mealLog *model.MealLog) (*model.MealLog, error)
+	Delete(ctx context.Context, id uuid.UUID, userID uuid.UUID) error
 }
