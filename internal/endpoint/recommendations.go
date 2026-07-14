@@ -60,6 +60,7 @@ func RegisterRecommendationRoutes(ctx context.Context, e *echo.Echo) {
 
 	recommendations := e.Group("/recommendations", middleware.Auth(a.JWTSecret))
 	recommendations.POST("", h.generateRecommendations)
+	recommendations.POST("/meal-detail", h.getMealDetail)
 }
 
 func (h *recommendationHandler) generateRecommendations(c *echo.Context) error {
@@ -216,14 +217,41 @@ func buildMealPromptFromPreferences(preferences interfaces.PreferenceResponse, r
 	}
 }
 
-func calculateDynamicPerMealBudget(monthlyBudget float64, currentMonthSpent float64, now time.Time) float64 {
+// calculateDynamicPerMealBudget estimates a per-meal budget from the remaining
+// monthly budget and days left in the current month.
+func calculateDynamicPerMealBudget(
+	monthlyBudget float64,
+	currentMonthSpent float64,
+	now time.Time,
+) float64 {
 	remainingBudget := monthlyBudget - currentMonthSpent
 	if remainingBudget <= 0 {
 		return 0
 	}
 
-	firstOfNextMonth := time.Date(now.Year(), now.Month()+1, 1, 0, 0, 0, 0, now.Location())
-	daysRemaining := int(firstOfNextMonth.Sub(time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())).Hours() / 24)
+	firstOfNextMonth := time.Date(
+		now.Year(),
+		now.Month()+1,
+		1,
+		0,
+		0,
+		0,
+		0,
+		now.Location(),
+	)
+
+	todayStart := time.Date(
+		now.Year(),
+		now.Month(),
+		now.Day(),
+		0,
+		0,
+		0,
+		0,
+		now.Location(),
+	)
+
+	daysRemaining := int(firstOfNextMonth.Sub(todayStart).Hours() / 24)
 	if daysRemaining < 1 {
 		daysRemaining = 1
 	}

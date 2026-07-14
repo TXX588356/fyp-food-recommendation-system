@@ -44,6 +44,7 @@ type AIClient interface {
 	interfaces.MealGenerator
 	interfaces.CustomMealAutocompleter
 	interfaces.MealMatchAdjudicator
+	interfaces.MealDetailExplainer
 }
 
 var newMealGenerator = func(ctx context.Context, apiKey string) (AIClient, error) {
@@ -195,6 +196,11 @@ func (a *App) GetRecommendationService(ctx context.Context) (interfaces.Recommen
 		return nil, err
 	}
 
+	preferenceService, err := a.GetPreferenceService(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	customMealAutocompleter, err := a.GetCustomMealAutocompleter(ctx)
 	if err != nil {
 		return nil, err
@@ -208,7 +214,16 @@ func (a *App) GetRecommendationService(ctx context.Context) (interfaces.Recommen
 	catalogCandidateSearcher := catalogService.NewCandidateSearcher(catalogSvc)
 	candidateSearcher := mealsearch.NewCandidateSearcher(customMealService, catalogCandidateSearcher)
 
-	a.recommendationService = recommendationService.NewService(mealGenerator, candidateSearcher, mealGenerator, catalogSvc, customMealAutocompleter, mealLogRepo)
+	a.recommendationService = recommendationService.NewService(
+		mealGenerator,
+		candidateSearcher,
+		mealGenerator,
+		catalogSvc,
+		customMealAutocompleter,
+		mealLogRepo,
+		preferenceService,
+		mealGenerator,
+	)
 
 	return a.recommendationService, nil
 }

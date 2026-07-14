@@ -24,6 +24,8 @@ type service struct {
 	// call. Exact match skips this dependency.
 	matchAdjudicator        interfaces.MealMatchAdjudicator
 	catalogService          interfaces.CatalogService
+	preferenceService       interfaces.PreferenceService
+	mealDetailExplainer     interfaces.MealDetailExplainer
 	customMealAutocompleter interfaces.CustomMealAutocompleter
 	mealLogRepository       interfaces.MealLogRepository
 	now                     func() time.Time
@@ -48,7 +50,16 @@ type indexedMealCandidate struct {
 	candidate interfaces.MatchedMealCandidate
 }
 
-func NewService(mealGenerator interfaces.MealGenerator, candidateSearcher interfaces.FoodCandidateSearcher, matchAdjudicator interfaces.MealMatchAdjudicator, catalogService interfaces.CatalogService, customMealAutocompleter interfaces.CustomMealAutocompleter, mealLogRepository interfaces.MealLogRepository) interfaces.RecommendationService {
+func NewService(
+	mealGenerator interfaces.MealGenerator,
+	candidateSearcher interfaces.FoodCandidateSearcher,
+	matchAdjudicator interfaces.MealMatchAdjudicator,
+	catalogService interfaces.CatalogService,
+	customMealAutocompleter interfaces.CustomMealAutocompleter,
+	mealLogRepository interfaces.MealLogRepository,
+	preferenceService interfaces.PreferenceService,
+	mealDetailExplainer interfaces.MealDetailExplainer,
+) interfaces.RecommendationService {
 	return &service{
 		mealGenerator:           mealGenerator,
 		candidateSearcher:       candidateSearcher,
@@ -56,6 +67,8 @@ func NewService(mealGenerator interfaces.MealGenerator, candidateSearcher interf
 		catalogService:          catalogService,
 		customMealAutocompleter: customMealAutocompleter,
 		mealLogRepository:       mealLogRepository,
+		preferenceService:       preferenceService,
+		mealDetailExplainer:     mealDetailExplainer,
 		autoCreateLimiter:       make(chan struct{}, 2),
 		now:                     time.Now,
 	}

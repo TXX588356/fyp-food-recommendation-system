@@ -23,6 +23,10 @@ func (stubMealGenerator) ResolveMatches(ctx context.Context, tasks []interfaces.
 	return nil, nil
 }
 
+func (stubMealGenerator) ExplainMealRecommendation(ctx context.Context, input interfaces.MealDetailExplanationInput) (string, error) {
+	return "This meal fits the user's current preferences.", nil
+}
+
 func TestApp(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "App Suite")

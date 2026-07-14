@@ -39,6 +39,78 @@ func (_m *RecommendationService) EXPECT() *RecommendationService_Expecter {
 	return &RecommendationService_Expecter{mock: &_m.Mock}
 }
 
+// BuildMealDetail provides a mock function for the type RecommendationService
+func (_mock *RecommendationService) BuildMealDetail(ctx context.Context, userID uuid.UUID, input interfaces.MealDetailInput) (interfaces.MealDetailResult, error) {
+	ret := _mock.Called(ctx, userID, input)
+
+	if len(ret) == 0 {
+		panic("no return value specified for BuildMealDetail")
+	}
+
+	var r0 interfaces.MealDetailResult
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, interfaces.MealDetailInput) (interfaces.MealDetailResult, error)); ok {
+		return returnFunc(ctx, userID, input)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, interfaces.MealDetailInput) interfaces.MealDetailResult); ok {
+		r0 = returnFunc(ctx, userID, input)
+	} else {
+		r0 = ret.Get(0).(interfaces.MealDetailResult)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, interfaces.MealDetailInput) error); ok {
+		r1 = returnFunc(ctx, userID, input)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// RecommendationService_BuildMealDetail_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'BuildMealDetail'
+type RecommendationService_BuildMealDetail_Call struct {
+	*mock.Call
+}
+
+// BuildMealDetail is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID uuid.UUID
+//   - input interfaces.MealDetailInput
+func (_e *RecommendationService_Expecter) BuildMealDetail(ctx interface{}, userID interface{}, input interface{}) *RecommendationService_BuildMealDetail_Call {
+	return &RecommendationService_BuildMealDetail_Call{Call: _e.mock.On("BuildMealDetail", ctx, userID, input)}
+}
+
+func (_c *RecommendationService_BuildMealDetail_Call) Run(run func(ctx context.Context, userID uuid.UUID, input interfaces.MealDetailInput)) *RecommendationService_BuildMealDetail_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 interfaces.MealDetailInput
+		if args[2] != nil {
+			arg2 = args[2].(interfaces.MealDetailInput)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *RecommendationService_BuildMealDetail_Call) Return(mealDetailResult interfaces.MealDetailResult, err error) *RecommendationService_BuildMealDetail_Call {
+	_c.Call.Return(mealDetailResult, err)
+	return _c
+}
+
+func (_c *RecommendationService_BuildMealDetail_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID, input interfaces.MealDetailInput) (interfaces.MealDetailResult, error)) *RecommendationService_BuildMealDetail_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GenerateRecommendationResult provides a mock function for the type RecommendationService
 func (_mock *RecommendationService) GenerateRecommendationResult(ctx context.Context, userID uuid.UUID, input interfaces.MealPromptInput) (interfaces.RecommendationResult, error) {
 	ret := _mock.Called(ctx, userID, input)

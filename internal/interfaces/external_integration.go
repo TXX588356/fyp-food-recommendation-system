@@ -67,10 +67,13 @@ type FoodSearchResult struct {
 type FoodMatchKind string
 
 const (
-	FoodMatchExactName  FoodMatchKind = "exact_name"
-	FoodMatchExactAlias FoodMatchKind = "exact_alias"
-	FoodMatchFuzzy      FoodMatchKind = "fuzzy"
-	FoodMatchPartial    FoodMatchKind = "partial"
+	FoodMatchExactName          FoodMatchKind = "exact_name"
+	FoodMatchExactAlias         FoodMatchKind = "exact_alias"
+	FoodMatchFuzzy              FoodMatchKind = "fuzzy"
+	FoodMatchPartial            FoodMatchKind = "partial"
+	RestaurantLookupOK                        = "ok"
+	RestaurantLookupNoResults                 = "no_results"
+	RestaurantLookupUnavailable               = "unavailable"
 )
 
 type FoodMatchCandidate struct {
@@ -88,8 +91,75 @@ type MealHistoryContext struct {
 	RecentlyEatenByName  map[string]int // Maps meal name to how many days ago it was last eaten (for scoring, ranking)
 }
 
+type MealDetailExplanationInput struct {
+	MealName     string
+	MealCategory string
+
+	Nutrition  MealDetailNutritionInput
+	PriceRange PriceRange
+
+	SodiumLevel string
+	SugarLevel  string
+	PurineRisk  string
+	HealthFlags map[string]string
+
+	UserGoal            string
+	DietaryRestrictions []string
+	HealthConcerns      []string
+	PreferredMealTags   []string
+
+	MonthlyMealBudget float64
+	CurrentMonthSpent float64
+	RemainingBudget   float64
+	PerMealBudget     float64
+
+	Location      string
+	LocationBasis string
+}
+
+type MealDetailNutritionInput struct {
+	Calories float64
+	FatG     float64
+	ProteinG float64
+	CarbsG   float64
+}
+
+// RestaurantSearcher looks up restaurants that may serve a selected meal near a location.
+type RestaurantSearcher interface {
+	SearchRestaurants(ctx context.Context, input RestaurantSearchInput) (RestaurantSearchResult, error)
+}
+
+// RestaurantSearchInput describes a restaurant lookup for one meal near one saved location.
+type RestaurantSearchInput struct {
+	MealName string
+	Location string
+	Limit    int
+}
+
+// RestaurantSearchResult contains mapped restaurant results and lookup status.
+type RestaurantSearchResult struct {
+	Status      string
+	Restaurants []RestaurantResult
+}
+
+// RestaurantResult is a frontend-safe restaurant result from an external lookup.
+type RestaurantResult struct {
+	Name         string
+	Address      string
+	Rating       float64
+	ReviewCount  int
+	Price        string
+	OpenNow      *bool
+	ThumbnailURL string
+	SourceURL    string
+}
+
 type MealGenerator interface {
 	GenerateMeals(ctx context.Context, input MealPromptInput) (GeminiMealsResponse, error)
+}
+
+type MealDetailExplainer interface {
+	ExplainMealRecommendation(ctx context.Context, input MealDetailExplanationInput) (string, error)
 }
 
 // FoodSearcher returns the single best food match for a query.

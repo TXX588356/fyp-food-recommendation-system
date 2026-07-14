@@ -441,3 +441,27 @@ func displayHistoryList(values []string) string {
 	}
 	return strings.Join(values, ", ")
 }
+
+func displayMap(values map[string]string) string {
+	if len(values) == 0 {
+		return "none"
+	}
+
+	parts := make([]string, 0, len(values))
+	for key, value := range values {
+		key = strings.TrimSpace(key)
+		value = strings.TrimSpace(value)
+
+		if key == "" || value == "" {
+			continue
+		}
+
+		parts = append(parts, fmt.Sprintf("%s=%s", key, value))
+	}
+
+	if len(parts) == 0 {
+		return "none"
+	}
+
+	return strings.Join(parts, ", ")
+}

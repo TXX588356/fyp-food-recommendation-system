@@ -40,8 +40,57 @@ type MealMatchDecision struct {
 	CandidateID string `json:"candidate_id,omitempty"`
 }
 
+// MealDetailInput is the service input for building a selected recommendation's detail.
+type MealDetailInput struct {
+	MealCategory string
+	Candidate    MatchedMealCandidate
+}
+
+// MealDetailResult is the service result returned to the meal detail endpoint
+type MealDetailResult struct {
+	Meal                      MealDetailMeal
+	RecommendationExplanation string
+	Location                  MealDetailLocation
+	Restaurants               []RestaurantResult
+	RestaurantLookupStatus    string
+}
+
+// MealDetailMeal is the display-ready selected meal detail.
+type MealDetailMeal struct {
+	ID                  string
+	Name                string
+	MealCategory        string
+	ImageURL            string
+	EstimatedPriceRange PriceRange
+	Nutrition           MealDetailNutrition
+	Signals             MealDetailSignals
+}
+
+// MealDetailNutrition contains serving-based macro nutrition for the selected meal.
+type MealDetailNutrition struct {
+	Calories float64
+	FatG     float64
+	ProteinG float64
+	CarbsG   float64
+}
+
+// MealDetailSignals contains generated health/risk signals for the selected meal.
+type MealDetailSignals struct {
+	SodiumLevel string
+	SugarLevel  string
+	PurineRisk  string
+	HealthFlags map[string]string
+}
+
+// MealDetailLocation describes the preference-based location used for restaurant lookup.
+type MealDetailLocation struct {
+	Query string
+	Basis string
+}
+
 type RecommendationService interface {
 	GenerateRecommendationResult(ctx context.Context, userID uuid.UUID, input MealPromptInput) (RecommendationResult, error)
+	BuildMealDetail(ctx context.Context, userID uuid.UUID, input MealDetailInput) (MealDetailResult, error)
 }
 
 // MealMatchAdjudicator resolves ambiguous recommendation matches in one batch.

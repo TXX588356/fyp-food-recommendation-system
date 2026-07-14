@@ -40,6 +40,16 @@ type testCandidateSearcher struct {
 	calls             []testCandidateSearchCall
 }
 
+type testPreferenceService struct {
+	response *interfaces.PreferenceResponse
+	err      error
+}
+
+type testMealDetailExplainer struct {
+	explanation string
+	err         error
+}
+
 func (s *testCandidateSearcher) SearchFoodCandidates(ctx context.Context, userID uuid.UUID, queries []string, limit int) ([]interfaces.FoodMatchCandidate, error) {
 	s.calls = append(s.calls, testCandidateSearchCall{
 		userID:  userID,
@@ -68,6 +78,42 @@ func (a *testMatchAdjudicator) ResolveMatches(ctx context.Context, tasks []inter
 	}
 
 	return a.decisions, nil
+}
+
+func (s *testPreferenceService) CompleteOnboarding(context.Context, uuid.UUID, interfaces.PreferenceInput) (*interfaces.PreferenceResponse, error) {
+	return s.response, s.err
+}
+
+func (s *testPreferenceService) GetByUserID(context.Context, uuid.UUID) (*interfaces.PreferenceResponse, error) {
+	if s.err != nil {
+		return nil, s.err
+	}
+
+	if s.response != nil {
+		return s.response, nil
+	}
+
+	return &interfaces.PreferenceResponse{}, nil
+}
+
+func (s *testPreferenceService) Update(context.Context, uuid.UUID, interfaces.PreferenceInput) (*interfaces.PreferenceResponse, error) {
+	return s.response, s.err
+}
+
+func (s *testPreferenceService) UpdateDataSharingConsent(context.Context, uuid.UUID, bool) error {
+	return s.err
+}
+
+func (e *testMealDetailExplainer) ExplainMealRecommendation(context.Context, interfaces.MealDetailExplanationInput) (string, error) {
+	if e.err != nil {
+		return "", e.err
+	}
+
+	if e.explanation != "" {
+		return e.explanation, nil
+	}
+
+	return "This meal fits the user's current preferences.", nil
 }
 
 func newTestCatalogService() *testCatalogService {
@@ -172,7 +218,16 @@ var _ = Describe("Recommendation candidate generation", func() {
 		matchAdjudicator = &testMatchAdjudicator{}
 		customMealAutocompleter = mocks.NewCustomMealAutocompleter(GinkgoT())
 		catalogService = newTestCatalogService()
-		svc = NewService(mealGenerator, candidateSearcher, matchAdjudicator, catalogService, customMealAutocompleter, &testMealLogRepository{}).(*service)
+		svc = NewService(
+			mealGenerator,
+			candidateSearcher,
+			matchAdjudicator,
+			catalogService,
+			customMealAutocompleter,
+			&testMealLogRepository{},
+			&testPreferenceService{},
+			&testMealDetailExplainer{},
+		).(*service)
 	})
 
 	It("should accept one exact candidate without adjudication", func() {
