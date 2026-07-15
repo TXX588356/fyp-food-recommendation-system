@@ -52,9 +52,36 @@ func (s *service) BuildMealDetail(ctx context.Context, userID uuid.UUID, input i
 		return interfaces.MealDetailResult{}, fmt.Errorf("explain meal recommendation: %w", err)
 	}
 
+	restaurantResult := interfaces.RestaurantSearchResult{
+		Status:      interfaces.RestaurantLookupUnavailable,
+		Restaurants: []interfaces.RestaurantResult{},
+	}
+
+	if strings.TrimSpace(explanationInput.Location) != "" && explanationInput.LocationBasis != "unavailable" {
+		result, err := s.restaurantSearcher.SearchRestaurants(ctx, interfaces.RestaurantSearchInput{
+			MealName: explanationInput.MealName,
+			Location: explanationInput.Location,
+			Limit:    10,
+		})
+		if err != nil {
+			restaurantResult = interfaces.RestaurantSearchResult{
+				Status:      interfaces.RestaurantLookupUnavailable,
+				Restaurants: []interfaces.RestaurantResult{},
+			}
+		} else {
+			restaurantResult = result
+		}
+	}
+
 	return interfaces.MealDetailResult{
 		Meal:                      buildMealDetailMeal(input.MealCategory, input.Candidate),
 		RecommendationExplanation: explanation,
+		Location: interfaces.MealDetailLocation{
+			Query: explanationInput.Location,
+			Basis: explanationInput.LocationBasis,
+		},
+		Restaurants:            restaurantResult.Restaurants,
+		RestaurantLookupStatus: restaurantResult.Status,
 	}, nil
 
 }

@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fyp/food-rs/internal/interfaces"
+	"fyp/food-rs/internal/service/restaurant"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -50,7 +51,7 @@ var _ = Describe("App dependencies", func() {
 			gotGeminiAPIKey = apiKey
 			return stubMealGenerator{}, nil
 		}
-		a := New(nil, "jwt-secret", "gemini-key", nil, "http://localhost:9000", "images")
+		a := New(nil, "jwt-secret", "gemini-key", nil, "http://localhost:9000", "images", "")
 
 		service, err := a.GetRecommendationService(context.Background())
 		Expect(err).NotTo(HaveOccurred())
@@ -72,7 +73,7 @@ var _ = Describe("App dependencies", func() {
 			return stubMealGenerator{}, nil
 		}
 
-		a := New(nil, "jwt-secret", "gemini-key", nil, "http://localhost:9000", "images")
+		a := New(nil, "jwt-secret", "gemini-key", nil, "http://localhost:9000", "images", "")
 
 		first, err := a.GetCustomMealAutocompleter(context.Background())
 		Expect(err).NotTo(HaveOccurred())
@@ -82,5 +83,36 @@ var _ = Describe("App dependencies", func() {
 
 		Expect(first).To(BeIdenticalTo(second))
 		Expect(factoryCalls).To(Equal(1))
+	})
+
+	It("should use a no-op restaurant searcher when SerpAPI key is missing", func() {
+		a := New(nil, "jwt-secret", "gemini-key", nil, "http://localhost:9000", "images", " ")
+
+		first, err := a.GetRestaurantSearcher(context.Background())
+		Expect(err).NotTo(HaveOccurred())
+		second, err := a.GetRestaurantSearcher(context.Background())
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(first).To(BeIdenticalTo(second))
+		_, ok := first.(restaurant.NoopSearcher)
+		Expect(ok).To(BeTrue())
+
+		result, err := first.SearchRestaurants(context.Background(), interfaces.RestaurantSearchInput{
+			MealName: "Chicken Rice",
+			Location: "Pavilion Kuala Lumpur",
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result.Status).To(Equal(interfaces.RestaurantLookupUnavailable))
+		Expect(result.Restaurants).To(BeEmpty())
+	})
+
+	It("should use a SerpAPI restaurant searcher when SerpAPI key is configured", func() {
+		a := New(nil, "jwt-secret", "gemini-key", nil, "http://localhost:9000", "images", "serp-key")
+
+		searcher, err := a.GetRestaurantSearcher(context.Background())
+
+		Expect(err).NotTo(HaveOccurred())
+		_, ok := searcher.(*restaurant.SerpAPIClient)
+		Expect(ok).To(BeTrue())
 	})
 })

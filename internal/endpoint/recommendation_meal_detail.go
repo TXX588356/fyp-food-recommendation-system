@@ -18,8 +18,27 @@ type mealDetailRequest struct {
 }
 
 type mealDetailResponse struct {
-	Meal                      mealDetailMealResponse `json:"meal"`
-	RecommendationExplanation string                 `json:"recommendationExplanation"`
+	Meal                      mealDetailMealResponse     `json:"meal"`
+	RecommendationExplanation string                     `json:"recommendationExplanation"`
+	Location                  mealDetailLocationResponse `json:"location"`
+	Restaurants               []restaurantResponse       `json:"restaurants"`
+	RestaurantLookupStatus    string                     `json:"restaurantLookupStatus"`
+}
+
+type mealDetailLocationResponse struct {
+	Query string `json:"query"`
+	Basis string `json:"basis"`
+}
+
+type restaurantResponse struct {
+	Name         string  `json:"name"`
+	Address      string  `json:"address"`
+	Rating       float64 `json:"rating"`
+	ReviewCount  int     `json:"reviewCount"`
+	Price        string  `json:"price"`
+	OpenNow      *bool   `json:"openNow,omitempty"`
+	ThumbnailURL string  `json:"thumbnailUrl,omitempty"`
+	SourceURL    string  `json:"sourceUrl,omitempty"`
 }
 
 type mealDetailMealResponse struct {
@@ -202,6 +221,20 @@ func validateMealDetailHealthFlags(healthFlags map[string]string) error {
 
 // buildMealDetailResponse maps service meal detail output into the HTTP response shape.
 func buildMealDetailResponse(result interfaces.MealDetailResult) mealDetailResponse {
+	restaurants := make([]restaurantResponse, 0, len(result.Restaurants))
+	for _, restaurant := range result.Restaurants {
+		restaurants = append(restaurants, restaurantResponse{
+			Name:         restaurant.Name,
+			Address:      restaurant.Address,
+			Rating:       restaurant.Rating,
+			ReviewCount:  restaurant.ReviewCount,
+			Price:        restaurant.Price,
+			OpenNow:      restaurant.OpenNow,
+			ThumbnailURL: restaurant.ThumbnailURL,
+			SourceURL:    restaurant.SourceURL,
+		})
+	}
+
 	return mealDetailResponse{
 		Meal: mealDetailMealResponse{
 			ID:                  result.Meal.ID,
@@ -223,6 +256,12 @@ func buildMealDetailResponse(result interfaces.MealDetailResult) mealDetailRespo
 			},
 		},
 		RecommendationExplanation: result.RecommendationExplanation,
+		Location: mealDetailLocationResponse{
+			Query: result.Location.Query,
+			Basis: result.Location.Basis,
+		},
+		Restaurants:            restaurants,
+		RestaurantLookupStatus: result.RestaurantLookupStatus,
 	}
 }
 

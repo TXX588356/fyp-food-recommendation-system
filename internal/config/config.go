@@ -23,6 +23,7 @@ type Config struct {
 	MinIOPublicURL      string
 	CatalogAdminEnabled bool
 	CatalogAdminToken   string
+	SerpAPIKey          string
 }
 
 func (c Config) Validate() error {
@@ -55,6 +56,7 @@ func Load() Config {
 		MinIOPublicURL:      configString("MINIO_PUBLIC_URL"),
 		CatalogAdminEnabled: viper.GetBool("CATALOG_ADMIN_ENABLED"),
 		CatalogAdminToken:   configString("CATALOG_ADMIN_TOKEN"),
+		SerpAPIKey:          configString("SERPAPI_API_KEY"),
 	}
 }
 

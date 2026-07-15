@@ -50,6 +50,11 @@ type testMealDetailExplainer struct {
 	err         error
 }
 
+type testRestaurantSearcher struct {
+	result interfaces.RestaurantSearchResult
+	err    error
+}
+
 func (s *testCandidateSearcher) SearchFoodCandidates(ctx context.Context, userID uuid.UUID, queries []string, limit int) ([]interfaces.FoodMatchCandidate, error) {
 	s.calls = append(s.calls, testCandidateSearchCall{
 		userID:  userID,
@@ -114,6 +119,21 @@ func (e *testMealDetailExplainer) ExplainMealRecommendation(context.Context, int
 	}
 
 	return "This meal fits the user's current preferences.", nil
+}
+
+func (s *testRestaurantSearcher) SearchRestaurants(context.Context, interfaces.RestaurantSearchInput) (interfaces.RestaurantSearchResult, error) {
+	if s.err != nil {
+		return interfaces.RestaurantSearchResult{}, s.err
+	}
+
+	if s.result.Status != "" {
+		return s.result, nil
+	}
+
+	return interfaces.RestaurantSearchResult{
+		Status:      interfaces.RestaurantLookupUnavailable,
+		Restaurants: []interfaces.RestaurantResult{},
+	}, nil
 }
 
 func newTestCatalogService() *testCatalogService {
@@ -227,6 +247,7 @@ var _ = Describe("Recommendation candidate generation", func() {
 			&testMealLogRepository{},
 			&testPreferenceService{},
 			&testMealDetailExplainer{},
+			&testRestaurantSearcher{},
 		).(*service)
 	})
 

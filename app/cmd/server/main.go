@@ -46,7 +46,7 @@ func Run(parent context.Context) error {
 	ctx, cancel := signal.NotifyContext(parent, os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
-	a := app.New(db, cfg.JWTSecret, cfg.GeminiAPIKey, imageStorage, cfg.MinIOPublicURL, cfg.MinIOBucket)
+	a := app.New(db, cfg.JWTSecret, cfg.GeminiAPIKey, imageStorage, cfg.MinIOPublicURL, cfg.MinIOBucket, cfg.SerpAPIKey)
 	ctx = app.WithApp(ctx, a) // attach App instance to the context, allowing other codes to retrieve
 	endpoint.RegisterEndpoints(ctx, e)
 

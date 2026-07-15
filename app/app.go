@@ -13,7 +13,9 @@ import (
 	"fyp/food-rs/internal/service/mealsearch"
 	preferenceService "fyp/food-rs/internal/service/preference"
 	recommendationService "fyp/food-rs/internal/service/recommendation"
+	"fyp/food-rs/internal/service/restaurant"
 	"fyp/food-rs/internal/storage"
+	"strings"
 
 	"google.golang.org/genai"
 	"gorm.io/gorm"
@@ -32,12 +34,14 @@ type App struct {
 	GeminiAPIKey          string
 	preferenceService     interfaces.PreferenceService
 	customMealService     interfaces.CustomMealService
+	restaurantSearcher    interfaces.RestaurantSearcher
 	recommendationService interfaces.RecommendationService
 	aiClient              AIClient
 	catalogService        *catalogService.Service
 	catalogFoodSearcher   interfaces.FoodSearcher
 	minIOPublicURL        string
 	minIOBucket           string
+	SerpAPIKey            string
 }
 
 type AIClient interface {
@@ -59,7 +63,7 @@ var newMealGenerator = func(ctx context.Context, apiKey string) (AIClient, error
 	return llm.NewClient(client), nil
 }
 
-func New(db *gorm.DB, jwtSecret, geminiAPIKey string, imageStorage interfaces.ImageStorage, minIOPublicURL, minIOBucket string) *App {
+func New(db *gorm.DB, jwtSecret, geminiAPIKey string, imageStorage interfaces.ImageStorage, minIOPublicURL, minIOBucket, serpAPIKey string) *App {
 	return &App{
 		PostgresDB:     db,
 		JWTSecret:      jwtSecret,
@@ -67,6 +71,7 @@ func New(db *gorm.DB, jwtSecret, geminiAPIKey string, imageStorage interfaces.Im
 		ImageStorage:   imageStorage,
 		minIOPublicURL: minIOPublicURL,
 		minIOBucket:    minIOBucket,
+		SerpAPIKey:     serpAPIKey,
 	}
 }
 
@@ -178,6 +183,20 @@ func (a *App) GetCustomMealAutocompleter(ctx context.Context) (interfaces.Custom
 	return a.GetAIClient(ctx)
 }
 
+func (a *App) GetRestaurantSearcher(ctx context.Context) (interfaces.RestaurantSearcher, error) {
+	if a.restaurantSearcher != nil {
+		return a.restaurantSearcher, nil
+	}
+
+	if strings.TrimSpace(a.SerpAPIKey) == "" {
+		a.restaurantSearcher = restaurant.NoopSearcher{}
+		return a.restaurantSearcher, nil
+	}
+
+	a.restaurantSearcher = restaurant.NewSerpAPIClient(a.SerpAPIKey)
+	return a.restaurantSearcher, nil
+}
+
 // GetRecommendationService builds the recommendation service from Gemini and the prebuilt meal dataset.
 func (a *App) GetRecommendationService(ctx context.Context) (interfaces.RecommendationService, error) {
 	if a.recommendationService != nil {
@@ -211,6 +230,11 @@ func (a *App) GetRecommendationService(ctx context.Context) (interfaces.Recommen
 		return nil, err
 	}
 
+	restaurantSearcher, err := a.GetRestaurantSearcher(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	catalogCandidateSearcher := catalogService.NewCandidateSearcher(catalogSvc)
 	candidateSearcher := mealsearch.NewCandidateSearcher(customMealService, catalogCandidateSearcher)
 
@@ -223,6 +247,7 @@ func (a *App) GetRecommendationService(ctx context.Context) (interfaces.Recommen
 		mealLogRepo,
 		preferenceService,
 		mealGenerator,
+		restaurantSearcher,
 	)
 
 	return a.recommendationService, nil
