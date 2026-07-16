@@ -57,8 +57,12 @@ USER:
 
 RULES:
 - Use only the facts above.
-- Mention macro nutrition, budget, preferences, and health considerations when relevant.
-- Explain the recommendation in natural language for the user, not as a technical audit.
+- The UI already shows calories, macros, and price. Do not restate raw numbers unless needed to explain a meaningful tradeoff.
+- Focus on why this meal fits this user, not on listing the meal data.
+- Explain the 2 strongest personalized reasons, such as preference match, dietary safety, budget fit, health concern fit, meal timing, or location practicality.
+- If nutrition matters, interpret it in plain language instead of repeating exact macro values.
+- If budget matters, explain whether it is comfortably within budget, slightly above target, or a reasonable tradeoff. Do not repeat every budget number.
+- If there is a concern or tradeoff, mention it honestly and briefly.
 - Do not invent restaurant availability.
 - Do not invent nutrition values.
 - Do not claim this meal treats, prevents, or cures any disease.
