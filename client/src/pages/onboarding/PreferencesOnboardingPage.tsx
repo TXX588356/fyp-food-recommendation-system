@@ -87,6 +87,7 @@ export default function PreferencesOnboardingPage() {
 
     try {
       const preferencePayload = buildPreferencePayload(form.values)
+      console.debug('Preference onboarding payload', preferencePayload)
 
       await axios.post(`${API_BASE_URL}/preferences`, preferencePayload, {
         headers: {
@@ -101,7 +102,12 @@ export default function PreferencesOnboardingPage() {
       navigate('/recommendation', { replace: true })
     } catch (error) {
       console.error('Preference onboarding failed', error)
-      setSubmitError('Could not save your preferences. Please try again.')
+
+      const serverError = axios.isAxiosError(error)
+        ? error.response?.data?.error
+        : undefined
+
+      setSubmitError(serverError || 'Could not save your preferences. Please try again.')
     } finally {
       setIsSubmitting(false)
     }
