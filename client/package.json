@@ -15,6 +15,7 @@
     "@mantine/hooks": "^9.1.1",
     "@phosphor-icons/react": "github:phosphor-icons/react",
     "axios": "^1.16.0",
+    "lucide-react": "^1.24.0",
     "phosphor-icons": "^1.4.2",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
