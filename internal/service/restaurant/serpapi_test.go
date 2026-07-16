@@ -246,7 +246,16 @@ func TestSearchRestaurantsReturnsTransportError(t *testing.T) {
 		Location: "Pavilion Kuala Lumpur",
 	})
 
-	g.Expect(err).To(MatchError("Get \"https://serpapi.com/search?api_key=test-key&engine=google_maps&q=Chicken+Rice+restaurant+near+Pavilion+Kuala+Lumpur\": network down"))
+	g.Expect(err).To(MatchError("serpapi request failed: Get \"https://serpapi.com/search?api_key=<redacted>&engine=google_maps&q=Chicken+Rice+restaurant+near+Pavilion+Kuala+Lumpur\": network down"))
+}
+
+func TestRedactSerpAPIKey(t *testing.T) {
+	g := NewWithT(t)
+
+	got := redactSerpAPIKey(`Get "https://serpapi.com/search?api_key=secret-key&engine=google_maps": tls failed`)
+
+	g.Expect(got).To(Equal(`Get "https://serpapi.com/search?api_key=<redacted>&engine=google_maps": tls failed`))
+	g.Expect(got).NotTo(ContainSubstring("secret-key"))
 }
 
 func TestNoopSearcherReturnsUnavailable(t *testing.T) {

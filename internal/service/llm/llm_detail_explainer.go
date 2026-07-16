@@ -58,11 +58,15 @@ USER:
 RULES:
 - Use only the facts above.
 - The UI already shows calories, macros, and price. Do not restate raw numbers unless needed to explain a meaningful tradeoff.
-- Focus on why this meal fits this user, not on listing the meal data.
-- Explain the 2 strongest personalized reasons, such as preference match, dietary safety, budget fit, health concern fit, meal timing, or location practicality.
+- Start with the meal's practical food qualities, such as cooking style, heaviness, flavor profile, portion style, or when it is usually satisfying.
+- Then connect those food qualities to the user's preferences, restrictions, budget, or health context.
+- Do not make the explanation mostly a checklist of user profile matches.
+- Explain the 2 strongest reasons this specific food makes sense for this user.
 - If nutrition matters, interpret it in plain language instead of repeating exact macro values.
 - If budget matters, explain whether it is comfortably within budget, slightly above target, or a reasonable tradeoff. Do not repeat every budget number.
 - If there is a concern or tradeoff, mention it honestly and briefly.
+- Mention at most one budget point and one health point.
+- Prefer concrete food descriptions over generic praise.
 - Do not invent restaurant availability.
 - Do not invent nutrition values.
 - Do not claim this meal treats, prevents, or cures any disease.

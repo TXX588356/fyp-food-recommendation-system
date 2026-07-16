@@ -94,7 +94,7 @@ func (c *SerpAPIClient) SearchRestaurants(ctx context.Context, input interfaces.
 
 	response, err := c.httpClient.Do(request)
 	if err != nil {
-		return interfaces.RestaurantSearchResult{}, err
+		return interfaces.RestaurantSearchResult{}, fmt.Errorf("serpapi request failed: %s", redactSerpAPIKey(err.Error()))
 	}
 	defer response.Body.Close()
 
@@ -133,6 +133,37 @@ func buildSerpAPIMapsURL(apiKey, query string) (string, error) {
 	values.Set("api_key", apiKey)
 
 	return "https://serpapi.com/search?" + values.Encode(), nil
+}
+
+// redactSerpAPIKey removes API key values from URLs before errors are logged.
+func redactSerpAPIKey(message string) string {
+	parsedURL, err := url.Parse(message)
+	if err == nil {
+		values := parsedURL.Query()
+		if values.Has("api_key") {
+			values.Set("api_key", "<redacted>")
+			parsedURL.RawQuery = values.Encode()
+			return parsedURL.String()
+		}
+	}
+
+	if !strings.Contains(message, "api_key=") {
+		return message
+	}
+
+	parts := strings.Split(message, "api_key=")
+	for index := 1; index < len(parts); index++ {
+		value := parts[index]
+		end := strings.IndexAny(value, "&\" ")
+		if end == -1 {
+			parts[index] = "<redacted>"
+			continue
+		}
+
+		parts[index] = "<redacted>" + value[end:]
+	}
+
+	return strings.Join(parts, "api_key=")
 }
 
 // mapSerpAPILocalResults converts SerpAPI local results into app-owned restaurant results.

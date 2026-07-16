@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"fyp/food-rs/internal/interfaces"
+	"log"
 	"strings"
 	"time"
 
@@ -64,6 +65,13 @@ func (s *service) BuildMealDetail(ctx context.Context, userID uuid.UUID, input i
 			Limit:    10,
 		})
 		if err != nil {
+			log.Printf(
+				"restaurant lookup unavailable: meal=%q location=%q basis=%q error=%v",
+				explanationInput.MealName,
+				explanationInput.Location,
+				explanationInput.LocationBasis,
+				err,
+			)
 			restaurantResult = interfaces.RestaurantSearchResult{
 				Status:      interfaces.RestaurantLookupUnavailable,
 				Restaurants: []interfaces.RestaurantResult{},
@@ -71,6 +79,13 @@ func (s *service) BuildMealDetail(ctx context.Context, userID uuid.UUID, input i
 		} else {
 			restaurantResult = result
 		}
+	} else {
+		log.Printf(
+			"restaurant lookup skipped: meal=%q location=%q basis=%q",
+			explanationInput.MealName,
+			explanationInput.Location,
+			explanationInput.LocationBasis,
+		)
 	}
 
 	return interfaces.MealDetailResult{
