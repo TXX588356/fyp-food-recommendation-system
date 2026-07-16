@@ -171,16 +171,16 @@
   animation: ui-meal-log-success-toast-in 220ms ease-out both;
 }
 
-.ui-meal-log-success-toast > span {
-  width: 28px;
-  height: 28px;
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
+.ui-meal-log-success-toast .ui-success-toast-icon {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  box-sizing: border-box;
+  padding: 7px;
   border-radius: 999px;
-  color: #24533f;
-  background: #f4d77f;
-  font-weight: 900;
+  color: #0fba6b;
+  background: #eaf8ef;
+  stroke-width: 3;
 }
 
 @keyframes ui-meal-log-success-toast-in {
@@ -200,14 +200,91 @@
 
 .ui-meal-log-modal {
   border-radius: 22px;
-  background: var(--paper);
+  overflow: hidden;
+  border: 1px solid rgba(32, 52, 43, 0.14);
+  background:
+    linear-gradient(180deg, rgba(255, 251, 239, 0.96), rgba(247, 237, 210, 0.96)),
+    var(--paper);
+  box-shadow: 0 26px 70px rgba(32, 52, 43, 0.22);
+}
+
+.ui-meal-log-modal-header {
+  min-height: 72px;
+  padding: 22px 26px 16px;
+  align-items: flex-start;
+  background: transparent;
+  border-bottom: 1px solid rgba(32, 52, 43, 0.08);
+}
+
+.ui-meal-log-modal-body {
+  padding: 10px 26px 26px;
+  background: transparent;
 }
 
 .ui-meal-log-modal-title {
   color: var(--ink);
   font-family: var(--serif);
-  font-size: 24px;
+  font-size: 30px;
   font-weight: 700;
+  line-height: 1;
+}
+
+.ui-meal-log-modal-close {
+  margin-top: 2px;
+  color: rgba(23, 36, 30, 0.72);
+  border-radius: 999px;
+  transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.ui-meal-log-modal-close:hover {
+  background: rgba(32, 52, 43, 0.08);
+  color: var(--ink);
+  transform: rotate(90deg);
+}
+
+.ui-log-meal-form {
+  gap: 20px;
+}
+
+.ui-log-meal-summary {
+  padding-bottom: 2px;
+}
+
+.ui-log-meal-summary > p:first-child {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: clamp(30px, 5vw, 42px);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.ui-log-meal-summary > p:last-child {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.ui-log-meal-form .mantine-InputWrapper-label {
+  margin-bottom: 8px;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.ui-log-meal-form .ui-input {
+  min-height: 56px;
+  border-color: rgba(32, 52, 43, 0.18);
+  background: rgba(255, 251, 239, 0.72);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48);
+}
+
+.ui-log-meal-form .ui-input:hover {
+  border-color: rgba(15, 107, 67, 0.28);
+  background: rgba(255, 251, 239, 0.88);
+}
+
+.ui-log-meal-actions {
+  padding-top: 4px;
 }
 
 @media (max-width: 780px) {

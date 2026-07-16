@@ -20,6 +20,7 @@ import {
 import axios from 'axios'
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { FiCheck } from 'react-icons/fi'
 
 import {
   dietaryRestrictionOptions,
@@ -366,7 +367,7 @@ export function CustomMealSearchPage() {
           role="status"
           aria-live="polite"
         >
-          <span aria-hidden="true">✓</span>
+          <FiCheck className="ui-success-toast-icon" aria-hidden="true" />
           <Text fw={900}>{successMessage}</Text>
         </Box>
       )}

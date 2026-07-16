@@ -80,9 +80,9 @@ import { formatKcal, toDateTimeLocalValue, fromDateTimeLocalValue} from './mealL
 	}
 
 	return (
-		<Stack gap="md">
-			<Stack gap={4}>
-				<Text fw={900} style={{fontSize: 30}}>{meal.name}</Text>
+		<Stack gap="md" className="ui-log-meal-form">
+			<Stack gap={4} className="ui-log-meal-summary">
+				<Text fw={900}>{meal.name}</Text>
 				<Text size="sm" c="dimmed">{formatKcal(meal.calories)}</Text>
 			</Stack>
 
@@ -105,10 +105,7 @@ import { formatKcal, toDateTimeLocalValue, fromDateTimeLocalValue} from './mealL
 				classNames={{ input: 'ui-input'}}
 			/>
 
-			<Group style={{
-				display: 'flex',
-				justifyContent: 'flex-end',
-			}}>
+			<Group justify="flex-end" className="ui-log-meal-actions">
 				<Button className="ui-primary-button" loading={isSaving} onClick={saveLog}>Save</Button>
 			</Group>
 		</Stack>
@@ -132,7 +129,10 @@ import { formatKcal, toDateTimeLocalValue, fromDateTimeLocalValue} from './mealL
 			title="Log meal"
 			classNames={{
 				content: 'ui-meal-log-modal',
+				header: 'ui-meal-log-modal-header',
+				body: 'ui-meal-log-modal-body',
 				title: 'ui-meal-log-modal-title',
+				close: 'ui-meal-log-modal-close',
 			}}
 			>
 				{meal && (

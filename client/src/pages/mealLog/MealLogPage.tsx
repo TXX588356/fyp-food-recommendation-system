@@ -34,6 +34,7 @@ import {
   toMonthKey,
 } from './mealLogHelpers'
 import './MealLogPage.css'
+import { FiCheck } from 'react-icons/fi'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
@@ -242,7 +243,8 @@ export default function MealLogPage() {
 					role="status"
 					aria-live="polite"
 				>
-					<span aria-hidden="true">✓</span>
+					<FiCheck className="ui-success-toast-icon" aria-hidden="true" />
+					
 					<Text fw={900}>{successMessage}</Text>
 				</Box>
 			)}

@@ -1,19 +1,20 @@
 import { createBrowserRouter } from 'react-router-dom'
 
-import RegisterPage from './pages/authentication/RegisterPage'
-import LoginPage from './pages/authentication/LoginPage'
-import RecommendationPage from './pages/recommendation/RecommendationPage'
-import PreferencesOnboardingPage from './pages/onboarding/PreferencesOnboardingPage'
-import PreferencePage from './pages/preferences/PreferencePage'
-import { HomeRedirect, ProtectedRoute, OnboardingRoute } from './RouteGuards'
-import DietaryRestrictionsPreferencePage from './pages/preferences/DietaryRestrictionsPreferencePage'
-import MainGoalPreferencePage from './pages/preferences/MainGoalPreferencePage'
-import HealthConcernsPreferencePage from './pages/preferences/HealthConcernsPreferencePage'
-import PreferredMealPreferencePage from './pages/preferences/PreferredMealPreferencePage'
-import BudgetLocationPreferencePage from './pages/preferences/BudgetLocationPreferencePage'
-import ConsentPreferencePage from './pages/preferences/ConsentPreferencePage'
-import { CustomMealFormPage, CustomMealSearchPage } from './pages/customMeal/CustomMealAddPage'
-import MealLogPage from './pages/mealLog/MealLogPage'
+import RegisterPage from '@/pages/authentication/RegisterPage'
+import LoginPage from '@/pages/authentication/LoginPage'
+import RecommendationPage from '@/pages/recommendation/RecommendationPage'
+import PreferencesOnboardingPage from '@/pages/onboarding/PreferencesOnboardingPage'
+import PreferencePage from '@/pages/preferences/PreferencePage'
+import { HomeRedirect, ProtectedRoute, OnboardingRoute } from '@/RouteGuards'
+import DietaryRestrictionsPreferencePage from '@/pages/preferences/DietaryRestrictionsPreferencePage'
+import MainGoalPreferencePage from '@/pages/preferences/MainGoalPreferencePage'
+import HealthConcernsPreferencePage from '@/pages/preferences/HealthConcernsPreferencePage'
+import PreferredMealPreferencePage from '@/pages/preferences/PreferredMealPreferencePage'
+import BudgetLocationPreferencePage from '@/pages/preferences/BudgetLocationPreferencePage'
+import ConsentPreferencePage from '@/pages/preferences/ConsentPreferencePage'
+import { CustomMealFormPage, CustomMealSearchPage } from '@/pages/customMeal/CustomMealAddPage'
+import MealLogPage from '@/pages/mealLog/MealLogPage'
+import MealDetailPage from '@/pages/recommendation/MealDetailPage'
 
 export const router = createBrowserRouter([
   {path: '/', element: <HomeRedirect />,},
@@ -77,6 +78,11 @@ export const router = createBrowserRouter([
   {path: '/meal-logs', element: (
     <ProtectedRoute>
       <MealLogPage />
+    </ProtectedRoute>
+  )},
+  {path: '/recommendation/:mealCategory/:mealId', element: (
+    <ProtectedRoute>
+      <MealDetailPage />
     </ProtectedRoute>
   )}
 ])

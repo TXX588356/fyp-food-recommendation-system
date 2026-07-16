@@ -9,14 +9,16 @@ import {
   Title,
 } from '@mantine/core'
 import axios from 'axios'
-import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import React, { useEffect, useMemo, useState } from 'react'
+import { Moon, Sun } from 'lucide-react'
 
 import { useAuth } from '@/auth/useAuth'
 import './RecommendationPage.css'
 import '@/App.css'
-import type { LoggableMeal } from '../mealLog/mealLogTypes'
-import LogMealModal from '../mealLog/LogMealModal'
+import type { LoggableMeal } from '@/pages/mealLog/mealLogTypes'
+import LogMealModal from '@/pages/mealLog/LogMealModal'
+import { FiCheck } from 'react-icons/fi'
+import { Link, useNavigate } from 'react-router-dom'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
@@ -307,6 +309,8 @@ export default function RecommendationPage() {
 
   const [mealToLog, setMealToLog] = useState<LoggableMeal | null>(null)
   const [successMeassage, setSuccessMessage] = useState<string | null>(null)
+  const [isDarkMode, setIsDarkMode] = useState(false)
+  const navigate = useNavigate()
 
   useEffect(() => {
     if (!successMeassage) {
@@ -423,11 +427,31 @@ export default function RecommendationPage() {
     }
   }
 
-  const renderCandidateCard = (item: VisibleRecommendationItem, index: number) => {
+  const renderCandidateCard = (mealCategory: MealCategory, item: VisibleRecommendationItem, index: number) => {
     const { candidate, filteredReason } = item
 
+    const openDetailPage = () => {
+      if (filteredReason) { return }
+
+      navigate(`/recommendation/${mealCategory}/${candidate.food.id}`)
+    }
+
+    const handleCardKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault()
+        openDetailPage()
+      }
+    }
+
     return (
-    <Box className={`ui-meal-card ui-card ${filteredReason ? 'ui-meal-card-filtered' : ''}`} key={`${candidate.food.id}-${candidate.matched_query}-${index}`}>
+    <Box 
+      className={`ui-meal-card ui-card ${filteredReason ? 'ui-meal-card-filtered' : 'ui-meal-card-clickable'}`} 
+      key={`${candidate.food.id}-${candidate.matched_query}-${index}`}
+      role={filteredReason ? undefined : 'button'}
+      tabIndex={filteredReason ? undefined : 0}
+      onClick={openDetailPage}
+      onKeyDown={handleCardKeyDown}
+      >
       <Box className="ui-meal-photo" aria-hidden={!candidate.food.image_url}>
         {candidate.food.image_url ? (
           <img src={candidate.food.image_url} alt={candidate.food.name} loading="lazy" />
@@ -441,7 +465,8 @@ export default function RecommendationPage() {
           role="status"
           aria-live='polite'
         >
-          <span aria-hidden="true">✓</span>
+          <FiCheck className="ui-success-toast-icon" aria-hidden="true" />
+          
           <Text fw={900}>{successMeassage}</Text>
         </Box>
       )}
@@ -463,7 +488,10 @@ export default function RecommendationPage() {
         className="ui-meal-log-button" 
         variant="subtle"
         disabled={filteredReason !== null}
-        onClick={() => openLogModal(candidate)}
+        onClick={(event) => {
+          event.stopPropagation()
+          openLogModal(candidate)
+        }}
         >
         Log
       </Button>
@@ -481,12 +509,25 @@ export default function RecommendationPage() {
   const formattedDate = today.toLocaleDateString('en-US', options)
 
   return (
-    <Box className="ui-settings-page ui-recommendation-page">
+    <Box className={`ui-settings-page ui-recommendation-page ${isDarkMode ? 'ui-recommendation-dark' : ''}`}>
       <Box component="main" className="ui-settings-frame">
         <nav className="ui-settings-nav ui-surface" aria-label="Main navigation">
           <Link to="/recommendation" aria-current="page">Recommendation</Link>
           <Link to="/meal-logs">Logs</Link>
           <Link to="/preferences">Preferences</Link>
+          <button
+            className="ui-theme-toggle"
+            type="button"
+            aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-pressed={isDarkMode}
+            onClick={() => setIsDarkMode((current) => !current)}
+          >
+            {isDarkMode ? (
+              <Sun size={19} strokeWidth={2.35} aria-hidden="true" />
+            ) : (
+              <Moon size={19} strokeWidth={2.35} aria-hidden="true" />
+            )}
+          </button>
         </nav>
 
         <Box className="ui-recommendation-layout">
@@ -588,7 +629,7 @@ export default function RecommendationPage() {
 
                       {!isLoading && visibleItems.length > 0 && (
                         <Box className="ui-recommendation-grid">
-                          {visibleItems.map(renderCandidateCard)}
+                          {visibleItems.map((item, index) => renderCandidateCard(option.value, item, index))}
                         </Box>
                       )}
 
