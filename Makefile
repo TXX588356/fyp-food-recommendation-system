@@ -9,11 +9,22 @@ MINIO_CONTAINER ?= minio
 POSTGRES_CONTAINER ?= fyp-postgres
 CATALOG_DATA_DUMP ?= data/catalog-data.sql
 CATALOG_DUMP_TABLES := meal_categories prebuilt_meals prebuilt_meal_images
+MIGRATION_FILES := $(sort $(wildcard db/migrations/*.up.sql))
 
-.PHONY: dev-env-start dev dev-client dev-start generate dev-migrate catalog-install catalog-install-ml catalog-lint catalog-test
+.PHONY: dev-env-start dev dev-client dev-start generate dev-migrate migrate-up catalog-dump catalog-seed catalog-install catalog-install-ml catalog-lint catalog-test
 
 dev-env-start:
-	podman start fyp-postgres
+	@if podman container exists $(POSTGRES_CONTAINER); then \
+		podman start $(POSTGRES_CONTAINER); \
+	else \
+		podman run -d \
+			--name $(POSTGRES_CONTAINER) \
+			-e POSTGRES_USER=${DATABASE_USER} \
+			-e POSTGRES_PASSWORD=${DATABASE_PASSWORD} \
+			-e POSTGRES_DB=${DATABASE_NAME} \
+			-p ${DATABASE_PORT}:5432 \
+			postgres; \
+	fi
 	@if podman container exists $(MINIO_CONTAINER); then \
 		podman start $(MINIO_CONTAINER); \
 	else \
@@ -51,7 +62,23 @@ generate: $(MOCKERY_STAMP)
 	$(MOCKERY)
 	go generate ./...
 
-dev-migrate:
+dev-migrate: dev-env-start migrate-up catalog-seed
+
+# Apply every db/migrations/*.up.sql
+migrate-up:
+	@for migration in $(MIGRATION_FILES); do \
+		echo "Applying $$migration"; \
+		podman exec -i -e PGPASSWORD="${DATABASE_PASSWORD}" $(POSTGRES_CONTAINER) psql \
+			-v ON_ERROR_STOP=1 \
+			-U "${DATABASE_USER}" \
+			-d "${DATABASE_NAME}" \
+			< "$$migration"; \
+	done
+
+# Snapshot the catalog tables from current local Postgres database into a SQL file.
+# Write to data/catalog-data.sql 
+# export catalog tables from DB into data/catalog-data.sql
+catalog-dump:
 	@mkdir -p $(dir $(CATALOG_DATA_DUMP))
 	podman exec -e PGPASSWORD="${DATABASE_PASSWORD}" $(POSTGRES_CONTAINER) pg_dump \
 		-U "${DATABASE_USER}" \
@@ -61,8 +88,23 @@ dev-migrate:
 		--no-owner \
 		--no-privileges \
 		$(foreach table,$(CATALOG_DUMP_TABLES),--table=$(table)) \
-		> "$(CATALOG_DATA_DUMP)"
+			> "$(CATALOG_DATA_DUMP)"
 	@echo "Wrote catalog data dump to $(CATALOG_DATA_DUMP)"
+
+# Loads data/catalog-data.sql into DB
+catalog-seed:
+	@test -f "$(CATALOG_DATA_DUMP)" || (echo "Missing $(CATALOG_DATA_DUMP). Run make catalog-dump first." && exit 1)
+	podman exec -e PGPASSWORD="${DATABASE_PASSWORD}" $(POSTGRES_CONTAINER) psql \
+		-v ON_ERROR_STOP=1 \
+		-U "${DATABASE_USER}" \
+		-d "${DATABASE_NAME}" \
+		-c "DELETE FROM prebuilt_meal_images; DELETE FROM prebuilt_meals; DELETE FROM meal_categories;"
+	podman exec -i -e PGPASSWORD="${DATABASE_PASSWORD}" $(POSTGRES_CONTAINER) psql \
+		-v ON_ERROR_STOP=1 \
+		-U "${DATABASE_USER}" \
+		-d "${DATABASE_NAME}" \
+		< "$(CATALOG_DATA_DUMP)"
+	@echo "Seeded catalog data from $(CATALOG_DATA_DUMP)"
 
 catalog-install:
 	python3 -m venv .venv

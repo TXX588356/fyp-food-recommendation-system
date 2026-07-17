@@ -1,4 +1,4 @@
-CREATE TABLE prebuilt_meals (
+CREATE TABLE IF NOT EXISTS prebuilt_meals (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     source_code TEXT NOT NULL,
     source_record_id TEXT NOT NULL,
@@ -19,11 +19,11 @@ CREATE TABLE prebuilt_meals (
     UNIQUE (source_code, source_record_id)
 );
 
-CREATE INDEX prebuilt_meals_normalized_name_idx ON prebuilt_meals(normalized_name, id);
-CREATE INDEX prebuilt_meals_source_idx ON prebuilt_meals(source_code);
-CREATE INDEX prebuilt_meals_category_codes_idx ON prebuilt_meals USING GIN(category_codes);
+CREATE INDEX IF NOT EXISTS prebuilt_meals_normalized_name_idx ON prebuilt_meals(normalized_name, id);
+CREATE INDEX IF NOT EXISTS prebuilt_meals_source_idx ON prebuilt_meals(source_code);
+CREATE INDEX IF NOT EXISTS prebuilt_meals_category_codes_idx ON prebuilt_meals USING GIN(category_codes);
 
-CREATE TABLE meal_categories (
+CREATE TABLE IF NOT EXISTS meal_categories (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     code TEXT NOT NULL UNIQUE,
     label TEXT NOT NULL,
@@ -32,7 +32,7 @@ CREATE TABLE meal_categories (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE prebuilt_meal_images (
+CREATE TABLE IF NOT EXISTS prebuilt_meal_images (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     prebuilt_meal_id UUID NOT NULL REFERENCES prebuilt_meals(id) ON DELETE CASCADE,
     provider TEXT NOT NULL DEFAULT 'wikimedia_commons' CHECK (provider = 'wikimedia_commons'),
@@ -75,9 +75,9 @@ CREATE TABLE prebuilt_meal_images (
         AND attribution_text IS NOT NULL
     ))
 );
-CREATE UNIQUE INDEX prebuilt_meal_one_primary_image_idx ON prebuilt_meal_images(prebuilt_meal_id) WHERE is_primary;
-CREATE INDEX prebuilt_meal_images_review_idx ON prebuilt_meal_images(match_status, match_score, id);
-CREATE INDEX prebuilt_meal_images_rematch_idx ON prebuilt_meal_images(rematch_requested_at) WHERE rematch_requested_at IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS prebuilt_meal_one_primary_image_idx ON prebuilt_meal_images(prebuilt_meal_id) WHERE is_primary;
+CREATE INDEX IF NOT EXISTS prebuilt_meal_images_review_idx ON prebuilt_meal_images(match_status, match_score, id);
+CREATE INDEX IF NOT EXISTS prebuilt_meal_images_rematch_idx ON prebuilt_meal_images(rematch_requested_at) WHERE rematch_requested_at IS NOT NULL;
 
 INSERT INTO meal_categories (code, label, display_order) VALUES
 ('malaysian','Malaysian',1),('singaporean','Singaporean',2),('indonesian','Indonesian',3),('chinese','Chinese',4),('indian','Indian',5),('thai','Thai',6),('vietnamese','Vietnamese',7),('japanese','Japanese',8),('korean','Korean',9),('middle_eastern','Middle Eastern',10),('american','American',11),('mexican','Mexican',12),('italian','Italian',13),('french','French',14),('greek','Greek',15),('spanish','Spanish',16),('western','Western',17),
