@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"fyp/food-rs/internal/interfaces"
+	"log/slog"
 	"strings"
 
 	"google.golang.org/genai"
@@ -80,6 +81,7 @@ func (c Client) ResolveMatches(ctx context.Context, tasks []interfaces.MealMatch
 	if err != nil {
 		return nil, err
 	}
+	slog.Info("gemini prompt", "operation", "resolve_matches", "model", c.model, "prompt", prompt)
 
 	// Use the same configured Gemini model as meal generation/autocomplete
 	result, err := c.client.Models.GenerateContent(ctx, c.model, genai.Text(prompt), nil)

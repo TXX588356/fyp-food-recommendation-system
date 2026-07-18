@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"fyp/food-rs/internal/interfaces"
+	"log/slog"
 	"strings"
 
 	"google.golang.org/genai"
@@ -105,6 +106,7 @@ func NewClient(client *genai.Client) Client {
 // the generated meal candidates into the external-integration response shape.
 func (c Client) GenerateMeals(ctx context.Context, input interfaces.MealPromptInput) (interfaces.GeminiMealsResponse, error) {
 	prompt := BuildMealRecommendationPrompt(input)
+	slog.Info("gemini prompt", "operation", "generate_meals", "model", c.model, "prompt", prompt)
 
 	result, err := c.client.Models.GenerateContent(ctx, c.model, genai.Text(prompt), nil)
 	if err != nil {
@@ -116,6 +118,7 @@ func (c Client) GenerateMeals(ctx context.Context, input interfaces.MealPromptIn
 
 func (c Client) AutocompleteCustomMeal(ctx context.Context, input interfaces.CustomMealAutocompleteInput) (interfaces.CustomMealAutocompleteResponse, error) {
 	prompt := BuildCustomMealAutocompletePrompt(input.Name)
+	slog.Info("gemini prompt", "operation", "autocomplete_custom_meal", "model", c.model, "prompt", prompt)
 
 	result, err := c.client.Models.GenerateContent(ctx, c.model, genai.Text(prompt), nil)
 	if err != nil {
@@ -194,10 +197,7 @@ func BuildMealRecommendationPrompt(input interfaces.MealPromptInput) string {
 	MEAL TIMING GUIDANCE:
 	- Breakfast should be practical morning food: moderate calories, not overly oily, and suitable before work or school.
 	- Lunch can include more filling meals with higher calories, carbohydrates, and digestive load because it is usually the main daytime meal.
-	- Dinner should be lighter than lunch. Prefer meals with lower calories, lower carbohydrates, and easier digestion.
 	- For dinner, avoid very heavy fried rice/noodle dishes, oversized rice portions, and meals that are typically greasy unless the user's goal requires higher intake.
-	- For lunch, suitable examples include rice bowls, noodle meals, mixed rice, chicken rice, nasi lemak, or other balanced meals with enough energy.
-	- For dinner, suitable examples include soup noodles, porridge, grilled protein with vegetables, yong tau foo, lighter rice portions, or simple warm meals.
 	- Still respect the user's goal: muscle_gain can use higher-protein dinners, but keep dinner less heavy than lunch when possible.
 
 	Generate exactly 6 meals suitable for the selected meal category.

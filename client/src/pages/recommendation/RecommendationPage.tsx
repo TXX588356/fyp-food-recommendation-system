@@ -16,7 +16,8 @@ import { Moon, Sun } from 'lucide-react'
 import { useAuth } from '@/auth/useAuth'
 import './RecommendationPage.css'
 import '@/App.css'
-import type { LoggableMeal } from '@/pages/mealLog/mealLogTypes'
+import type { LoggableMeal, MealLogMonthResponse } from '@/pages/mealLog/mealLogTypes'
+import { toMonthKey } from '@/pages/mealLog/mealLogHelpers'
 import LogMealModal from '@/pages/mealLog/LogMealModal'
 import { FiCheck } from 'react-icons/fi'
 import { Link, useNavigate } from 'react-router-dom'
@@ -406,11 +407,22 @@ export default function RecommendationPage() {
     setErrorsByCategory((current) => ({ ...current, [mealCategory]: null }))
 
     try {
+      const mealLogResponse = await axios.get<MealLogMonthResponse>(
+        `${API_BASE_URL}/meal-logs`,
+        {
+          params: { month: toMonthKey(new Date()) },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      )
+      const currentMonthSpent = mealLogResponse.data.summary.totalSpent
+
       const response = await axios.post<GenerateRecommendationsResponse>(
         `${API_BASE_URL}/recommendations`,
         {
           mealCategory,
-          currentMonthSpent: 0,
+          currentMonthSpent,
           perMealBudget: 0,
         },
         {

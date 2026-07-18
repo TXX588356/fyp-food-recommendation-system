@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"fyp/food-rs/internal/interfaces"
+	"log/slog"
 	"strings"
 
 	"google.golang.org/genai"
@@ -12,6 +13,8 @@ import (
 
 func (c Client) ExplainMealRecommendation(ctx context.Context, input interfaces.MealDetailExplanationInput) (string, error) {
 	prompt := BuildMealDetailExplanationPrompt(input)
+	slog.Info("gemini prompt", "operation", "explain_meal_recommendation", "model", c.model, "prompt", prompt)
+
 	result, err := c.client.Models.GenerateContent(ctx, c.model, genai.Text(prompt), nil)
 	if err != nil {
 		return "", err
