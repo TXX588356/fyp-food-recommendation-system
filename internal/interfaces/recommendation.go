@@ -11,6 +11,14 @@ type MatchedMealCandidate struct {
 	Food          FoodSearchResult `json:"food"`           // Matched food data from catalog / custom meal
 	MatchedQuery  string           `json:"matched_query"`  // Records of successful matched with generated meals
 	Score         float64          `json:"score"`
+	ScoreBreakdown CandidateScoreBreakdown `json:"score_breakdown"`
+}
+
+type CandidateScoreBreakdown struct {
+	GoalAlignment  float64 `json:"goal_alignment"`
+	BudgetFit      float64 `json:"budget_fit"`
+	RecencyPenalty float64 `json:"recency_penalty"`
+	Preference     float64 `json:"preference"`
 }
 
 type RecommendationResult struct {

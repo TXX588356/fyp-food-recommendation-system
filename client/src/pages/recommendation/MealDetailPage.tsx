@@ -24,13 +24,14 @@ import {
 } from './recommendationStorage'
 import { resolveWikipediaMealImage } from './wikiMealImages'
 import type {
+  CandidateScoreBreakdown,
   MatchedMealCandidate,
   MealCategory,
   MealDetailResponse,
   RestaurantResult,
 } from './recommendationTypes.ts'
 import './MealDetailPage.css'
-import { ChefHat, Soup } from 'lucide-react'
+import { ChefHat, Gauge, Soup } from 'lucide-react'
 import { FiCheck } from 'react-icons/fi'
 
 
@@ -44,6 +45,35 @@ const isMealCategory = (value: string | undefined): value is MealCategory => {
 
 const formatRM = (value: number) => `RM${value.toFixed(2)}`
 const formatMacro = (value: number) => `${Number(value.toFixed(1))}g`
+const formatRecommendationScore = (score: number | undefined) => {
+	if (typeof score !== 'number' || Number.isNaN(score)) {
+		return null
+	}
+	return Math.round(score).toString()
+}
+
+const scoreBreakdownItems = (breakdown: CandidateScoreBreakdown) => [
+	{
+		label: 'Goal alignment',
+		value: breakdown.goal_alignment,
+		description: 'Nutrition fit for your selected goal',
+	},
+	{
+		label: 'Budget fit',
+		value: breakdown.budget_fit,
+		description: 'Price fit against your per-meal budget',
+	},
+	{
+		label: 'Recency',
+		value: breakdown.recency_penalty,
+		description: 'Variety boost from recent meal history',
+	},
+	{
+		label: 'Preference',
+		value: breakdown.preference,
+		description: 'Match with your preferred meal tags',
+	},
+]
 
 // Custom meals can have a fixed price, while generated meals usually return a range.
 const formatPriceRange = (min: number, max: number) => {
@@ -62,26 +92,26 @@ function RestaurantCard({ restaurant }: { restaurant: RestaurantResult }) {
 		<Box className='ui-restaurant-row'>
 			<Box className="ui-restaurant-thumb" aria-hidden={!shouldShowThumbnail}>
 				{shouldShowThumbnail ? (
-						<img
-							src={restaurant.thumbnailUrl}
-							alt=""
-							loading="lazy"
-							referrerPolicy="no-referrer"
-							onError={() => setImageFailed(true)}
-						/>
+					<img
+						src={restaurant.thumbnailUrl}
+						alt=""
+						loading="lazy"
+						referrerPolicy="no-referrer"
+						onError={() => setImageFailed(true)}
+					/>
 				) : (
-						<Soup size={18}/>
+					<Soup size={18}/>
 				)}
-		</Box>
+			</Box>
 
-		<Box className='ui-restaurant-copy'>
+			<Box className='ui-restaurant-copy'>
 				<Text fw={900}>{restaurant.name}</Text>
 				{restaurant.address && <Text className='ui-restaurant-address'>{restaurant.address}</Text>}
 
 				<Group gap="xs" className='ui-restaurant-meta'>
 					{restaurant.rating > 0 && <Text color='#FFEA00'>{restaurant.rating.toFixed(1)} ★</Text>}
 					{restaurant.reviewCount > 0 && <Text>{restaurant.reviewCount} reviews</Text>}
-          {restaurant.price && <Text>{restaurant.price}</Text>}
+					{restaurant.price && <Text>{restaurant.price}</Text>}
 					{restaurant.openNow !== undefined && (
 						<Badge color={restaurant.openNow ? 'green' : 'red'} variant="light">
 							{restaurant.openNow ? 'Open' : 'Closed'}
@@ -97,10 +127,42 @@ function RestaurantCard({ restaurant }: { restaurant: RestaurantResult }) {
 						rel="noreferrer"
 						variant="subtle"
 						className='ui-restaurant-link'
-						>
+					>
 						View map
 					</Button>
 				)}
+			</Box>
+		</Box>
+	)
+}
+
+function RecommendationScorePanel({
+	score,
+	breakdown,
+}: {
+	score: number
+	breakdown: CandidateScoreBreakdown
+}) {
+	return (
+		<Box className="ui-meal-detail-score">
+			<Box className="ui-meal-detail-score-total">
+				<Box className="ui-meal-detail-score-icon" aria-hidden="true">
+					<Gauge size={18} />
+				</Box>
+				<Box className="ui-meal-detail-score-copy">
+					<Text>Total recommendation score</Text>
+					<Title order={3}>{Math.round(score)}</Title>
+				</Box>
+			</Box>
+
+			<Box className="ui-meal-detail-score-grid">
+				{scoreBreakdownItems(breakdown).map((item) => (
+					<Box className="ui-meal-detail-score-item" key={item.label}>
+						<Text>{item.label}</Text>
+						<Title order={4}>{Math.round(item.value)}</Title>
+						<Text>{item.description}</Text>
+					</Box>
+				))}
 			</Box>
 		</Box>
 	)
@@ -223,11 +285,11 @@ export default function MealDetailPage() {
 
 	const openLogModal = () => {
 		if (!detail) {
-			return 
+			return
 		}
-		
+
 		setMealToLog({
-			source: 'prebuilt',
+			source: candidate?.food.source === 'custom' ? 'custom' : 'prebuilt',
 			mealId: detail.meal.id,
 			name: detail.meal.name,
 			calories: detail.meal.nutrition.calories,
@@ -238,10 +300,10 @@ export default function MealDetailPage() {
 		return (
 			<Box className='ui-settings-page ui-meal-detail-page'>
 				<Box component="main" className='ui-settings-frame'>
-					<nav className='ui-settings-nav ui-surface' aria-label='Main navigation'>
-						<Link to="/recommendation">Recommendation</Link>
-						<Link to="/meal-logs">Logs</Link>
-						<Link to="/preferences">Preferences</Link>
+				<nav className='ui-settings-nav ui-surface' aria-label='Main navigation'>
+					<Link to="/recommendation">Recommendation</Link>
+					<Link to="/meal-logs">Logs</Link>
+					<Link to="/preferences">Preferences</Link>
 					</nav>
 
 					<Box className='ui-meal-detail-empty ui-card'>
@@ -259,10 +321,13 @@ export default function MealDetailPage() {
 		)
 	}
 
+	const recommendationScore = formatRecommendationScore(candidate.score)
+	const scoreBreakdown = candidate.score_breakdown
+
 	return (
 		<Box className='ui-settings-page ui-meal-detail-page'>
 			<Box component="main" className='ui-settings-frame'>
-			 	<nav className='ui-settings-nav ui-surface' aria-label='Main navigation'>
+					<nav className='ui-settings-nav ui-surface' aria-label='Main navigation'>
 					<Link to="/recommendation">Recommendation</Link>
 					<Link to="/meal-logs">Logs</Link>
 					<Link to="/preferences">Preferences</Link>
@@ -294,102 +359,105 @@ export default function MealDetailPage() {
 				{detail && !isLoading && !error && (
 					<Box className='ui-meal-detail-layout'>
 						<Box className='ui-meal-detail-left'>
-							<Text component={Link} to="/recommendation" className='ui-meal-detail-back'>
-								Back to recommendation
-							</Text>
+								<Text component={Link} to="/recommendation" className='ui-meal-detail-back'>
+									Back to recommendation
+								</Text>
 
-							<Title order={1}>Meal Detail</Title>
+								<Title order={1}>Meal Detail</Title>
 
-							<Box className="ui-meal-detail-photo" aria-hidden={!detail.meal.imageUrl}>
-								{detail.meal.imageUrl ? (
-									<img
-										src={detail.meal.imageUrl}
-										alt={detail.meal.name}
-										referrerPolicy="no-referrer"
-									/>
-								) : (
-									<ChefHat size={38}/>
-								)}
-							</Box>
-
-							<Box className='ui-meal-detail-meta ui-card'>
-								<Text fw={900}>Per serving</Text>
-								{detail.meal.servingDescription && (
-									<Text className="ui-field-copy">{detail.meal.servingDescription}</Text>
-								)}
-								<SimpleGrid cols={2} spacing="sm">
-									<Text>{Math.round(detail.meal.nutrition.calories)} kcal</Text>
-									<Text>Fat {formatMacro(detail.meal.nutrition.fatG)}</Text>
-                  <Text>Protein {formatMacro(detail.meal.nutrition.proteinG)}</Text>
-                  <Text>Carbs {formatMacro(detail.meal.nutrition.carbsG)}</Text>
-								</SimpleGrid>
-
-								<Group gap="xs" align="center">
-									<Text className="ui-meal-detail-price">
-										{formatPriceRange(
-											detail.meal.estimatedPriceRange.min,
-											detail.meal.estimatedPriceRange.max,
-										)}
-									</Text>
-									<Badge
-									variant="gradient"
-									gradient={{ from: 'rgba(37, 161, 21, 1)', to: 'rgba(247, 200, 153, 1)', deg: 90 }}
-									>Estimated</Badge>
-								</Group>
-
-								<Group>
-									{detail.meal.signals.sodiumLevel && <Badge variant='light'>Sodium {detail.meal.signals.sodiumLevel}</Badge>}
-									{detail.meal.signals.sugarLevel && <Badge variant="light">Sugar {detail.meal.signals.sugarLevel}</Badge>}
-                  {detail.meal.signals.purineRisk && <Badge variant="light">Purine {detail.meal.signals.purineRisk}</Badge>}
-								</Group>
-							</Box>
-						</Box>
-
-						<Box className="ui-meal-detail-panel ui-surface">
-							<Stack gap="lg">
-								<Box>
-									<Title order={2}>{detail.meal.name}</Title>
-									<Text className='ui-meal-detail-question'>Why this is recommended to me?</Text>
-									<Text className='ui-meal-detail-explanation'>
-										{detail.recommendationExplanation}
-									</Text>
+								<Box className="ui-meal-detail-photo" aria-hidden={!detail.meal.imageUrl}>
+									{detail.meal.imageUrl ? (
+										<img
+											src={detail.meal.imageUrl}
+											alt={detail.meal.name}
+											referrerPolicy="no-referrer"
+										/>
+									) : (
+										<ChefHat size={38}/>
+									)}
 								</Box>
 
-								<Button className='ui-primary-button ui-meal-detail-log' onClick={openLogModal}>
-									Log
-								</Button>
+								<Box className='ui-meal-detail-meta ui-card'>
+									<Text fw={900}>Per serving</Text>
+									{detail.meal.servingDescription && (
+										<Text className="ui-field-copy">{detail.meal.servingDescription}</Text>
+									)}
+									<SimpleGrid cols={2} spacing="sm">
+										<Text>{Math.round(detail.meal.nutrition.calories)} kcal</Text>
+										<Text>Fat {formatMacro(detail.meal.nutrition.fatG)}</Text>
+										<Text>Protein {formatMacro(detail.meal.nutrition.proteinG)}</Text>
+										<Text>Carbs {formatMacro(detail.meal.nutrition.carbsG)}</Text>
+									</SimpleGrid>
 
-								<Box>
-									<Text className='ui-restaurant-heading'>
-										Nearby restaurants that may serve this food
-									</Text>
-
-									{detail.location.query && (
-										<Text className='ui-restaurant-location'>
-											Near {detail.location.query}
+									<Group gap="xs" align="center">
+										<Text className="ui-meal-detail-price">
+											{formatPriceRange(
+												detail.meal.estimatedPriceRange.min,
+												detail.meal.estimatedPriceRange.max,
+											)}
 										</Text>
-									)}
+										<Badge
+											variant="gradient"
+											gradient={{ from: 'rgba(37, 161, 21, 1)', to: 'rgba(247, 200, 153, 1)', deg: 90 }}
+										>Estimated</Badge>
+									</Group>
 
-									{detail.restaurantLookupStatus === 'ok' && detail.restaurants.length > 0 && (
-										<Stack gap="sm">
-											{detail.restaurants.map((restaurant) => (
-												<RestaurantCard restaurant={restaurant} key={`${restaurant.name}-${restaurant.address}`}/>
-											))}
-										</Stack>
-									)}
-
-									{detail.restaurantLookupStatus === 'no_results' && (
-										<Text className='ui-field-copy'>No nearby restaurant matches found.</Text>
-									)}
-
-									{detail.restaurantLookupStatus === 'unavailable' && (
-										<Text className='ui-field-copy'>Restaurant lookup is unavailable right now.</Text>
-									)}
+									<Group>
+										{detail.meal.signals.sodiumLevel && <Badge variant='light'>Sodium {detail.meal.signals.sodiumLevel}</Badge>}
+										{detail.meal.signals.sugarLevel && <Badge variant="light">Sugar {detail.meal.signals.sugarLevel}</Badge>}
+										{detail.meal.signals.purineRisk && <Badge variant="light">Purine {detail.meal.signals.purineRisk}</Badge>}
+									</Group>
 								</Box>
-							</Stack>
+							</Box>
+
+							<Box className="ui-meal-detail-panel ui-surface">
+								<Stack gap="lg">
+									<Box>
+										<Title order={2}>{detail.meal.name}</Title>
+										{recommendationScore && scoreBreakdown && (
+											<RecommendationScorePanel score={candidate.score ?? 0} breakdown={scoreBreakdown} />
+										)}
+										<Text className='ui-meal-detail-question'>Why this is recommended to me?</Text>
+										<Text className='ui-meal-detail-explanation'>
+											{detail.recommendationExplanation}
+										</Text>
+									</Box>
+
+									<Button className='ui-primary-button ui-meal-detail-log' onClick={openLogModal}>
+										Log
+									</Button>
+
+									<Box>
+										<Text className='ui-restaurant-heading'>
+											Nearby restaurants that may serve this food
+										</Text>
+
+										{detail.location.query && (
+											<Text className='ui-restaurant-location'>
+												Near {detail.location.query}
+											</Text>
+										)}
+
+										{detail.restaurantLookupStatus === 'ok' && detail.restaurants.length > 0 && (
+											<Stack gap="sm">
+												{detail.restaurants.map((restaurant) => (
+													<RestaurantCard restaurant={restaurant} key={`${restaurant.name}-${restaurant.address}`}/>
+												))}
+											</Stack>
+										)}
+
+										{detail.restaurantLookupStatus === 'no_results' && (
+											<Text className='ui-field-copy'>No nearby restaurant matches found.</Text>
+										)}
+
+										{detail.restaurantLookupStatus === 'unavailable' && (
+											<Text className='ui-field-copy'>Restaurant lookup is unavailable right now.</Text>
+										)}
+									</Box>
+								</Stack>
+							</Box>
 						</Box>
-					</Box>
-				)}
+					)}
 			</Box>
 
 			<LogMealModal

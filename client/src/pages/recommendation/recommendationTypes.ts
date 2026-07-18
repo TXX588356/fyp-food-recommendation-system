@@ -30,11 +30,19 @@ export type FoodSearchResult = {
 	image_url?: string
 }
 
+export type CandidateScoreBreakdown = {
+	goal_alignment: number
+	budget_fit: number
+	recency_penalty: number
+	preference: number
+}
+
 export type MatchedMealCandidate = {
 	generated_meal: GeneratedMeal
 	food: FoodSearchResult
 	matched_query: string
 	score: number
+	score_breakdown?: CandidateScoreBreakdown
 }
 
 export type FilteredMealCandidate = {

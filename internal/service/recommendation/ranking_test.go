@@ -72,6 +72,8 @@ var _ = Describe("recommendation ranking", func() {
 
 		Expect(got[0].Food.ID).To(Equal("high_protein_food"))
 		Expect(got[0].Score).To(BeNumerically(">", got[1].Score))
+		Expect(got[0].ScoreBreakdown.GoalAlignment).To(BeNumerically(">", got[1].ScoreBreakdown.GoalAlignment))
+		Expect(got[0].ScoreBreakdown.BudgetFit).To(BeNumerically(">", 0))
 	})
 
 	It("should rank recently repeated meals lower", func() {

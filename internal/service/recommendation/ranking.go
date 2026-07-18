@@ -23,7 +23,7 @@ func rankCandidates(candidates []interfaces.MatchedMealCandidate, input interfac
 
 	for index, candidate := range candidates {
 		if candidate.Score == 0 {
-			candidate.Score = scoreCandidate(candidate, input, history).Total
+			applyCandidateScore(&candidate, scoreCandidate(candidate, input, history))
 		}
 		scored[index].candidate = candidate
 		scored[index].score = candidate.Score
@@ -44,6 +44,16 @@ func rankCandidates(candidates []interfaces.MatchedMealCandidate, input interfac
 	}
 
 	return result
+}
+
+func applyCandidateScore(candidate *interfaces.MatchedMealCandidate, score CandidateScore) {
+	candidate.Score = score.Total
+	candidate.ScoreBreakdown = interfaces.CandidateScoreBreakdown{
+		GoalAlignment:  score.GoalScore,
+		BudgetFit:      score.BudgetScore,
+		RecencyPenalty: score.RecencyPenaltyScore,
+		Preference:     score.PreferenceScore,
+	}
 }
 
 func scoreCandidate(candidate interfaces.MatchedMealCandidate, input interfaces.MealPromptInput, history interfaces.MealHistoryContext) CandidateScore {

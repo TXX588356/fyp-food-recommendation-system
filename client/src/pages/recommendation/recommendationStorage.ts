@@ -41,6 +41,26 @@ export const createEmptyPersistedRecommendation = (): PersistedRecommendationSta
 	generatedByCategory: {...emptyGenerated},
 })
 
+const hasScoreBreakdown = (candidate: MatchedMealCandidate) => (
+	typeof candidate.score === 'number' &&
+	typeof candidate.score_breakdown?.goal_alignment === 'number' &&
+	typeof candidate.score_breakdown?.budget_fit === 'number' &&
+	typeof candidate.score_breakdown?.recency_penalty === 'number' &&
+	typeof candidate.score_breakdown?.preference === 'number'
+)
+
+const needsRegeneration = (
+	candidates: MatchedMealCandidate[],
+	filteredOut: FilteredMealCandidate[],
+) => {
+	const allCandidates = [
+		...candidates,
+		...filteredOut.map((item) => item.candidate),
+	]
+
+	return allCandidates.length > 0 && allCandidates.some((candidate) => !hasScoreBreakdown(candidate))
+}
+
 export const loadPersistedRecommendations = (storageKey: string): PersistedRecommendationState => {
 	const emptyState = createEmptyPersistedRecommendation()
 
@@ -59,20 +79,32 @@ export const loadPersistedRecommendations = (storageKey: string): PersistedRecom
 			return emptyState
 		}
 
+		const candidatesByCategory = {
+			...emptyCandidates,
+			...parsedValue.candidatesByCategory,
+		}
+		const filteredOutByCategory = {
+			...emptyFilteredOut,
+			...parsedValue.filteredOutByCategory,
+		}
+		const generatedByCategory = {
+			...emptyGenerated,
+			...parsedValue.generatedByCategory,
+		}
+
+		for (const category of Object.keys(generatedByCategory) as MealCategory[]) {
+			if (generatedByCategory[category] && needsRegeneration(candidatesByCategory[category], filteredOutByCategory[category])) {
+				candidatesByCategory[category] = []
+				filteredOutByCategory[category] = []
+				generatedByCategory[category] = false
+			}
+		}
+
 		return {
 			generatedDate: parsedValue.generatedDate,
-			candidatesByCategory: {
-				...emptyCandidates,
-				...parsedValue.candidatesByCategory,
-			},
-			filteredOutByCategory: {
-				...emptyFilteredOut,
-				...parsedValue.filteredOutByCategory,
-			},
-			generatedByCategory: {
-				...emptyGenerated,
-				...parsedValue.generatedByCategory,
-			},
+			candidatesByCategory,
+			filteredOutByCategory,
+			generatedByCategory,
 		}
 	} catch {
 		localStorage.removeItem(storageKey)

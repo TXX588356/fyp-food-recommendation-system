@@ -54,11 +54,19 @@ type FoodSearchResult = {
   image_url?: string
 }
 
+type CandidateScoreBreakdown = {
+  goal_alignment: number
+  budget_fit: number
+  recency_penalty: number
+  preference: number
+}
+
 type MatchedMealCandidate = {
   generated_meal: GeneratedMeal
   food: FoodSearchResult
   matched_query: string
   score?: number
+  score_breakdown?: CandidateScoreBreakdown
 }
 
 type FilteredMealCandidate = {
