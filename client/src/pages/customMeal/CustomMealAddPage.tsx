@@ -36,6 +36,7 @@ import {
 import type { PreferenceData } from '@/preferences/types'
 import LogMealModal from '../mealLog/LogMealModal'
 import type { LoggableMeal } from '../mealLog/mealLogTypes'
+import { resolveWikipediaMealImage } from '../recommendation/wikiMealImages'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
@@ -350,6 +351,40 @@ export function CustomMealSearchPage() {
     return () => request.abort()
   }, [query, token])
 
+  useEffect(() => {
+    const mealsWithoutImages = visibleMeals.filter((meal) => (
+      meal.source === 'prebuilt' && !meal.imageUrl
+    ))
+    if (mealsWithoutImages.length === 0) {
+      return
+    }
+
+    const controller = new AbortController()
+
+    const loadImages = async () => {
+      for (const meal of mealsWithoutImages) {
+        if (controller.signal.aborted) {
+          return
+        }
+
+        const imageUrl = await resolveWikipediaMealImage(meal.name, controller.signal)
+        if (imageUrl) {
+          setVisibleMeals((current) => current.map((currentMeal) => (
+            currentMeal.source === 'prebuilt' && currentMeal.id === meal.id
+              ? { ...currentMeal, imageUrl: currentMeal.imageUrl || imageUrl }
+              : currentMeal
+          )))
+        }
+
+        await new Promise((resolve) => window.setTimeout(resolve, 350))
+      }
+    }
+
+    void loadImages()
+
+    return () => controller.abort()
+  }, [visibleMeals])
+
   const openLogModal = (meal: ExistingMeal) => {
     setMealToLog({
       source: meal.source,
@@ -433,7 +468,12 @@ export function CustomMealSearchPage() {
                 <Box className="ui-meal-card ui-card" key={`${meal.source}-${meal.id}`}>
                   <Box className="ui-meal-photo" aria-hidden={!meal.imageUrl}>
                     {meal.imageUrl ? (
-                      <img src={meal.imageUrl} alt={meal.name} loading="lazy" />
+                      <img
+                        src={meal.imageUrl}
+                        alt={meal.name}
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                      />
                     ) : (
                       <MealAddIcon name="bowl" />
                     )}

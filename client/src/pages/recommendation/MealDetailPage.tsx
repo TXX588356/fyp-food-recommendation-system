@@ -22,6 +22,7 @@ import {
   buildRecommendationStorageKey,
   findPersistedRecommendationCandidate,
 } from './recommendationStorage'
+import { resolveWikipediaMealImage } from './wikiMealImages'
 import type {
   MatchedMealCandidate,
   MealCategory,
@@ -158,7 +159,13 @@ export default function MealDetailPage() {
 				}
 			)
 
-			setDetail(response.data)
+			setDetail({
+				...response.data,
+				meal: {
+					...response.data.meal,
+					imageUrl: response.data.meal.imageUrl || candidate.food.image_url,
+				},
+			})
 		} catch (requestError) {
 			console.error('Failed to load meal detail', requestError)
 
@@ -179,6 +186,37 @@ export default function MealDetailPage() {
 		// candidate is memoized from storage and should trigger reload when route changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [candidate, mealCategory])
+
+	useEffect(() => {
+		if (!detail || detail.meal.imageUrl) {
+			return
+		}
+
+		const controller = new AbortController()
+
+		const loadImage = async () => {
+			const imageUrl = await resolveWikipediaMealImage(detail.meal.name, controller.signal)
+			if (!imageUrl || controller.signal.aborted) {
+				return
+			}
+
+			setDetail((current) => (
+				current
+					? {
+							...current,
+							meal: {
+								...current.meal,
+								imageUrl,
+							},
+						}
+					: current
+			))
+		}
+
+		void loadImage()
+
+		return () => controller.abort()
+	}, [detail])
 
 	const openLogModal = () => {
 		if (!detail) {
@@ -261,7 +299,11 @@ export default function MealDetailPage() {
 
 							<Box className="ui-meal-detail-photo" aria-hidden={!detail.meal.imageUrl}>
 								{detail.meal.imageUrl ? (
-									<img src={detail.meal.imageUrl} alt={detail.meal.name}/>
+									<img
+										src={detail.meal.imageUrl}
+										alt={detail.meal.name}
+										referrerPolicy="no-referrer"
+									/>
 								) : (
 									<ChefHat size={38}/>
 								)}

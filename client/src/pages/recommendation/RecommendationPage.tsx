@@ -9,7 +9,7 @@ import {
   Title,
 } from '@mantine/core'
 import axios from 'axios'
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Moon, Sun } from 'lucide-react'
 
 import { useAuth } from '@/auth/useAuth'
@@ -19,6 +19,7 @@ import type { LoggableMeal } from '@/pages/mealLog/mealLogTypes'
 import LogMealModal from '@/pages/mealLog/LogMealModal'
 import { FiCheck } from 'react-icons/fi'
 import { Link, useNavigate } from 'react-router-dom'
+import { resolveWikipediaMealImage } from './wikiMealImages'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
@@ -418,6 +419,112 @@ export default function RecommendationPage() {
     }
   }
 
+  const updateCandidateImage = useCallback((
+    mealCategory: MealCategory,
+    mealId: string,
+    imageUrl: string,
+  ) => {
+    if (!imageUrl) {
+      return
+    }
+
+    setCandidatesByCategory((current) => ({
+      ...current,
+      [mealCategory]: current[mealCategory].map((candidate) => (
+        candidate.food.id === mealId
+          ? { ...candidate, food: { ...candidate.food, image_url: candidate.food.image_url || imageUrl } }
+          : candidate
+      )),
+    }))
+
+    setFilteredOutByCategory((current) => ({
+      ...current,
+      [mealCategory]: current[mealCategory].map((item) => (
+        item.candidate.food.id === mealId
+          ? {
+              ...item,
+              candidate: {
+                ...item.candidate,
+                food: {
+                  ...item.candidate.food,
+                  image_url: item.candidate.food.image_url || imageUrl,
+                },
+              },
+            }
+          : item
+      )),
+    }))
+
+    const persistedRecommendations = loadPersistedRecommendations(recommendationStorageKey)
+    savePersistedRecommendations(recommendationStorageKey, {
+      ...persistedRecommendations,
+      candidatesByCategory: {
+        ...persistedRecommendations.candidatesByCategory,
+        [mealCategory]: persistedRecommendations.candidatesByCategory[mealCategory].map((candidate) => (
+          candidate.food.id === mealId
+            ? { ...candidate, food: { ...candidate.food, image_url: candidate.food.image_url || imageUrl } }
+            : candidate
+        )),
+      },
+      filteredOutByCategory: {
+        ...persistedRecommendations.filteredOutByCategory,
+        [mealCategory]: persistedRecommendations.filteredOutByCategory[mealCategory].map((item) => (
+          item.candidate.food.id === mealId
+            ? {
+                ...item,
+                candidate: {
+                  ...item.candidate,
+                  food: {
+                    ...item.candidate.food,
+                    image_url: item.candidate.food.image_url || imageUrl,
+                  },
+                },
+              }
+            : item
+        )),
+      },
+    })
+  }, [recommendationStorageKey])
+
+  useEffect(() => {
+    if (!activeCategory || loadingByCategory[activeCategory] || !generatedByCategory[activeCategory]) {
+      return
+    }
+
+    const controller = new AbortController()
+    const candidates = [
+      ...candidatesByCategory[activeCategory],
+      ...filteredOutByCategory[activeCategory].map((item) => item.candidate),
+    ]
+    const missingImageCandidates = candidates.filter((candidate) => !candidate.food.image_url)
+
+    const loadImages = async () => {
+      for (const candidate of missingImageCandidates) {
+        if (controller.signal.aborted) {
+          return
+        }
+
+        const imageUrl = await resolveWikipediaMealImage(candidate.food.name, controller.signal)
+        updateCandidateImage(activeCategory, candidate.food.id, imageUrl)
+
+        await new Promise((resolve) => window.setTimeout(resolve, 350))
+      }
+    }
+
+    void loadImages()
+
+    return () => controller.abort()
+    // The candidate arrays intentionally trigger lookups after recommendation state changes.
+  }, [
+    activeCategory,
+    candidatesByCategory,
+    filteredOutByCategory,
+    generatedByCategory,
+    loadingByCategory,
+    recommendationStorageKey,
+    updateCandidateImage,
+  ])
+
   const handleCategoryChange = (value: string | null) => {
     const nextCategory = value as MealCategory | null
     setActiveCategory(nextCategory)
@@ -454,7 +561,12 @@ export default function RecommendationPage() {
       >
       <Box className="ui-meal-photo" aria-hidden={!candidate.food.image_url}>
         {candidate.food.image_url ? (
-          <img src={candidate.food.image_url} alt={candidate.food.name} loading="lazy" />
+          <img
+            src={candidate.food.image_url}
+            alt={candidate.food.name}
+            loading="lazy"
+            referrerPolicy="no-referrer"
+          />
         ) : (
           <RecommendationIcon name="bowl" size={24} />
         )}
