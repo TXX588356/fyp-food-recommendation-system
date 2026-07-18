@@ -305,7 +305,9 @@ func (s *service) GenerateRecommendationResult(ctx context.Context, userID uuid.
 	})
 	matchedCandidates := make([]interfaces.MatchedMealCandidate, 0, len(candidates))
 	for _, candidate := range candidates {
-		matchedCandidates = append(matchedCandidates, candidate.candidate)
+		scoredCandidate := candidate.candidate
+		scoredCandidate.Score = scoreCandidate(scoredCandidate, input, input.History).Total
+		matchedCandidates = append(matchedCandidates, scoredCandidate)
 	}
 
 	filterStart := time.Now()

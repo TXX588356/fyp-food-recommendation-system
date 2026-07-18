@@ -22,8 +22,11 @@ func rankCandidates(candidates []interfaces.MatchedMealCandidate, input interfac
 	}, len(candidates))
 
 	for index, candidate := range candidates {
+		if candidate.Score == 0 {
+			candidate.Score = scoreCandidate(candidate, input, history).Total
+		}
 		scored[index].candidate = candidate
-		scored[index].score = scoreCandidate(candidate, input, history).Total
+		scored[index].score = candidate.Score
 		scored[index].index = index
 	}
 

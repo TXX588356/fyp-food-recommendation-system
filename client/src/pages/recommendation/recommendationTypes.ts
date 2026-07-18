@@ -34,6 +34,7 @@ export type MatchedMealCandidate = {
 	generated_meal: GeneratedMeal
 	food: FoodSearchResult
 	matched_query: string
+	score: number
 }
 
 export type FilteredMealCandidate = {

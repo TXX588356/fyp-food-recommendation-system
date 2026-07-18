@@ -58,6 +58,7 @@ type MatchedMealCandidate = {
   generated_meal: GeneratedMeal
   food: FoodSearchResult
   matched_query: string
+  score?: number
 }
 
 type FilteredMealCandidate = {
@@ -111,6 +112,13 @@ const emptyLoading: CategoryState<boolean> = {
   lunch: false,
   dinner: false,
   snack: false,
+}
+
+const formatRecommendationScore = (score: number | undefined) => {
+  if (typeof score !== 'number' || Number.isNaN(score)) {
+    return null
+  }
+  return Math.round(score).toString()
 }
 
 const emptyGenerated: CategoryState<boolean> = {
@@ -539,6 +547,7 @@ export default function RecommendationPage() {
 
   const renderCandidateCard = (mealCategory: MealCategory, item: VisibleRecommendationItem, index: number) => {
     const { candidate, filteredReason } = item
+    const recommendationScore = formatRecommendationScore(candidate.score)
 
     const openDetailPage = () => {
       if (filteredReason) { return }
@@ -591,6 +600,9 @@ export default function RecommendationPage() {
           <Title order={2}>{candidate.food.name}</Title>
           {candidate.food.source === 'custom' && (
             <Badge className="ui-meal-source-badge">Community</Badge>
+          )}
+          {recommendationScore && (
+            <Badge className="ui-meal-score-badge">Score {recommendationScore}</Badge>
           )}
         </Group>
         <Text>{Math.round(candidate.food.calories)} kcal</Text>

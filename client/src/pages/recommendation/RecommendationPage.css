@@ -113,6 +113,13 @@
   line-height: 1.25;
 }
 
+.ui-meal-score-badge {
+  width: fit-content;
+  background: rgba(15, 107, 67, 0.1);
+  color: var(--green-dark);
+  border: 1px solid rgba(15, 107, 67, 0.18);
+}
+
 .ui-meal-accordion { display: grid; gap: 14px; }
 .ui-meal-accordion-item {
   overflow: hidden; border: 1px solid rgba(32, 52, 43, 0.16); border-radius: 22px;
@@ -310,6 +317,12 @@
 
 .ui-recommendation-dark .ui-meal-price {
   color: var(--green-dark);
+}
+
+.ui-recommendation-dark .ui-meal-score-badge {
+  background: rgba(134, 215, 231, 0.12);
+  color: var(--green-dark);
+  border-color: rgba(134, 215, 231, 0.24);
 }
 
 .ui-recommendation-dark .ui-meal-log-button {
