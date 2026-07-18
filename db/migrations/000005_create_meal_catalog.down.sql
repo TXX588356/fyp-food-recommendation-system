@@ -1,4 +1,3 @@
-DROP TABLE IF EXISTS prebuilt_meal_images;
 DROP TABLE IF EXISTS prebuilt_meal_categories;
 DROP TABLE IF EXISTS prebuilt_meal_aliases;
 DROP TABLE IF EXISTS prebuilt_meal_portions;

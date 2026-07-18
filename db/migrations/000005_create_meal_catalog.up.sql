@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS prebuilt_meals (
     sugar_g NUMERIC CHECK (sugar_g >= 0),
     sodium_mg NUMERIC CHECK (sodium_mg >= 0),
     cholesterol_mg NUMERIC CHECK (cholesterol_mg >= 0),
+    image_object_key TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     UNIQUE (source_code, source_record_id)
@@ -31,53 +32,6 @@ CREATE TABLE IF NOT EXISTS meal_categories (
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-
-CREATE TABLE IF NOT EXISTS prebuilt_meal_images (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    prebuilt_meal_id UUID NOT NULL REFERENCES prebuilt_meals(id) ON DELETE CASCADE,
-    provider TEXT NOT NULL DEFAULT 'wikimedia_commons' CHECK (provider = 'wikimedia_commons'),
-    provider_file_id TEXT NOT NULL,
-    commons_file_title TEXT,
-    commons_page_url TEXT,
-    original_file_url TEXT,
-    minio_object_key TEXT,
-    mime_type TEXT,
-    width INTEGER CHECK (width > 0),
-    height INTEGER CHECK (height > 0),
-    file_size_bytes BIGINT CHECK (file_size_bytes > 0),
-    sha256 TEXT,
-    author_name TEXT,
-    author_url TEXT,
-    license_name TEXT,
-    license_url TEXT,
-    attribution_text TEXT,
-    search_query TEXT,
-    match_score NUMERIC CHECK (match_score >= 0 AND match_score <= 1),
-    scoring_policy_version TEXT NOT NULL,
-    model_version TEXT,
-    match_status TEXT NOT NULL CHECK (match_status IN ('auto_accepted', 'needs_review', 'approved', 'rejected', 'no_match')),
-    validation_details JSONB NOT NULL DEFAULT '{}'::jsonb,
-    is_primary BOOLEAN NOT NULL DEFAULT FALSE,
-    review_reason TEXT,
-    reviewed_at TIMESTAMPTZ,
-    rematch_requested_at TIMESTAMPTZ,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    UNIQUE (prebuilt_meal_id, provider, provider_file_id),
-    CHECK (NOT is_primary OR (
-        match_status IN ('auto_accepted', 'approved')
-        AND minio_object_key IS NOT NULL
-        AND mime_type IS NOT NULL
-        AND width IS NOT NULL
-        AND height IS NOT NULL
-        AND sha256 IS NOT NULL
-        AND license_name IS NOT NULL
-        AND attribution_text IS NOT NULL
-    ))
-);
-CREATE UNIQUE INDEX IF NOT EXISTS prebuilt_meal_one_primary_image_idx ON prebuilt_meal_images(prebuilt_meal_id) WHERE is_primary;
-CREATE INDEX IF NOT EXISTS prebuilt_meal_images_review_idx ON prebuilt_meal_images(match_status, match_score, id);
-CREATE INDEX IF NOT EXISTS prebuilt_meal_images_rematch_idx ON prebuilt_meal_images(rematch_requested_at) WHERE rematch_requested_at IS NOT NULL;
 
 INSERT INTO meal_categories (code, label, display_order) VALUES
 ('malaysian','Malaysian',1),('singaporean','Singaporean',2),('indonesian','Indonesian',3),('chinese','Chinese',4),('indian','Indian',5),('thai','Thai',6),('vietnamese','Vietnamese',7),('japanese','Japanese',8),('korean','Korean',9),('middle_eastern','Middle Eastern',10),('american','American',11),('mexican','Mexican',12),('italian','Italian',13),('french','French',14),('greek','Greek',15),('spanish','Spanish',16),('western','Western',17),
