@@ -328,12 +328,12 @@ export default function RecommendationPage() {
   const [errorsByCategory, setErrorsByCategory] = useState<CategoryState<string | null>>(emptyErrors)
 
   const [mealToLog, setMealToLog] = useState<LoggableMeal | null>(null)
-  const [successMeassage, setSuccessMessage] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [isDarkMode, setIsDarkMode] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (!successMeassage) {
+    if (!successMessage) {
       return 
     }
 
@@ -342,7 +342,7 @@ export default function RecommendationPage() {
     }, 4000)
 
     return () => window.clearTimeout(dismissTimer)
-  }, [successMeassage])
+  }, [successMessage])
 
   const openLogModal = (candidate: MatchedMealCandidate) => {
     setMealToLog({
@@ -591,18 +591,6 @@ export default function RecommendationPage() {
           <RecommendationIcon name="bowl" size={24} />
         )}
       </Box>
-      {successMeassage && (
-        <Box
-          className='ui-success-toast'
-          role="status"
-          aria-live='polite'
-        >
-          <FiCheck className="ui-success-toast-icon" aria-hidden="true" />
-          
-          <Text fw={900}>{successMeassage}</Text>
-        </Box>
-      )}
-
       <Box className="ui-meal-summary">
         <Group gap="xs" align="center">
           <Title order={2}>{candidate.food.name}</Title>
@@ -813,6 +801,16 @@ export default function RecommendationPage() {
           setMealToLog(null)
         }}
       />
+      {successMessage && (
+        <Box
+          className='ui-success-toast'
+          role="status"
+          aria-live='polite'
+        >
+          <FiCheck className="ui-success-toast-icon" aria-hidden="true" />
+          <Text fw={900}>{successMessage}</Text>
+        </Box>
+      )}
     </Box>
   )
 }
