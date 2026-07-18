@@ -4,6 +4,7 @@ import {
   Badge,
   Box,
   Button,
+  Group,
   SegmentedControl,
   Text,
   Title,
@@ -43,11 +44,13 @@ type GeneratedMeal = {
 type FoodSearchResult = {
   id: string
   name: string
+  source?: 'prebuilt' | 'custom'
   tags: string[]
   calories: number
   fat_g: number
   protein_g: number
   carbs_g: number
+  serving_description?: string
   image_url?: string
 }
 
@@ -327,7 +330,7 @@ export default function RecommendationPage() {
 
   const openLogModal = (candidate: MatchedMealCandidate) => {
     setMealToLog({
-      source: 'prebuilt',
+      source: candidate.food.source === 'custom' ? 'custom' : 'prebuilt',
       mealId: candidate.food.id,
       name: candidate.food.name,
       calories: candidate.food.calories,
@@ -584,11 +587,22 @@ export default function RecommendationPage() {
       )}
 
       <Box className="ui-meal-summary">
-        <Title order={2}>{candidate.food.name}</Title>
+        <Group gap="xs" align="center">
+          <Title order={2}>{candidate.food.name}</Title>
+          {candidate.food.source === 'custom' && (
+            <Badge className="ui-meal-source-badge">Community</Badge>
+          )}
+        </Group>
         <Text>{Math.round(candidate.food.calories)} kcal</Text>
-        <Text className="ui-meal-price">
-          {formatRM(candidate.generated_meal.estimated_price_range.min)} - {formatRM(candidate.generated_meal.estimated_price_range.max)}
-        </Text>
+        <Group gap="xs" align="center">
+          <Text className="ui-meal-price">
+            {formatRM(candidate.generated_meal.estimated_price_range.min)} - {formatRM(candidate.generated_meal.estimated_price_range.max)}
+          </Text>
+          <Badge
+            variant="gradient"
+            gradient={{ from: 'rgba(37, 161, 21, 1)', to: 'rgba(247, 200, 153, 1)', deg: 90 }}
+          >Estimated</Badge>
+        </Group>
         {filteredReason && (
           <Badge color="red" className="ui-meal-filtered-badge">
             Reason: {filteredReason}

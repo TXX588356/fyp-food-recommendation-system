@@ -29,6 +29,7 @@ func (s *service) calculateCurrentMonthSpent(ctx context.Context, userID uuid.UU
 
 func (s *service) BuildMealDetail(ctx context.Context, userID uuid.UUID, input interfaces.MealDetailInput) (interfaces.MealDetailResult, error) {
 	now := s.now()
+	candidate := s.hydrateMealDetailCandidate(ctx, input.Candidate)
 
 	currentMonthSpent, err := s.calculateCurrentMonthSpent(ctx, userID, now)
 	if err != nil {
@@ -42,7 +43,7 @@ func (s *service) BuildMealDetail(ctx context.Context, userID uuid.UUID, input i
 
 	explanationInput := buildMealDetailExplanationInput(
 		input.MealCategory,
-		input.Candidate,
+		candidate,
 		*preferences,
 		currentMonthSpent,
 		now,
@@ -89,7 +90,7 @@ func (s *service) BuildMealDetail(ctx context.Context, userID uuid.UUID, input i
 	}
 
 	return interfaces.MealDetailResult{
-		Meal:                      buildMealDetailMeal(input.MealCategory, input.Candidate),
+		Meal:                      buildMealDetailMeal(input.MealCategory, candidate),
 		RecommendationExplanation: explanation,
 		Location: interfaces.MealDetailLocation{
 			Query: explanationInput.Location,
@@ -99,6 +100,30 @@ func (s *service) BuildMealDetail(ctx context.Context, userID uuid.UUID, input i
 		RestaurantLookupStatus: restaurantResult.Status,
 	}, nil
 
+}
+
+func (s *service) hydrateMealDetailCandidate(
+	ctx context.Context,
+	candidate interfaces.MatchedMealCandidate,
+) interfaces.MatchedMealCandidate {
+	mealID, err := uuid.Parse(strings.TrimSpace(candidate.Food.ID))
+	if err != nil {
+		return candidate
+	}
+
+	meal, err := s.catalogService.GetMeal(ctx, mealID)
+	if err != nil {
+		return candidate
+	}
+
+	if servingDescription := strings.TrimSpace(meal.SelectedPortion.Description); servingDescription != "" {
+		candidate.Food.ServingDescription = servingDescription
+	}
+	if strings.TrimSpace(candidate.Food.ImageURL) == "" && meal.Image != nil {
+		candidate.Food.ImageURL = strings.TrimSpace(meal.Image.URL)
+	}
+
+	return candidate
 }
 
 // buildMealDetailMeal converts the selected matched candidate into service-level
@@ -123,10 +148,11 @@ func buildMealDetailMeal(
 	}
 
 	return interfaces.MealDetailMeal{
-		ID:           strings.TrimSpace(food.ID),
-		Name:         strings.TrimSpace(food.Name),
-		MealCategory: strings.TrimSpace(mealCategory),
-		ImageURL:     strings.TrimSpace(food.ImageURL),
+		ID:                 strings.TrimSpace(food.ID),
+		Name:               strings.TrimSpace(food.Name),
+		MealCategory:       strings.TrimSpace(mealCategory),
+		ImageURL:           strings.TrimSpace(food.ImageURL),
+		ServingDescription: strings.TrimSpace(food.ServingDescription),
 		EstimatedPriceRange: interfaces.PriceRange{
 			Min: generated.EstimatedPriceRange.Min,
 			Max: generated.EstimatedPriceRange.Max,

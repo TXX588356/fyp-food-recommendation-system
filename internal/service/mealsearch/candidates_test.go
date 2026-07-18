@@ -119,6 +119,7 @@ var _ = Describe("CandidateSearcher", func() {
 		// The exact custom candidate should rank before the fuzzy catalog candidate.
 		Expect(candidates[0].Food.ID).To(Equal("custom-1"))
 		Expect(candidates[0].Food.Name).To(Equal("Nasi Lemak"))
+		Expect(candidates[0].Food.Source).To(Equal("custom"))
 		Expect(candidates[0].MatchKind).To(Equal(interfaces.FoodMatchExactName))
 		Expect(candidates[0].MatchedTerm).To(Equal("Nasi Lemak"))
 		Expect(candidates[0].Score).To(Equal(float64(1)))
@@ -321,6 +322,7 @@ func catalogCandidate(id string, name string, score float64) interfaces.FoodMatc
 		Food: interfaces.FoodSearchResult{
 			ID:       id,
 			Name:     name,
+			Source:   "prebuilt",
 			Tags:     []string{"test_category"},
 			Calories: 500,
 			FatG:     15,

@@ -152,6 +152,7 @@ func customMealToCandidateFood(meal *interfaces.CustomMealResponse) interfaces.F
 	return interfaces.FoodSearchResult{
 		ID:       meal.ID,
 		Name:     meal.Name,
+		Source:   "custom",
 		Tags:     meal.MealCategoryTags,
 		Calories: meal.Calories,
 		FatG:     meal.FatG,

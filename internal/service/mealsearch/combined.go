@@ -97,6 +97,7 @@ func (s *CombinedSearcher) searchCustomMeals(ctx context.Context, userID uuid.UU
 	return interfaces.FoodSearchResult{
 		ID:       meal.ID,
 		Name:     meal.Name,
+		Source:   "custom",
 		Tags:     meal.MealCategoryTags,
 		Calories: meal.Calories,
 		FatG:     meal.FatG,

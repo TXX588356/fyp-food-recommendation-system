@@ -30,5 +30,15 @@ func (s *FoodSearcher) SearchFood(ctx context.Context, _ uuid.UUID, query string
 	if meal.Image != nil {
 		imageURL = meal.Image.URL
 	}
-	return interfaces.FoodSearchResult{ID: meal.ID.String(), Name: meal.Name, Tags: meal.Categories, Calories: *n.Calories, ProteinG: *n.ProteinG, CarbsG: *n.CarbsG, FatG: *n.FatG, ImageURL: imageURL}, true, nil
+	return interfaces.FoodSearchResult{
+		ID:                 meal.ID.String(),
+		Name:               meal.Name,
+		Tags:               meal.Categories,
+		Calories:           *n.Calories,
+		ProteinG:           *n.ProteinG,
+		CarbsG:             *n.CarbsG,
+		FatG:               *n.FatG,
+		ServingDescription: meal.SelectedPortion.Description,
+		ImageURL:           imageURL,
+	}, true, nil
 }

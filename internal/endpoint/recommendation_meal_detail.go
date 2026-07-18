@@ -46,6 +46,7 @@ type mealDetailMealResponse struct {
 	Name                string                `json:"name"`
 	MealCategory        string                `json:"mealCategory"`
 	ImageURL            string                `json:"imageUrl,omitempty"`
+	ServingDescription  string                `json:"servingDescription,omitempty"`
 	EstimatedPriceRange interfaces.PriceRange `json:"estimatedPriceRange"`
 	Nutrition           mealDetailNutrition   `json:"nutrition"`
 	Signals             mealDetailSignals     `json:"signals"`
@@ -241,6 +242,7 @@ func buildMealDetailResponse(result interfaces.MealDetailResult) mealDetailRespo
 			Name:                result.Meal.Name,
 			MealCategory:        result.Meal.MealCategory,
 			ImageURL:            result.Meal.ImageURL,
+			ServingDescription:  result.Meal.ServingDescription,
 			EstimatedPriceRange: result.Meal.EstimatedPriceRange,
 			Nutrition: mealDetailNutrition{
 				Calories: result.Meal.Nutrition.Calories,

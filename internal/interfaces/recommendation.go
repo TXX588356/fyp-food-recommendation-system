@@ -61,6 +61,7 @@ type MealDetailMeal struct {
 	Name                string
 	MealCategory        string
 	ImageURL            string
+	ServingDescription  string
 	EstimatedPriceRange PriceRange
 	Nutrition           MealDetailNutrition
 	Signals             MealDetailSignals

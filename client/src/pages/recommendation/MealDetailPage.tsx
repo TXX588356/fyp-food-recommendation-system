@@ -164,6 +164,9 @@ export default function MealDetailPage() {
 				meal: {
 					...response.data.meal,
 					imageUrl: response.data.meal.imageUrl || candidate.food.image_url,
+					servingDescription:
+						response.data.meal.servingDescription ||
+						candidate.food.serving_description,
 				},
 			})
 		} catch (requestError) {
@@ -311,6 +314,9 @@ export default function MealDetailPage() {
 
 							<Box className='ui-meal-detail-meta ui-card'>
 								<Text fw={900}>Per serving</Text>
+								{detail.meal.servingDescription && (
+									<Text className="ui-field-copy">{detail.meal.servingDescription}</Text>
+								)}
 								<SimpleGrid cols={2} spacing="sm">
 									<Text>{Math.round(detail.meal.nutrition.calories)} kcal</Text>
 									<Text>Fat {formatMacro(detail.meal.nutrition.fatG)}</Text>
@@ -318,15 +324,21 @@ export default function MealDetailPage() {
                   <Text>Carbs {formatMacro(detail.meal.nutrition.carbsG)}</Text>
 								</SimpleGrid>
 
-								<Text className="ui-meal-detail-price">
-									{formatPriceRange(
-										detail.meal.estimatedPriceRange.min,
-										detail.meal.estimatedPriceRange.max,
-									)}
-								</Text>
+								<Group gap="xs" align="center">
+									<Text className="ui-meal-detail-price">
+										{formatPriceRange(
+											detail.meal.estimatedPriceRange.min,
+											detail.meal.estimatedPriceRange.max,
+										)}
+									</Text>
+									<Badge
+									variant="gradient"
+									gradient={{ from: 'rgba(37, 161, 21, 1)', to: 'rgba(247, 200, 153, 1)', deg: 90 }}
+									>Estimated</Badge>
+								</Group>
 
 								<Group>
-									{detail.meal.signals.sodiumLevel && <Badge variant='light'>{detail.meal.signals.sodiumLevel}</Badge>}
+									{detail.meal.signals.sodiumLevel && <Badge variant='light'>Sodium {detail.meal.signals.sodiumLevel}</Badge>}
 									{detail.meal.signals.sugarLevel && <Badge variant="light">Sugar {detail.meal.signals.sugarLevel}</Badge>}
                   {detail.meal.signals.purineRisk && <Badge variant="light">Purine {detail.meal.signals.purineRisk}</Badge>}
 								</Group>

@@ -374,9 +374,10 @@ func (s *service) createMissingGeneratedCatalogMeal(ctx context.Context, userID 
 
 func catalogMealToFoodSearchResult(meal interfaces.CatalogMeal) interfaces.FoodSearchResult {
 	result := interfaces.FoodSearchResult{
-		ID:   meal.ID.String(),
-		Name: meal.Name,
-		Tags: meal.Categories,
+		ID:     meal.ID.String(),
+		Name:   meal.Name,
+		Source: "prebuilt",
+		Tags:   meal.Categories,
 	}
 	if meal.SelectedNutrition.Calories != nil {
 		result.Calories = *meal.SelectedNutrition.Calories

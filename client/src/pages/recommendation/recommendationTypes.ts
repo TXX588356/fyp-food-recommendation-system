@@ -20,11 +20,13 @@ export type GeneratedMeal = {
 export type FoodSearchResult = {
 	id: string
 	name: string
+	source?: 'prebuilt' | 'custom'
 	tags: string[]
 	calories: number
 	fat_g: number
 	protein_g: number
 	carbs_g: number
+	serving_description?: string
 	image_url?: string
 }
 
@@ -58,6 +60,7 @@ export type MealDetailResponse = {
 		name: string
 		mealCategory: MealCategory
 		imageUrl?: string
+		servingDescription?: string
 		estimatedPriceRange: PriceRange
 		nutrition: {
 			calories: number

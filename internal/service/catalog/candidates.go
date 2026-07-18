@@ -135,14 +135,16 @@ func catalogMealToCandidateFood(meal interfaces.CatalogMeal) (interfaces.FoodSea
 	}
 
 	return interfaces.FoodSearchResult{
-		ID:       meal.ID.String(),
-		Name:     meal.Name,
-		Tags:     meal.Categories,
-		Calories: *nutrition.Calories,
-		ProteinG: *nutrition.ProteinG,
-		CarbsG:   *nutrition.CarbsG,
-		FatG:     *nutrition.FatG,
-		ImageURL: imageURL,
+		ID:                 meal.ID.String(),
+		Name:               meal.Name,
+		Source:             "prebuilt",
+		Tags:               meal.Categories,
+		Calories:           *nutrition.Calories,
+		ProteinG:           *nutrition.ProteinG,
+		CarbsG:             *nutrition.CarbsG,
+		FatG:               *nutrition.FatG,
+		ServingDescription: meal.SelectedPortion.Description,
+		ImageURL:           imageURL,
 	}, true
 }
 

@@ -20,16 +20,17 @@ type mealSearchHandler struct {
 }
 
 type mealSearchResult struct {
-	ID       string   `json:"id"`
-	Name     string   `json:"name"`
-	Source   string   `json:"source"`
-	Tags     []string `json:"tags"`
-	Calories float64  `json:"calories"`
-	FatG     float64  `json:"fat_g"`
-	ProteinG float64  `json:"protein_g"`
-	CarbsG   float64  `json:"carbs_g"`
-	Price    float64  `json:"price,omitempty"`
-	ImageURL string   `json:"image_url,omitempty"`
+	ID                 string   `json:"id"`
+	Name               string   `json:"name"`
+	Source             string   `json:"source"`
+	Tags               []string `json:"tags"`
+	Calories           float64  `json:"calories"`
+	FatG               float64  `json:"fat_g"`
+	ProteinG           float64  `json:"protein_g"`
+	CarbsG             float64  `json:"carbs_g"`
+	Price              float64  `json:"price,omitempty"`
+	ServingDescription string   `json:"serving_description,omitempty"`
+	ImageURL           string   `json:"image_url,omitempty"`
 }
 
 func RegisterMealSearchRoutes(ctx context.Context, e *echo.Echo) {
@@ -148,15 +149,16 @@ func prebuiltMealSearchResult(meal interfaces.CatalogMeal) mealSearchResult {
 	}
 
 	return mealSearchResult{
-		ID:       meal.ID.String(),
-		Name:     meal.Name,
-		Source:   "prebuilt",
-		Tags:     meal.Categories,
-		Calories: float64Value(nutrition.Calories),
-		FatG:     float64Value(nutrition.FatG),
-		ProteinG: float64Value(nutrition.ProteinG),
-		CarbsG:   float64Value(nutrition.CarbsG),
-		ImageURL: imageURL,
+		ID:                 meal.ID.String(),
+		Name:               meal.Name,
+		Source:             "prebuilt",
+		Tags:               meal.Categories,
+		Calories:           float64Value(nutrition.Calories),
+		FatG:               float64Value(nutrition.FatG),
+		ProteinG:           float64Value(nutrition.ProteinG),
+		CarbsG:             float64Value(nutrition.CarbsG),
+		ServingDescription: meal.SelectedPortion.Description,
+		ImageURL:           imageURL,
 	}
 }
 

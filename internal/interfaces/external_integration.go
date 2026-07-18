@@ -51,14 +51,16 @@ type GeminiMealsResponse struct {
 }
 
 type FoodSearchResult struct {
-	ID       string   `json:"id"`
-	Name     string   `json:"name"`
-	Tags     []string `json:"tags"`
-	Calories float64  `json:"calories"`
-	FatG     float64  `json:"fat_g"`
-	ProteinG float64  `json:"protein_g"`
-	CarbsG   float64  `json:"carbs_g"`
-	ImageURL string   `json:"image_url,omitempty"`
+	ID                 string   `json:"id"`
+	Name               string   `json:"name"`
+	Source             string   `json:"source,omitempty"`
+	Tags               []string `json:"tags"`
+	Calories           float64  `json:"calories"`
+	FatG               float64  `json:"fat_g"`
+	ProteinG           float64  `json:"protein_g"`
+	CarbsG             float64  `json:"carbs_g"`
+	ServingDescription string   `json:"serving_description,omitempty"`
+	ImageURL           string   `json:"image_url,omitempty"`
 }
 
 // FoodMatchKind explains why a food candidate matched generated meal terms.

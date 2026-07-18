@@ -21,6 +21,8 @@ type testCatalogService struct {
 	createdInput *interfaces.GeneratedCatalogMealInput
 	createdMeal  interfaces.CatalogMeal
 	createErr    error
+	mealsByID    map[uuid.UUID]interfaces.CatalogMeal
+	getErr       error
 }
 
 type testMealLogRepository struct {
@@ -48,6 +50,7 @@ type testPreferenceService struct {
 type testMealDetailExplainer struct {
 	explanation string
 	err         error
+	input       *interfaces.MealDetailExplanationInput
 }
 
 type testRestaurantSearcher struct {
@@ -109,7 +112,9 @@ func (s *testPreferenceService) UpdateDataSharingConsent(context.Context, uuid.U
 	return s.err
 }
 
-func (e *testMealDetailExplainer) ExplainMealRecommendation(context.Context, interfaces.MealDetailExplanationInput) (string, error) {
+func (e *testMealDetailExplainer) ExplainMealRecommendation(_ context.Context, input interfaces.MealDetailExplanationInput) (string, error) {
+	e.input = &input
+
 	if e.err != nil {
 		return "", e.err
 	}
@@ -177,7 +182,17 @@ func (s *testCatalogService) SearchMeals(context.Context, interfaces.CatalogQuer
 	return interfaces.CatalogMealPage{}, nil
 }
 
-func (s *testCatalogService) GetMeal(context.Context, uuid.UUID) (interfaces.CatalogMeal, error) {
+func (s *testCatalogService) GetMeal(_ context.Context, id uuid.UUID) (interfaces.CatalogMeal, error) {
+	if s.getErr != nil {
+		return interfaces.CatalogMeal{}, s.getErr
+	}
+
+	if s.mealsByID != nil {
+		if meal, ok := s.mealsByID[id]; ok {
+			return meal, nil
+		}
+	}
+
 	return interfaces.CatalogMeal{}, nil
 }
 
@@ -650,6 +665,59 @@ var _ = Describe("Recommendation candidate generation", func() {
 			"Wantan Mee",
 			"Wan Tan Mee",
 		}))
+	})
+})
+
+var _ = Describe("Recommendation meal detail", func() {
+	It("should hydrate serving description from catalog for saved candidates without it", func() {
+		ctx := context.Background()
+		userID := uuid.New()
+		mealID := uuid.MustParse("44444444-4444-4444-4444-444444444444")
+		catalogService := newTestCatalogService()
+		catalogService.mealsByID = map[uuid.UUID]interfaces.CatalogMeal{
+			mealID: {
+				ID:   mealID,
+				Name: "Chicken Rice",
+				SelectedPortion: interfaces.CatalogPortion{
+					Amount:      1,
+					Description: "1 bowl (350g)",
+				},
+			},
+		}
+		explainer := &testMealDetailExplainer{}
+		svc := NewService(
+			mocks.NewMealGenerator(GinkgoT()),
+			&testCandidateSearcher{},
+			&testMatchAdjudicator{},
+			catalogService,
+			mocks.NewCustomMealAutocompleter(GinkgoT()),
+			&testMealLogRepository{},
+			&testPreferenceService{},
+			explainer,
+			&testRestaurantSearcher{},
+		).(*service)
+
+		result, err := svc.BuildMealDetail(ctx, userID, interfaces.MealDetailInput{
+			MealCategory: "lunch",
+			Candidate: interfaces.MatchedMealCandidate{
+				GeneratedMeal: interfaces.GeneratedMeal{
+					EstimatedPriceRange: interfaces.PriceRange{Min: 8, Max: 12},
+				},
+				Food: interfaces.FoodSearchResult{
+					ID:       mealID.String(),
+					Name:     "Chicken Rice",
+					Calories: 500,
+					FatG:     12,
+					ProteinG: 28,
+					CarbsG:   60,
+				},
+			},
+		})
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result.Meal.ServingDescription).To(Equal("1 bowl (350g)"))
+		Expect(explainer.input).NotTo(BeNil())
+		Expect(explainer.input.MealName).To(Equal("Chicken Rice"))
 	})
 })
 

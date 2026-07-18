@@ -55,6 +55,7 @@ var _ = Describe("Combined meal searcher", func() {
 		Expect(found).To(BeTrue())
 		Expect(food.ID).To(Equal("1"))
 		Expect(food.Name).To(Equal("Nasi Lemak"))
+		Expect(food.Source).To(Equal("custom"))
 		Expect(food.Calories).To(Equal(float64(530)))
 		Expect(food.FatG).To(Equal(float64(18)))
 		Expect(food.ProteinG).To(Equal(float64(20)))

@@ -70,6 +70,7 @@ type MealSearchResult = {
   protein_g: number
   carbs_g: number
   price?: number
+  serving_description?: string
   image_url?: string
 }
 
