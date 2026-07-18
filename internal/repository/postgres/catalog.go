@@ -46,11 +46,10 @@ func (r *catalogRepository) SearchMeals(ctx context.Context, query interfaces.Ca
 		db = db.Where("prebuilt_meals.category_codes @> ?::text[]", pgTextArrayLiteral(query.Categories))
 	}
 	if query.HasImage != nil {
-		exists := `EXISTS (SELECT 1 FROM prebuilt_meal_images i WHERE i.prebuilt_meal_id = prebuilt_meals.id AND i.is_primary = TRUE AND i.match_status IN ('auto_accepted','approved'))`
 		if *query.HasImage {
-			db = db.Where(exists)
+			db = db.Where("prebuilt_meals.image_object_key IS NOT NULL AND btrim(prebuilt_meals.image_object_key) <> ''")
 		} else {
-			db = db.Where("NOT " + exists)
+			db = db.Where("prebuilt_meals.image_object_key IS NULL OR btrim(prebuilt_meals.image_object_key) = ''")
 		}
 	}
 	if query.AfterID != nil {
@@ -74,7 +73,6 @@ func (r *catalogRepository) hydrateMeals(ctx context.Context, ids []uuid.UUID) (
 	}
 	var meals []model.PrebuiltMeal
 	err := r.db.WithContext(ctx).
-		Preload("Images", "is_primary = TRUE AND match_status IN ?", []string{"auto_accepted", "approved"}).
 		Where("prebuilt_meals.id IN ?", ids).
 		Order("prebuilt_meals.normalized_name, prebuilt_meals.id").Find(&meals).Error
 	return meals, err

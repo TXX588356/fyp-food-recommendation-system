@@ -35,15 +35,6 @@ func (r *testRepository) CategoryCodesExist(_ context.Context, codes []string) (
 	}
 	return r.categoriesOK, nil
 }
-func (r *testRepository) ListImages(context.Context, interfaces.CatalogImageQuery) ([]model.PrebuiltMealImage, error) {
-	return nil, nil
-}
-func (r *testRepository) FindImage(context.Context, uuid.UUID) (*model.PrebuiltMealImage, error) {
-	return nil, nil
-}
-func (r *testRepository) ApplyImageAction(context.Context, uuid.UUID, interfaces.CatalogImageAction) (*model.PrebuiltMealImage, error) {
-	return nil, nil
-}
 
 func (r *testRepository) CreateGeneratedMeal(ctx context.Context, input interfaces.GeneratedCatalogMealInput) (*model.PrebuiltMeal, error) {
 	r.createdInput = &input
@@ -79,12 +70,12 @@ func TestCatalogService(t *testing.T) {
 
 var _ = Describe("Catalog service", func() {
 	It("should return stored serving nutrition and image URL", func() {
-		mealID, imageID := uuid.New(), uuid.New()
+		mealID := uuid.New()
 		repo := &testRepository{meal: &model.PrebuiltMeal{
 			ID: mealID, Name: "Fried Rice", SourceCode: "usda_fndds", SourceRecordID: "270001",
 			CategoryCodes: []string{"rice_dishes", "indonesian"}, ServingDescription: "plate",
 			Calories: float(500), ProteinG: float(25), CarbsG: float(75), FatG: float(12.5),
-			Images: []model.PrebuiltMealImage{{ID: imageID, MinioObjectKey: str("catalog-meals/x.jpg"), IsPrimary: true}},
+			ImageObjectKey: str("catalog-meals/x.jpg"),
 		}}
 		service := NewService(repo, testResolver{})
 

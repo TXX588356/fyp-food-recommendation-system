@@ -55,9 +55,6 @@ func Run(parent context.Context) error {
 		return err
 	}
 	endpoint.RegisterCatalogRoutes(e, catalogService, cfg.JWTSecret)
-	if cfg.CatalogAdminEnabled {
-		endpoint.RegisterCatalogAdminRoutes(e, catalogService, cfg.CatalogAdminToken)
-	}
 
 	// Start Echo
 	sc := echo.StartConfig{

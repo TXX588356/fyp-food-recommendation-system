@@ -84,9 +84,8 @@ func (s *Service) mapMeal(meal model.PrebuiltMeal) (interfaces.CatalogMeal, erro
 		SelectedPortion:   interfaces.CatalogPortion{Amount: 1, Description: meal.ServingDescription},
 		SelectedNutrition: nutrition(meal),
 	}
-	if len(meal.Images) > 0 && meal.Images[0].MinioObjectKey != nil {
-		image := meal.Images[0]
-		result.Image = &interfaces.CatalogImage{ID: image.ID, URL: s.urlResolver.Resolve(*image.MinioObjectKey), Attribution: value(image.AttributionText), SourceURL: value(image.CommonsPageURL), License: value(image.LicenseName), LicenseURL: value(image.LicenseURL)}
+	if meal.ImageObjectKey != nil && strings.TrimSpace(*meal.ImageObjectKey) != "" {
+		result.Image = &interfaces.CatalogImage{URL: s.urlResolver.Resolve(*meal.ImageObjectKey)}
 	}
 	return result, nil
 }
@@ -123,10 +122,4 @@ func (s *Service) CreateGeneratedMeal(ctx context.Context, input interfaces.Gene
 
 func nutrition(meal model.PrebuiltMeal) interfaces.CatalogNutrition {
 	return interfaces.CatalogNutrition{Calories: meal.Calories, ProteinG: meal.ProteinG, CarbsG: meal.CarbsG, FatG: meal.FatG, FiberG: meal.FiberG, SugarG: meal.SugarG, SodiumMg: meal.SodiumMg, CholesterolMg: meal.CholesterolMg}
-}
-func value(input *string) string {
-	if input == nil {
-		return ""
-	}
-	return *input
 }

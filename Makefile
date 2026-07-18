@@ -8,10 +8,10 @@ MOCKERY_STAMP := bin/mockery-$(MOCKERY_VERSION)
 MINIO_CONTAINER ?= minio
 POSTGRES_CONTAINER ?= fyp-postgres
 CATALOG_DATA_DUMP ?= data/catalog-data.sql
-CATALOG_DUMP_TABLES := meal_categories prebuilt_meals prebuilt_meal_images
+CATALOG_DUMP_TABLES := meal_categories prebuilt_meals
 MIGRATION_FILES := $(sort $(wildcard db/migrations/*.up.sql))
 
-.PHONY: dev-env-start dev dev-client dev-start generate dev-migrate migrate-up catalog-dump catalog-seed catalog-install catalog-install-ml catalog-lint catalog-test
+.PHONY: dev-env-start dev dev-client dev-start generate dev-migrate migrate-up catalog-dump catalog-seed
 
 dev-env-start:
 	@if podman container exists $(POSTGRES_CONTAINER); then \
@@ -98,27 +98,13 @@ catalog-seed:
 		-v ON_ERROR_STOP=1 \
 		-U "${DATABASE_USER}" \
 		-d "${DATABASE_NAME}" \
-		-c "DELETE FROM prebuilt_meal_images; DELETE FROM prebuilt_meals; DELETE FROM meal_categories;"
+		-c "DELETE FROM prebuilt_meals; DELETE FROM meal_categories;"
 	podman exec -i -e PGPASSWORD="${DATABASE_PASSWORD}" $(POSTGRES_CONTAINER) psql \
 		-v ON_ERROR_STOP=1 \
 		-U "${DATABASE_USER}" \
 		-d "${DATABASE_NAME}" \
 		< "$(CATALOG_DATA_DUMP)"
 	@echo "Seeded catalog data from $(CATALOG_DATA_DUMP)"
-
-catalog-install:
-	python3 -m venv .venv
-	.venv/bin/pip install -e '.[dev,image]'
-
-catalog-install-ml:
-	.venv/bin/pip install -e '.[ml]'
-
-catalog-lint:
-	.venv/bin/ruff check scripts/meal_catalog
-	.venv/bin/ruff format --check scripts/meal_catalog
-
-catalog-test:
-	.venv/bin/pytest scripts/meal_catalog/tests -q
 
 $(MOCKERY_STAMP):
 	GOBIN=$(CURDIR)/bin go install github.com/vektra/mockery/v3@$(MOCKERY_VERSION)

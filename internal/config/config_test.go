@@ -61,19 +61,4 @@ var _ = Describe("Config", func() {
 		Expect(cfg.JWTSecret).To(Equal("test-secret"))
 	})
 
-	It("should load catalog admin config", func() {
-		GinkgoT().Setenv("CATALOG_ADMIN_ENABLED", "true")
-		GinkgoT().Setenv("CATALOG_ADMIN_TOKEN", "  catalog-secret  ")
-
-		cfg := Load()
-
-		Expect(cfg.CatalogAdminEnabled).To(BeTrue())
-		Expect(cfg.CatalogAdminToken).To(Equal("catalog-secret"))
-	})
-
-	It("should reject enabled catalog admin without token", func() {
-		cfg := Config{CatalogAdminEnabled: true}
-
-		Expect(cfg.Validate()).To(HaveOccurred())
-	})
 })

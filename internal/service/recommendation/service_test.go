@@ -185,18 +185,6 @@ func (s *testCatalogService) ListCategories(context.Context) ([]interfaces.Catal
 	return nil, nil
 }
 
-func (s *testCatalogService) ListImages(context.Context, interfaces.CatalogImageQuery) ([]model.PrebuiltMealImage, string, error) {
-	return nil, "", nil
-}
-
-func (s *testCatalogService) GetImage(context.Context, uuid.UUID) (*model.PrebuiltMealImage, error) {
-	return nil, nil
-}
-
-func (s *testCatalogService) ApplyImageAction(context.Context, uuid.UUID, interfaces.CatalogImageAction) (*model.PrebuiltMealImage, error) {
-	return nil, nil
-}
-
 func testFloatPtr(value float64) *float64 {
 	return &value
 }

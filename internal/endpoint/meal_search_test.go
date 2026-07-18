@@ -8,7 +8,6 @@ import (
 	"fyp/food-rs/internal/endpoint/middleware"
 	"fyp/food-rs/internal/interfaces"
 	"fyp/food-rs/internal/mocks"
-	"fyp/food-rs/types/model"
 	"net/http"
 	"net/http/httptest"
 	"time"
@@ -39,15 +38,6 @@ func (*fakeCatalogService) ListCategories(context.Context) ([]interfaces.Catalog
 }
 func (*fakeCatalogService) CreateGeneratedMeal(context.Context, interfaces.GeneratedCatalogMealInput) (interfaces.CatalogMeal, error) {
 	return interfaces.CatalogMeal{}, nil
-}
-func (*fakeCatalogService) ListImages(context.Context, interfaces.CatalogImageQuery) ([]model.PrebuiltMealImage, string, error) {
-	return nil, "", nil
-}
-func (*fakeCatalogService) GetImage(context.Context, uuid.UUID) (*model.PrebuiltMealImage, error) {
-	return nil, interfaces.ErrCatalogNotFound
-}
-func (*fakeCatalogService) ApplyImageAction(context.Context, uuid.UUID, interfaces.CatalogImageAction) (*model.PrebuiltMealImage, error) {
-	return nil, interfaces.ErrCatalogNotFound
 }
 
 func registerMealSearchTestRoutes(e *echo.Echo, customMealService interfaces.CustomMealService, catalogService interfaces.CatalogService, jwtSecret string) {
