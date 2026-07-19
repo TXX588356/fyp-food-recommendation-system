@@ -46,7 +46,7 @@ type matcherTask struct {
 
 // matcherGeneratedMeal is the generated meal identity information sent to Gemini.
 //
-// The generated meal name and alternative search terms help Gemini understand
+// The generated meal name and alternative search terms help Gemini understand to
 // what food identity was intended by the recommendation generator.
 type matcherGeneratedMeal struct {
 	Name                   string   `json:"name"`
