@@ -1,4 +1,5 @@
 .env
+.env.*
 
 # Go
 bin/
@@ -23,3 +24,6 @@ build/
 
 data/*
 docs/*
+
+static/
+client/dist/
