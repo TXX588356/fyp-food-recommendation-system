@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom'
+import { createBrowserRouter, Navigate } from 'react-router-dom'
 
 import RegisterPage from '@/pages/authentication/RegisterPage'
 import LoginPage from '@/pages/authentication/LoginPage'
@@ -15,6 +15,7 @@ import ConsentPreferencePage from '@/pages/preferences/ConsentPreferencePage'
 import { CustomMealFormPage, CustomMealSearchPage } from '@/pages/customMeal/CustomMealAddPage'
 import MealLogPage from '@/pages/mealLog/MealLogPage'
 import MealDetailPage from '@/pages/recommendation/MealDetailPage'
+
 
 export const router = createBrowserRouter([
   {path: '/', element: <HomeRedirect />,},
@@ -84,5 +85,9 @@ export const router = createBrowserRouter([
     <ProtectedRoute>
       <MealDetailPage />
     </ProtectedRoute>
-  )}
+  )},
+  {
+    path: "*",
+    element: <Navigate to="/" replace />,
+  },
 ])

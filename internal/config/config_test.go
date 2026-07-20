@@ -56,9 +56,9 @@ var _ = Describe("Config", func() {
 
 		cfg := Load()
 
-		Expect(cfg.GeminiAPIKey).To(Equal("test-gemini-key"))
-		Expect(cfg.DatabaseURL).To(Equal("postgres://test"))
-		Expect(cfg.JWTSecret).To(Equal("test-secret"))
+		Expect(cfg.AI.GeminiAPIKey).To(Equal("test-gemini-key"))
+		Expect(cfg.Database.URL).To(Equal("postgres://test"))
+		Expect(cfg.Security.JWTSecret).To(Equal("test-secret"))
 	})
 
 })

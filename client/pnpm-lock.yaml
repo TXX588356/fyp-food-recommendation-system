@@ -23,6 +23,9 @@ importers:
       axios:
         specifier: ^1.16.0
         version: 1.16.1
+      lucide-react:
+        specifier: ^1.24.0
+        version: 1.25.0(react@19.2.6)
       phosphor-icons:
         specifier: ^1.4.2
         version: 1.4.2
@@ -32,6 +35,9 @@ importers:
       react-dom:
         specifier: ^19.2.5
         version: 19.2.6(react@19.2.6)
+      react-icons:
+        specifier: ^5.7.0
+        version: 5.7.0(react@19.2.6)
       react-router-dom:
         specifier: ^7.15.0
         version: 7.15.1(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
@@ -895,6 +901,11 @@ packages:
   lru-cache@5.1.1:
     resolution: {integrity: sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==}
 
+  lucide-react@1.25.0:
+    resolution: {integrity: sha512-/mdJTRbiwcLOQ1NZZK1amZF9rIZyvO18D6r9TngE6TG1NmqHgFuT4eE7Xrkm9UsXMbBJD1NlfwHVltCDWHrOTw==}
+    peerDependencies:
+      react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
   math-intrinsics@1.1.0:
     resolution: {integrity: sha512-/IXtbwEk5HTPyEwyKX6hGkYXxM9nbj64B+ilVJnC/R6B0pH5G4V3b0pVbL7DBj4tkhBAppbQUlf6F6Xl9LHu1g==}
     engines: {node: '>= 0.4'}
@@ -975,6 +986,11 @@ packages:
     resolution: {integrity: sha512-0prMI+hvBbPjsWnxDLxlCGyM8PN6UuWjEUCYmZhO67xIV9Xasa/r/vDnq+Xyq4Lo27g8QSbO5YzARu0D1Sps3g==}
     peerDependencies:
       react: ^19.2.6
+
+  react-icons@5.7.0:
+    resolution: {integrity: sha512-LBLy340Rzqy6+/yVhZKT3B/QpP1BZaesGqasf09HPOBzRarcDIFH0WwXlXQfE7q7ipxK4MSiC5DIBWURCny6fw==}
+    peerDependencies:
+      react: '*'
 
   react-number-format@5.4.5:
     resolution: {integrity: sha512-y8O2yHHj3w0aE9XO8d2BCcUOOdQTRSVq+WIuMlLVucAm5XNjJAy+BoOJiuQMldVYVOKTMyvVNfnbl2Oqp+YxGw==}
@@ -2005,6 +2021,10 @@ snapshots:
     dependencies:
       yallist: 3.1.1
 
+  lucide-react@1.25.0(react@19.2.6):
+    dependencies:
+      react: 19.2.6
+
   math-intrinsics@1.1.0: {}
 
   mime-db@1.52.0: {}
@@ -2068,6 +2088,10 @@ snapshots:
     dependencies:
       react: 19.2.6
       scheduler: 0.27.0
+
+  react-icons@5.7.0(react@19.2.6):
+    dependencies:
+      react: 19.2.6
 
   react-number-format@5.4.5(react-dom@19.2.6(react@19.2.6))(react@19.2.6):
     dependencies:
