@@ -14,7 +14,6 @@ CREATE TABLE IF NOT EXISTS prebuilt_meals (
     sugar_g NUMERIC CHECK (sugar_g >= 0),
     sodium_mg NUMERIC CHECK (sodium_mg >= 0),
     cholesterol_mg NUMERIC CHECK (cholesterol_mg >= 0),
-    image_object_key TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     UNIQUE (source_code, source_record_id)
