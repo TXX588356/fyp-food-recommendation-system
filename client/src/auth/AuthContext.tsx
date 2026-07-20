@@ -25,6 +25,7 @@ const AuthProvider = ({ children }: LayoutProps) => {
     const [user, setUser] = useState<User | null>(() => safeParseUser())
     // A user is considered authenticated when a token is present.
     const isAuthenticated = Boolean(token)
+    const [isAuthLoading, setIsAuthLoading] = useState(true)
 
     const clearAuth = () => {
         setToken(null)
@@ -34,51 +35,101 @@ const AuthProvider = ({ children }: LayoutProps) => {
         localStorage.removeItem('user')
     }
 
+
+    // Check saved session when the app first loads
+    // job: 
+    // Browser opens app -> check existing refresh token -> refresh/verify session immediately
+    // -> load latest user -> route guards decide where to send user.
     useEffect(() => {
-        const interceptor = axios.interceptors.response.use(
-            (response) => response,
-            async (error) => {
-                const originalRequest = error.config as typeof error.config & { _retry?: boolean }
-                const refreshToken = localStorage.getItem('refreshToken')
+			const bootstrapAuth = async () => {
+				const refreshToken = localStorage.getItem('refreshToken')
 
-                if (
-                    error.response?.status !== 401 ||
-                    originalRequest?._retry ||
-                    !refreshToken ||
-                    originalRequest?.url?.includes('/auth/refresh')
-                ) {
-                    return Promise.reject(error)
-                }
+				if (!refreshToken) {
+					clearAuth()
+					setIsAuthLoading(false)
+					return
+				}
 
-                originalRequest._retry = true
+				try {
+					const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
+						refreshToken,
+					})
 
-                try {
-                    const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-                        refreshToken,
-                    })
-                    const nextAccessToken = response.data.accessToken
-                    const nextRefreshToken = response.data.refreshToken
+					const nextAccessToken = response.data.accessToken
+					const nextRefreshToken = response.data.refreshToken
+					const nextUser = response.data.user
 
-                    setToken(nextAccessToken)
-                    localStorage.setItem('token', nextAccessToken)
-                    localStorage.setItem('refreshToken', nextRefreshToken)
+					setToken(nextAccessToken)
+					setUser(nextUser)
 
-                    originalRequest.headers = originalRequest.headers ?? {}
-                    originalRequest.headers.Authorization = `Bearer ${nextAccessToken}`
+					localStorage.setItem('token', nextAccessToken)
+					localStorage.setItem('refreshToken', nextRefreshToken)
+					localStorage.setItem('user', JSON.stringify(nextUser))
+				} catch {
+					clearAuth()
+				} finally {
+					setIsAuthLoading(false)
+				}
+			}
 
-                    return axios(originalRequest)
-                } catch (refreshError) {
-                    clearAuth()
-                    return Promise.reject(refreshError)
-                }
-            },
-        )
+			bootstrapAuth()
+    }, [] )
 
-        return () => axios.interceptors.response.eject(interceptor)
+
+		// Run once to register a global response handler
+		// Job:
+		// User is already inside app -> some API req gets 401 -> try refresh token
+		// -> retry original req -> if refresh fails, clearAuth()
+		// handles token expiry during active usage
+    useEffect(() => {
+			const interceptor = axios.interceptors.response.use(
+				(response) => response,
+					async (error) => {
+						const originalRequest = error.config as typeof error.config & { _retry?: boolean }
+						const refreshToken = localStorage.getItem('refreshToken')
+
+						if (
+								error.response?.status !== 401 ||
+								originalRequest?._retry ||
+								!refreshToken ||
+								originalRequest?.url?.includes('/auth/refresh')
+						) {
+							return Promise.reject(error)
+							}
+
+						originalRequest._retry = true
+
+						try {
+							const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
+									refreshToken,
+							})
+							const nextAccessToken = response.data.accessToken
+							const nextRefreshToken = response.data.refreshToken
+							const nextUser = response.data.user
+
+							setToken(nextAccessToken)
+							setUser(nextUser)
+							localStorage.setItem('token', nextAccessToken)
+							localStorage.setItem('refreshToken', nextRefreshToken)
+							localStorage.setItem('user', JSON.stringify(nextUser))
+
+							originalRequest.headers = originalRequest.headers ?? {}
+							originalRequest.headers.Authorization = `Bearer ${nextAccessToken}`
+
+							return axios(originalRequest)
+						} catch (refreshError) {
+							clearAuth()
+							return Promise.reject(refreshError)
+						}
+				},
+			)
+
+			return () => axios.interceptors.response.eject(interceptor)
     }, [])
 
     // Keep React state and localStorage in sync after a successful login.
     const login = (user: User, accessToken: string, refreshToken?: string) => {
+			setIsAuthLoading(false)
         setToken(accessToken)
         setUser(user)
         localStorage.setItem('token', accessToken)
@@ -95,26 +146,29 @@ const AuthProvider = ({ children }: LayoutProps) => {
 
     // Clear both in-memory auth state and persisted auth state.
     const logout = () => {
-        const refreshToken = localStorage.getItem('refreshToken')
-        if (refreshToken) {
-            void axios.post(`${API_BASE_URL}/auth/logout`, { refreshToken }).catch(() => undefined)
-        }
+			const refreshToken = localStorage.getItem('refreshToken')
+			if (refreshToken) {
+					void axios.post(`${API_BASE_URL}/auth/logout`, { refreshToken }).catch(() => undefined)
+			}
 
-        clearAuth()
+			clearAuth()
+			setIsAuthLoading(false)
+
     }
 
     const value: AuthContextType = {
-        isAuthenticated, 
-        user,
-        login,
-        updateUser,
-        logout,
+			isAuthenticated, 
+			isAuthLoading,
+			user,
+			login,
+			updateUser,
+			logout,
     }
 
     return (
-        <AuthContext.Provider value={value}>
-            {children}
-        </AuthContext.Provider>
+			<AuthContext.Provider value={value}>
+					{children}
+			</AuthContext.Provider>
     )
 }
 

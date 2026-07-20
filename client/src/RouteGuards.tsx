@@ -3,7 +3,12 @@ import type { ReactNode } from 'react'
 import { useAuth } from './auth/useAuth'
 
 export function HomeRedirect() {
-    const { isAuthenticated, user } = useAuth()
+    const { isAuthenticated, isAuthLoading, user } = useAuth()
+
+    if (isAuthLoading) {
+    	return null 
+    }
+    
 
     if (!isAuthenticated) {
         return <Navigate to="/login" replace/>
@@ -15,7 +20,11 @@ export function HomeRedirect() {
 }
 
 export function ProtectedRoute({ children }: { children: ReactNode }) {
-    const { isAuthenticated, user } = useAuth()
+    const { isAuthenticated, isAuthLoading, user } = useAuth()
+
+    if (isAuthLoading) {
+        return null 
+    }
     
     if (!isAuthenticated) {
         return <Navigate to="/login" replace/>
@@ -29,8 +38,12 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
 }
 
 export function OnboardingRoute({ children }: { children: ReactNode }) {
-    const { isAuthenticated, user } = useAuth()
+    const { isAuthenticated, isAuthLoading, user } = useAuth()
 
+		if (isAuthLoading) {
+      return null 
+    }
+    
     if (!isAuthenticated) {
         return <Navigate to="/login" replace/>
     }
