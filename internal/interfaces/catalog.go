@@ -18,7 +18,6 @@ type CatalogQuery struct {
 	Query      string
 	Categories []string
 	Source     string
-	HasImage   *bool
 	AfterName  string
 	AfterID    *uuid.UUID
 	Limit      int

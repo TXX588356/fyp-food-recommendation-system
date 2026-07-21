@@ -61,21 +61,18 @@ type testResolver struct{}
 func (testResolver) Resolve(key string) string { return "https://images.test/" + key }
 
 func float(value float64) *float64 { return &value }
-func str(value string) *string     { return &value }
-
 func TestCatalogService(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Catalog Service Suite")
 }
 
 var _ = Describe("Catalog service", func() {
-	It("should return stored serving nutrition and image URL", func() {
+	It("should return stored serving nutrition", func() {
 		mealID := uuid.New()
 		repo := &testRepository{meal: &model.PrebuiltMeal{
 			ID: mealID, Name: "Fried Rice", SourceCode: "usda_fndds", SourceRecordID: "270001",
 			CategoryCodes: []string{"rice_dishes", "indonesian"}, ServingDescription: "plate",
 			Calories: float(500), ProteinG: float(25), CarbsG: float(75), FatG: float(12.5),
-			ImageObjectKey: str("catalog-meals/x.jpg"),
 		}}
 		service := NewService(repo, testResolver{})
 
@@ -86,8 +83,7 @@ var _ = Describe("Catalog service", func() {
 		Expect(*got.SelectedNutrition.Calories).To(Equal(float64(500)))
 		Expect(got.SelectedPortion.Description).To(Equal("plate"))
 		Expect(got.SourceCode).To(Equal("usda_fndds"))
-		Expect(got.Image).NotTo(BeNil())
-		Expect(got.Image.URL).To(Equal("https://images.test/catalog-meals/x.jpg"))
+		Expect(got.Image).To(BeNil())
 	})
 
 	It("should reject excessive search limits", func() {

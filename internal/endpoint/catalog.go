@@ -37,13 +37,6 @@ func (h *catalogHandler) search(c *echo.Context) error {
 		}
 		q.Limit = value
 	}
-	if raw := c.QueryParam("has_image"); raw != "" {
-		value, err := strconv.ParseBool(raw)
-		if err != nil {
-			return catalogError(c, http.StatusBadRequest, "invalid has_image", "INVALID_QUERY")
-		}
-		q.HasImage = &value
-	}
 	if raw := c.QueryParam("cursor"); raw != "" {
 		var cur struct {
 			Name string    `json:"name"`

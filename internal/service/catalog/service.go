@@ -84,9 +84,6 @@ func (s *Service) mapMeal(meal model.PrebuiltMeal) (interfaces.CatalogMeal, erro
 		SelectedPortion:   interfaces.CatalogPortion{Amount: 1, Description: meal.ServingDescription},
 		SelectedNutrition: nutrition(meal),
 	}
-	if meal.ImageObjectKey != nil && strings.TrimSpace(*meal.ImageObjectKey) != "" {
-		result.Image = &interfaces.CatalogImage{URL: s.urlResolver.Resolve(*meal.ImageObjectKey)}
-	}
 	return result, nil
 }
 

@@ -34,26 +34,64 @@ func aiGeneratedMealSourceRecordID(normalizedName string) string {
 }
 
 func (r *catalogRepository) SearchMeals(ctx context.Context, query interfaces.CatalogQuery) ([]model.PrebuiltMeal, error) {
-	db := visibleCatalogMeals(r.db.WithContext(ctx)).Select("prebuilt_meals.id")
+	conditions := make([]string, 0)
+	args := make([]any, 0)
 	if value := strings.TrimSpace(query.Query); value != "" {
-		pattern := "%" + strings.ToLower(value) + "%"
-		db = db.Where(`LOWER(prebuilt_meals.name) LIKE ? OR prebuilt_meals.normalized_name LIKE ?`, pattern, pattern)
+		/*
+			Example:
+			value = fried rice
+
+			phrasePattern = %fried rice%
+			condition = (name ILIKE ? OR normalized_name ILIKE ?)
+			args = [%fried rice%, %fried rice%]
+
+			strings.Fields(value) = ["fried", "rice"]
+
+			Loop 1:
+			wordPattern = "%fried%"
+			wordConditions = (name ILIKE ? OR normalized_name ILIKE ?)
+			wordArgs = ["%fried", "%fried%"]
+
+			Loop 2:
+			wordPattern = "%rice%"
+			wordConditions = [(name ILIKE ? OR normalized_name ILIKE ?), (name ILIKE ? OR normalized_name ILIKE ?)],
+			wordArgs = ["%fried", "fried%", "%rice", "rice%"]
+
+			len(wordConditions) > 1  => true
+			condition = name ILIKE ? OR normalized_name ILIKE ? OR (name ILIKE ? OR normalized_name ILIKE ? AND name ILIKE ? OR normalized_name ILIKE ?)
+			args = [%fried rice%, %fried rice%, "%fried"%, "%fried%", "%rice%", "%rice%"]
+
+			conditions =( name ILIKE ? OR normalized_name ILIKE ?) OR ((name ILIKE ? OR normalized_name ILIKE ?) AND (name ILIKE ? OR normalized_name ILIKE ?))
+		*/
+
+		phrasePattern := "%" + value + "%"
+		condition := `(prebuilt_meals.name ILIKE ? OR prebuilt_meals.normalized_name ILIKE ?)`
+		args = append(args, phrasePattern, phrasePattern)
+
+		wordConditions := make([]string, 0)
+		wordArgs := make([]any, 0)
+		for _, word := range strings.Fields(value) {
+			wordPattern := "%" + word + "%"
+			wordConditions = append(wordConditions, `(prebuilt_meals.name ILIKE ? OR prebuilt_meals.normalized_name ILIKE ?)`)
+			wordArgs = append(wordArgs, wordPattern, wordPattern)
+		}
+		if len(wordConditions) > 1 {
+			condition = condition + ` OR (` + strings.Join(wordConditions, ` AND `) + `)`
+			args = append(args, wordArgs...)
+		}
+		conditions = append(conditions, condition)
 	}
 	if query.Source != "" {
-		db = db.Where("prebuilt_meals.source_code = ?", query.Source)
+		conditions = append(conditions, "prebuilt_meals.source_code = ?")
+		args = append(args, query.Source)
 	}
 	if len(query.Categories) > 0 {
-		db = db.Where("prebuilt_meals.category_codes @> ?::text[]", pgTextArrayLiteral(query.Categories))
-	}
-	if query.HasImage != nil {
-		if *query.HasImage {
-			db = db.Where("prebuilt_meals.image_object_key IS NOT NULL AND btrim(prebuilt_meals.image_object_key) <> ''")
-		} else {
-			db = db.Where("prebuilt_meals.image_object_key IS NULL OR btrim(prebuilt_meals.image_object_key) = ''")
-		}
+		conditions = append(conditions, "prebuilt_meals.category_codes @> ?::text[]")
+		args = append(args, pgTextArrayLiteral(query.Categories))
 	}
 	if query.AfterID != nil {
-		db = db.Where("(prebuilt_meals.normalized_name, prebuilt_meals.id) > (?, ?)", query.AfterName, *query.AfterID)
+		conditions = append(conditions, "(prebuilt_meals.normalized_name, prebuilt_meals.id) > (?::text, ?::uuid)")
+		args = append(args, query.AfterName, *query.AfterID)
 	}
 	limit := query.Limit
 	if limit <= 0 || limit > 100 {
@@ -61,7 +99,12 @@ func (r *catalogRepository) SearchMeals(ctx context.Context, query interfaces.Ca
 	}
 
 	var ids []uuid.UUID
-	if err := db.Order("prebuilt_meals.normalized_name, prebuilt_meals.id").Limit(limit + 1).Scan(&ids).Error; err != nil {
+	sql := "SELECT prebuilt_meals.id FROM prebuilt_meals"
+	if len(conditions) > 0 {
+		sql += " WHERE " + strings.Join(conditions, " AND ")
+	}
+	sql += fmt.Sprintf(" ORDER BY prebuilt_meals.normalized_name, prebuilt_meals.id LIMIT %d", limit+1)
+	if err := r.db.WithContext(ctx).Raw(sql, args...).Scan(&ids).Error; err != nil {
 		return nil, err
 	}
 	return r.hydrateMeals(ctx, ids)
