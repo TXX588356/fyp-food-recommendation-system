@@ -15,6 +15,7 @@ import ConsentPreferencePage from '@/pages/preferences/ConsentPreferencePage'
 import { CustomMealFormPage, CustomMealSearchPage } from '@/pages/customMeal/CustomMealAddPage'
 import MealLogPage from '@/pages/mealLog/MealLogPage'
 import MealDetailPage from '@/pages/recommendation/MealDetailPage'
+import SearchMealDetailPage from '@/pages/customMeal/SearchMealDetailPage'
 
 
 export const router = createBrowserRouter([
@@ -34,6 +35,11 @@ export const router = createBrowserRouter([
   {path: '/meals/add/:mealCategory/custom', element: (
     <ProtectedRoute>
       <CustomMealFormPage />
+    </ProtectedRoute>
+  )},
+  {path: '/meals/:source/:mealId', element: (
+    <ProtectedRoute>
+      <SearchMealDetailPage />
     </ProtectedRoute>
   )},
   {path: '/preferences', element: (

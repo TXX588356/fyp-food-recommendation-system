@@ -169,6 +169,19 @@
   min-height: 116px; padding: 14px 16px; display: grid; grid-template-columns: 96px minmax(0, 1fr) auto;
   gap: 16px; align-items: center; border-radius: 18px; background: rgba(255, 251, 239, 0.86); box-shadow: var(--shadow-sm);
 }
+.ui-meal-card-clickable {
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+.ui-meal-card-clickable:hover {
+  transform: translateY(-2px);
+  border-color: rgba(15, 107, 67, 0.28);
+  box-shadow: var(--shadow-md);
+}
+.ui-meal-card-clickable:focus-visible {
+  outline: none;
+  box-shadow: var(--focus), var(--shadow-sm);
+}
 .ui-meal-photo {
   width: 96px; height: 86px; display: grid; place-items: center; overflow: hidden; border-radius: 14px;
   background: rgba(32, 52, 43, 0.12); color: var(--green-dark);

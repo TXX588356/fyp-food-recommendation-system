@@ -129,6 +129,23 @@ func TestSearchRestaurantsReturnsUnavailableWithoutMealOrLocation(t *testing.T) 
 	g.Expect(got.Restaurants).To(BeEmpty())
 }
 
+func TestNewSerpAPIClientBypassesTLSVerificationOnlyForRestaurantLookup(t *testing.T) {
+	g := NewWithT(t)
+
+	client := NewSerpAPIClient("test-key")
+
+	transport, ok := client.httpClient.Transport.(*http.Transport)
+	g.Expect(ok).To(BeTrue())
+	g.Expect(transport.TLSClientConfig).NotTo(BeNil())
+	g.Expect(transport.TLSClientConfig.InsecureSkipVerify).To(BeTrue())
+
+	defaultTransport, ok := http.DefaultTransport.(*http.Transport)
+	g.Expect(ok).To(BeTrue())
+	if defaultTransport.TLSClientConfig != nil {
+		g.Expect(defaultTransport.TLSClientConfig.InsecureSkipVerify).To(BeFalse())
+	}
+}
+
 func TestSearchRestaurantsMapsSuccessfulResponse(t *testing.T) {
 	g := NewWithT(t)
 

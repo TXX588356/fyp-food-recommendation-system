@@ -73,6 +73,12 @@
   transform: translateX(-2px);
 }
 
+.ui-meal-detail-back-button {
+  border: 1px solid rgba(15, 107, 67, 0.14);
+  font-family: inherit;
+  cursor: pointer;
+}
+
 .ui-meal-detail-photo {
   aspect-ratio: 1 / 0.82;
   display: grid;

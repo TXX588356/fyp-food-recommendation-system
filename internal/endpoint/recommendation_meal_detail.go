@@ -222,20 +222,6 @@ func validateMealDetailHealthFlags(healthFlags map[string]string) error {
 
 // buildMealDetailResponse maps service meal detail output into the HTTP response shape.
 func buildMealDetailResponse(result interfaces.MealDetailResult) mealDetailResponse {
-	restaurants := make([]restaurantResponse, 0, len(result.Restaurants))
-	for _, restaurant := range result.Restaurants {
-		restaurants = append(restaurants, restaurantResponse{
-			Name:         restaurant.Name,
-			Address:      restaurant.Address,
-			Rating:       restaurant.Rating,
-			ReviewCount:  restaurant.ReviewCount,
-			Price:        restaurant.Price,
-			OpenNow:      restaurant.OpenNow,
-			ThumbnailURL: restaurant.ThumbnailURL,
-			SourceURL:    restaurant.SourceURL,
-		})
-	}
-
 	return mealDetailResponse{
 		Meal: mealDetailMealResponse{
 			ID:                  result.Meal.ID,
@@ -262,9 +248,27 @@ func buildMealDetailResponse(result interfaces.MealDetailResult) mealDetailRespo
 			Query: result.Location.Query,
 			Basis: result.Location.Basis,
 		},
-		Restaurants:            restaurants,
+		Restaurants:            buildRestaurantResponses(result.Restaurants),
 		RestaurantLookupStatus: result.RestaurantLookupStatus,
 	}
+}
+
+func buildRestaurantResponses(restaurants []interfaces.RestaurantResult) []restaurantResponse {
+	response := make([]restaurantResponse, 0, len(restaurants))
+	for _, restaurant := range restaurants {
+		response = append(response, restaurantResponse{
+			Name:         restaurant.Name,
+			Address:      restaurant.Address,
+			Rating:       restaurant.Rating,
+			ReviewCount:  restaurant.ReviewCount,
+			Price:        restaurant.Price,
+			OpenNow:      restaurant.OpenNow,
+			ThumbnailURL: restaurant.ThumbnailURL,
+			SourceURL:    restaurant.SourceURL,
+		})
+	}
+
+	return response
 }
 
 // copyTrimmedStringSlice returns a clean copy of a string slice without blank entries.

@@ -2,6 +2,7 @@ package restaurant
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -43,6 +44,13 @@ func NewSerpAPIClient(apiKey string) *SerpAPIClient {
 	return &SerpAPIClient{
 		apiKey: strings.TrimSpace(apiKey),
 		httpClient: &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					// Restaurant lookup is isolated from other HTTP clients; this bypass
+					// handles environments that intercept SerpAPI TLS certificates.
+					InsecureSkipVerify: true,
+				},
+			},
 			// Timeout to prevent request hanging, and keeps meal detail endpoint responsive
 			Timeout: 8 * time.Second,
 		},

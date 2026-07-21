@@ -361,19 +361,3 @@
   border-color: rgba(255, 181, 173, 0.28);
 }
 
-
-.ui-meal-card-clickable {
-  cursor: pointer;
-  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
-}
-
-.ui-meal-card-clickable:hover {
-  transform: translateY(-2px);
-  border-color: rgba(15, 107, 67, 0.28);
-  box-shadow: var(--shadow-md);
-}
-
-.ui-meal-card-clickable:focus-visible {
-  outline: none;
-  box-shadow: var(--focus), var(--shadow-sm);
-}

@@ -84,7 +84,7 @@ const formatPriceRange = (min: number, max: number) => {
 	return `${formatRM(min)} - ${formatRM(max)}`
 }
 
-function RestaurantCard({ restaurant }: { restaurant: RestaurantResult }) {
+export function RestaurantCard({ restaurant }: { restaurant: RestaurantResult }) {
 	const [imageFailed, setImageFailed] = useState(false)
 	const shouldShowThumbnail = Boolean(restaurant.thumbnailUrl) && !imageFailed
 

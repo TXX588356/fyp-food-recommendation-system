@@ -18,7 +18,7 @@ import {
   createTheme,
 } from '@mantine/core'
 import axios from 'axios'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type KeyboardEvent } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { FiCheck } from 'react-icons/fi'
 
@@ -395,6 +395,22 @@ export function CustomMealSearchPage() {
     })
   }
 
+  const openMealDetail = (meal: ExistingMeal) => {
+    navigate(`/meals/${meal.source}/${meal.id}`)
+  }
+
+  const handleMealCardKeyDown = (
+    event: KeyboardEvent<HTMLDivElement>,
+    meal: ExistingMeal,
+  ) => {
+    if (event.key !== 'Enter' && event.key !== ' ') {
+      return
+    }
+
+    event.preventDefault()
+    openMealDetail(meal)
+  }
+
   return (
     <Box className="ui-settings-page ui-meal-add-page">
       {successMessage && (
@@ -466,7 +482,14 @@ export function CustomMealSearchPage() {
           ) : (
             <Box className="ui-meal-add-list">
               {visibleMeals.map((meal) => (
-                <Box className="ui-meal-card ui-card" key={`${meal.source}-${meal.id}`}>
+                <Box
+                  className="ui-meal-card ui-card ui-meal-card-clickable"
+                  key={`${meal.source}-${meal.id}`}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => openMealDetail(meal)}
+                  onKeyDown={(event) => handleMealCardKeyDown(event, meal)}
+                >
                   <Box className="ui-meal-photo" aria-hidden={!meal.imageUrl}>
                     {meal.imageUrl ? (
                       <img
@@ -494,7 +517,10 @@ export function CustomMealSearchPage() {
                   <Button 
                     className="ui-meal-log-button" 
                     variant="subtle"
-                    onClick={() => openLogModal(meal)}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      openLogModal(meal)
+                    }}
                     >
                     Log
                   </Button>

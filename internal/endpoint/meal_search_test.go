@@ -21,17 +21,21 @@ import (
 )
 
 type fakeCatalogService struct {
-	meals []interfaces.CatalogMeal
-	err   error
-	query string
+	meals    []interfaces.CatalogMeal
+	err      error
+	query    string
+	detail   interfaces.CatalogMeal
+	getErr   error
+	detailID uuid.UUID
 }
 
 func (s *fakeCatalogService) SearchMeals(_ context.Context, query interfaces.CatalogQuery) (interfaces.CatalogMealPage, error) {
 	s.query = query.Query
 	return interfaces.CatalogMealPage{Items: s.meals}, s.err
 }
-func (*fakeCatalogService) GetMeal(context.Context, uuid.UUID) (interfaces.CatalogMeal, error) {
-	return interfaces.CatalogMeal{}, interfaces.ErrCatalogNotFound
+func (s *fakeCatalogService) GetMeal(_ context.Context, id uuid.UUID) (interfaces.CatalogMeal, error) {
+	s.detailID = id
+	return s.detail, s.getErr
 }
 func (*fakeCatalogService) ListCategories(context.Context) ([]interfaces.CatalogCategory, error) {
 	return nil, nil
@@ -48,6 +52,37 @@ func registerMealSearchTestRoutes(e *echo.Echo, customMealService interfaces.Cus
 
 	meals := e.Group("/meals", middleware.Auth(jwtSecret))
 	meals.GET("/search", handler.searchMeals)
+	meals.GET("/:source/:mealID", handler.getMealDetail)
+}
+
+func registerMealDetailTestRoutes(
+	e *echo.Echo,
+	customMealService interfaces.CustomMealService,
+	catalogService interfaces.CatalogService,
+	preferenceService interfaces.PreferenceService,
+	restaurantSearcher interfaces.RestaurantSearcher,
+	jwtSecret string,
+) {
+	handler := &mealSearchHandler{
+		customMealService:  customMealService,
+		catalogService:     catalogService,
+		preferenceService:  preferenceService,
+		restaurantSearcher: restaurantSearcher,
+	}
+
+	meals := e.Group("/meals", middleware.Auth(jwtSecret))
+	meals.GET("/:source/:mealID", handler.getMealDetail)
+}
+
+type fakeRestaurantSearcher struct {
+	input  interfaces.RestaurantSearchInput
+	result interfaces.RestaurantSearchResult
+	err    error
+}
+
+func (s *fakeRestaurantSearcher) SearchRestaurants(_ context.Context, input interfaces.RestaurantSearchInput) (interfaces.RestaurantSearchResult, error) {
+	s.input = input
+	return s.result, s.err
 }
 
 func performMealSearchRequest(e *echo.Echo, path string, token string) *httptest.ResponseRecorder {
@@ -197,5 +232,74 @@ var _ = Describe("Meal search endpoints", func() {
 
 		Expect(response.Code).To(Equal(http.StatusInternalServerError))
 		Expect(response.Body.String()).To(ContainSubstring("database unavailable"))
+	})
+
+	It("should return manual prebuilt meal detail with nutrition and restaurants", func() {
+		preferenceService := mocks.NewPreferenceService(GinkgoT())
+		restaurantSearcher := &fakeRestaurantSearcher{
+			result: interfaces.RestaurantSearchResult{
+				Status: interfaces.RestaurantLookupOK,
+				Restaurants: []interfaces.RestaurantResult{
+					{
+						Name:        "Nasi House",
+						Address:     "Kuala Lumpur",
+						Rating:      4.3,
+						ReviewCount: 12,
+						Price:       "$$",
+					},
+				},
+			},
+		}
+		mealID := uuid.New()
+		calories, protein, carbs, fat := 500.0, 24.0, 66.0, 16.0
+		catalogService.detail = interfaces.CatalogMeal{
+			ID:         mealID,
+			Name:       "Nasi Lemak",
+			Categories: []string{"rice_dishes"},
+			SelectedPortion: interfaces.CatalogPortion{
+				Description: "1 plate",
+			},
+			SelectedNutrition: interfaces.CatalogNutrition{
+				Calories: &calories,
+				ProteinG: &protein,
+				CarbsG:   &carbs,
+				FatG:     &fat,
+			},
+		}
+
+		preferenceService.EXPECT().
+			GetByUserID(mock.Anything, userID).
+			Return(&interfaces.PreferenceResponse{
+				HomeLocation:       "Petaling Jaya",
+				WorkSchoolLocation: "Kuala Lumpur",
+			}, nil).
+			Once()
+
+		e = echo.New()
+		registerMealDetailTestRoutes(e, customMealService, catalogService, preferenceService, restaurantSearcher, jwtSecret)
+
+		response := performMealSearchRequest(e, "/meals/prebuilt/"+mealID.String(), token)
+
+		Expect(response.Code).To(Equal(http.StatusOK))
+
+		var result map[string]any
+		Expect(json.Unmarshal(response.Body.Bytes(), &result)).To(Succeed())
+
+		Expect(result).To(HaveKey("meal"))
+		Expect(result).To(HaveKey("restaurants"))
+		Expect(result).NotTo(HaveKey("recommendationExplanation"))
+		Expect(result).NotTo(HaveKey("score"))
+
+		meal := result["meal"].(map[string]any)
+		Expect(meal["name"]).To(Equal("Nasi Lemak"))
+		Expect(meal["source"]).To(Equal("prebuilt"))
+		Expect(meal["servingDescription"]).To(Equal("1 plate"))
+
+		nutrition := meal["nutrition"].(map[string]any)
+		Expect(nutrition["calories"]).To(BeNumerically("==", 500))
+		Expect(nutrition["proteinG"]).To(BeNumerically("==", 24))
+
+		Expect(restaurantSearcher.input.MealName).To(Equal("Nasi Lemak"))
+		Expect(restaurantSearcher.input.Location).NotTo(BeEmpty())
 	})
 })
