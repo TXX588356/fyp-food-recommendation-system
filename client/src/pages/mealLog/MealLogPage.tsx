@@ -232,9 +232,6 @@ export default function MealLogPage() {
 		([left], [right]) => Number(right) - Number(left),
 	)
 
-	const date: Date = new Date()
-	const shortDay: string = date.toLocaleDateString('en-US', { weekday: 'short' })
-
 	return (
 		<Box className='ui-settings-page ui-meal-log-page'>
 			{successMessage && (
@@ -320,7 +317,18 @@ export default function MealLogPage() {
 								</Box>
 							) : (
 								<Box className='ui-meal-log-days'>
-									{dayEntries.map(([day, items]) => (
+									{dayEntries.map(([day, items]) => {
+										const [year, monthNumber] = month.split('-').map(Number)
+
+										const weekday = new Date(
+											year,
+											monthNumber - 1,
+											Number(day),
+										).toLocaleDateString('en-US', {
+											weekday: 'short',
+										})
+
+										return(
 										<Box className='ui-meal-log-day' key={day}>
 											<Box className='ui-meal-log-day-header'>
 												<Box style={{
@@ -329,7 +337,9 @@ export default function MealLogPage() {
 													gap: '8px',
 												}}>
 												<Text fw={900} style={{fontSize: 20}}>{String(day).padStart(2, '0')}</Text>
-												<Badge variant='light' color='rgb(231, 139, 0)'>{shortDay}</Badge>
+												<Badge variant='light' color='rgb(231, 139, 0)'>
+													{weekday}
+												</Badge>
 												</Box>
 												<Text></Text>
 												<Text fw={900} style={{textAlign: 'right'}}>{formatKcal(sumCalories(items))}</Text>
@@ -368,7 +378,8 @@ export default function MealLogPage() {
 												</Box>
 											))}
 										</Box>
-									))}
+										)
+									})}
 								</Box>
 							)}
 						</>
