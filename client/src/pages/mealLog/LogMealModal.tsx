@@ -47,11 +47,16 @@ import { formatKcal, toDateTimeLocalValue, fromDateTimeLocalValue} from './mealL
 				return
 		}
 
+		// const today: Date = new Date()
+
 		if (!eatenAt) {
-				setError('Please choose when you ate this meal')
-				return
+			setError('Please choose when you ate this meal')
+			return
 		}
 
+		// if (eatenAt > today) {
+		// 	setError('You cannot save eaten meal in future!')
+		// }
 		const payload: MealLogInput = {
 			source: meal.source,
 			mealId: meal.mealId,
@@ -103,6 +108,7 @@ import { formatKcal, toDateTimeLocalValue, fromDateTimeLocalValue} from './mealL
 				value={eatenAt}
 				onChange={(event) => setEatenAt(event.currentTarget.value)}
 				classNames={{ input: 'ui-input'}}
+				max={toDateTimeLocalValue(new Date())}
 			/>
 
 			<Group justify="flex-end" className="ui-log-meal-actions">
