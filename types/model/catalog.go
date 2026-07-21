@@ -57,7 +57,6 @@ type PrebuiltMeal struct {
 	SugarG             *float64
 	SodiumMg           *float64
 	CholesterolMg      *float64
-	ImageObjectKey     *string
 	CreatedAt          time.Time
 	UpdatedAt          time.Time
 }
