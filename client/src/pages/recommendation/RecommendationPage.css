@@ -160,6 +160,14 @@
 @media (max-width: 680px) {
   .ui-recommendation-page .ui-settings-nav { padding-inline: 54px; }
   .ui-theme-toggle { right: 10px; width: 38px; height: 38px; }
+  .ui-recommendation-location {
+    width: 100%;
+    padding: 12px;
+  }
+  .ui-recommendation-location .mantine-Group-root {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
   .ui-meal-accordion-heading {
     min-height: auto; padding: 16px; grid-template-columns: auto minmax(0, 1fr); gap: 12px;
   }
@@ -361,3 +369,32 @@
   border-color: rgba(255, 181, 173, 0.28);
 }
 
+.ui-recommendation-location {
+  display: grid;
+  width: min(100%, 720px);
+  justify-self: start;
+  gap: 10px;
+  padding: 12px 14px;
+  margin-bottom: 4px;
+  border-radius: 14px;
+}
+
+.ui-recommendation-location .mantine-Group-root {
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.ui-recommendation-location .ui-settings-title {
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.ui-recommendation-location .ui-input-label {
+  margin-bottom: 4px;
+  font-size: 11px;
+}
+
+.ui-recommendation-location .ui-input {
+  min-height: 36px;
+  font-size: 13px;
+}

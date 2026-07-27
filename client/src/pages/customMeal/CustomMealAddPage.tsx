@@ -37,6 +37,7 @@ import type { PreferenceData } from '@/preferences/types'
 import LogMealModal from '../mealLog/LogMealModal'
 import type { LoggableMeal } from '../mealLog/mealLogTypes'
 import { resolveWikipediaMealImage } from '../recommendation/wikiMealImages'
+import { loadCurrentRecommendationLocation } from '../recommendation/recommendationStorage'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
@@ -267,6 +268,7 @@ export function CustomMealSearchPage() {
   const location = useLocation()
   const { mealCategory } = useParams()
   const mealTime = isMealTime(mealCategory) ? mealCategory : 'breakfast'
+  const recommendationLocation = new URLSearchParams(location.search).get('location') ?? ''
   const [query, setQuery] = useState('')
   const [visibleMeals, setVisibleMeals] = useState<ExistingMeal[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -396,7 +398,13 @@ export function CustomMealSearchPage() {
   }
 
   const openMealDetail = (meal: ExistingMeal) => {
-    navigate(`/meals/${meal.source}/${meal.id}`)
+    const currentRecommendationLocation = loadCurrentRecommendationLocation()
+    const detailLocation = currentRecommendationLocation || recommendationLocation
+    const locationSearch = detailLocation
+      ? `?location=${encodeURIComponent(detailLocation)}`
+      : ''
+
+    navigate(`/meals/${meal.source}/${meal.id}${locationSearch}`)
   }
 
   const handleMealCardKeyDown = (

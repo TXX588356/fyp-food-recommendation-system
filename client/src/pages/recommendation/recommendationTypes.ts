@@ -61,6 +61,7 @@ export type PersistedRecommendationState = {
 	candidatesByCategory: CategoryState<MatchedMealCandidate[]>
 	filteredOutByCategory: CategoryState<FilteredMealCandidate[]>
 	generatedByCategory: CategoryState<boolean>
+	locationByCategory: CategoryState<string>
 }
 
 export type MealDetailResponse = {

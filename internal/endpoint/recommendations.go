@@ -25,6 +25,7 @@ type generateRecommendationRequest struct {
 	MealCategory      string  `json:"mealCategory"`
 	CurrentMonthSpent float64 `json:"currentMonthSpent"`
 	PerMealBudget     float64 `json:"perMealBudget"`
+	Location          string  `json:"location"`
 }
 
 var allowedRecommendationMealCategories = map[string]bool{
@@ -96,6 +97,7 @@ func (h *recommendationHandler) generateRecommendations(c *echo.Context) error {
 	slog.Info("recommendation request started",
 		"user_id", userID,
 		"meal_category", strings.TrimSpace(request.MealCategory),
+		"location", strings.TrimSpace(request.Location),
 		"current_month_spent", request.CurrentMonthSpent,
 		"per_meal_budget", request.PerMealBudget,
 	)
@@ -182,8 +184,10 @@ func buildMealPromptFromPreferences(preferences interfaces.PreferenceResponse, r
 
 	dayOfTheWeek := time.Now().Weekday()
 
-	var location string
-	if dayOfTheWeek == 0 || dayOfTheWeek == 6 {
+	location := strings.TrimSpace(request.Location)
+	if location != "" {
+		// User selected a temporary recommendation location.
+	} else if dayOfTheWeek == 0 || dayOfTheWeek == 6 {
 		location = preferences.HomeLocation
 	} else {
 		location = preferences.WorkSchoolLocation

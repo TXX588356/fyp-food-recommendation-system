@@ -7,10 +7,10 @@ import (
 )
 
 type MatchedMealCandidate struct {
-	GeneratedMeal GeneratedMeal    `json:"generated_meal"` // Meal produced by Gemini
-	Food          FoodSearchResult `json:"food"`           // Matched food data from catalog / custom meal
-	MatchedQuery  string           `json:"matched_query"`  // Records of successful matched with generated meals
-	Score         float64          `json:"score"`
+	GeneratedMeal  GeneratedMeal           `json:"generated_meal"` // Meal produced by Gemini
+	Food           FoodSearchResult        `json:"food"`           // Matched food data from catalog / custom meal
+	MatchedQuery   string                  `json:"matched_query"`  // Records of successful matched with generated meals
+	Score          float64                 `json:"score"`
 	ScoreBreakdown CandidateScoreBreakdown `json:"score_breakdown"`
 }
 
@@ -53,6 +53,7 @@ type MealMatchDecision struct {
 type MealDetailInput struct {
 	MealCategory string
 	Candidate    MatchedMealCandidate
+	Location     string
 }
 
 // MealDetailResult is the service result returned to the meal detail endpoint

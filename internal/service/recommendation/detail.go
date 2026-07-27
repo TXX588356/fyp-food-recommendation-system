@@ -47,6 +47,7 @@ func (s *service) BuildMealDetail(ctx context.Context, userID uuid.UUID, input i
 		*preferences,
 		currentMonthSpent,
 		now,
+		input.Location,
 	)
 
 	explanation, err := s.mealDetailExplainer.ExplainMealRecommendation(ctx, explanationInput)
@@ -180,6 +181,7 @@ func buildMealDetailExplanationInput(
 	preferences interfaces.PreferenceResponse,
 	currentMonthSpent float64,
 	now time.Time,
+	locationOverride string,
 ) interfaces.MealDetailExplanationInput {
 	food := candidate.Food
 	generated := candidate.GeneratedMeal
@@ -196,6 +198,10 @@ func buildMealDetailExplanationInput(
 	)
 
 	location, locationBasis := selectMealDetailPreferenceLocation(preferences, now)
+	if selectedLocation := strings.TrimSpace(locationOverride); selectedLocation != "" {
+		location = selectedLocation
+		locationBasis = "selected"
+	}
 
 	return interfaces.MealDetailExplanationInput{
 		MealName:     strings.TrimSpace(food.Name),

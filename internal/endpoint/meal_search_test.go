@@ -302,4 +302,39 @@ var _ = Describe("Meal search endpoints", func() {
 		Expect(restaurantSearcher.input.MealName).To(Equal("Nasi Lemak"))
 		Expect(restaurantSearcher.input.Location).NotTo(BeEmpty())
 	})
+
+	It("should use selected location query for manual meal detail restaurants", func() {
+		preferenceService := mocks.NewPreferenceService(GinkgoT())
+		restaurantSearcher := &fakeRestaurantSearcher{
+			result: interfaces.RestaurantSearchResult{
+				Status: interfaces.RestaurantLookupOK,
+				Restaurants: []interfaces.RestaurantResult{
+					{
+						Name:    "Bangsar Nasi House",
+						Address: "Bangsar",
+					},
+				},
+			},
+		}
+		mealID := uuid.New()
+		catalogService.detail = interfaces.CatalogMeal{
+			ID:   mealID,
+			Name: "Nasi Lemak",
+		}
+
+		e = echo.New()
+		registerMealDetailTestRoutes(e, customMealService, catalogService, preferenceService, restaurantSearcher, jwtSecret)
+
+		response := performMealSearchRequest(e, "/meals/prebuilt/"+mealID.String()+"?location=Bangsar%2C%20Kuala%20Lumpur", token)
+
+		Expect(response.Code).To(Equal(http.StatusOK))
+		Expect(restaurantSearcher.input.Location).To(Equal("Bangsar, Kuala Lumpur"))
+
+		var result map[string]any
+		Expect(json.Unmarshal(response.Body.Bytes(), &result)).To(Succeed())
+
+		location := result["location"].(map[string]any)
+		Expect(location["query"]).To(Equal("Bangsar, Kuala Lumpur"))
+		Expect(location["basis"]).To(Equal("selected"))
+	})
 })

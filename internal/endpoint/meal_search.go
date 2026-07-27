@@ -249,13 +249,14 @@ func (h *mealSearchHandler) getMealDetail(c *echo.Context) error {
 		})
 	}
 
-	location, restaurants, status := h.lookupManualMealRestaurants(c.Request().Context(), userID, meal.Name)
+	locationOverride := strings.TrimSpace(c.QueryParam("location"))
+	location, basis, restaurants, status := h.lookupManualMealRestaurants(c.Request().Context(), userID, meal.Name, locationOverride)
 
 	return c.JSON(http.StatusOK, manualMealDetailResponse{
 		Meal: meal,
 		Location: mealDetailLocationResponse{
 			Query: location,
-			Basis: "",
+			Basis: basis,
 		},
 		Restaurants:            restaurants,
 		RestaurantLookupStatus: status,
@@ -305,19 +306,31 @@ func manualCustomMealDetail(meal *interfaces.CustomMealResponse) manualMealDetai
 	}
 }
 
-func (h *mealSearchHandler) lookupManualMealRestaurants(ctx context.Context, userID uuid.UUID, mealName string) (string, []restaurantResponse, string) {
-	if h.preferenceService == nil || h.restaurantSearcher == nil {
-		return "", []restaurantResponse{}, interfaces.RestaurantLookupUnavailable
+func (h *mealSearchHandler) lookupManualMealRestaurants(ctx context.Context, userID uuid.UUID, mealName string, locationOverride string) (string, string, []restaurantResponse, string) {
+	if h.restaurantSearcher == nil {
+		return "", "unavailable", []restaurantResponse{}, interfaces.RestaurantLookupUnavailable
 	}
 
-	preferences, err := h.preferenceService.GetByUserID(ctx, userID)
-	if err != nil {
-		return "", []restaurantResponse{}, interfaces.RestaurantLookupUnavailable
+	location := ""
+	basis := "unavailable"
+	if selectedLocation := strings.TrimSpace(locationOverride); selectedLocation != "" {
+		location = selectedLocation
+		basis = "selected"
+	} else {
+		if h.preferenceService == nil {
+			return "", "unavailable", []restaurantResponse{}, interfaces.RestaurantLookupUnavailable
+		}
+
+		preferences, err := h.preferenceService.GetByUserID(ctx, userID)
+		if err != nil {
+			return "", "unavailable", []restaurantResponse{}, interfaces.RestaurantLookupUnavailable
+		}
+
+		location, basis = selectMealDetailPreferenceLocation(*preferences, timeNow())
 	}
 
-	location, basis := selectMealDetailPreferenceLocation(*preferences, timeNow())
 	if strings.TrimSpace(location) == "" || basis == "unavailable" {
-		return location, []restaurantResponse{}, interfaces.RestaurantLookupUnavailable
+		return location, basis, []restaurantResponse{}, interfaces.RestaurantLookupUnavailable
 	}
 
 	result, err := h.restaurantSearcher.SearchRestaurants(ctx, interfaces.RestaurantSearchInput{
@@ -326,10 +339,10 @@ func (h *mealSearchHandler) lookupManualMealRestaurants(ctx context.Context, use
 		Limit:    30,
 	})
 	if err != nil {
-		return location, []restaurantResponse{}, interfaces.RestaurantLookupUnavailable
+		return location, basis, []restaurantResponse{}, interfaces.RestaurantLookupUnavailable
 	}
 
-	return location, buildRestaurantResponses(result.Restaurants), result.Status
+	return location, basis, buildRestaurantResponses(result.Restaurants), result.Status
 }
 
 func float64Value(value *float64) float64 {

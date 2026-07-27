@@ -12,7 +12,7 @@ import {
 } from '@mantine/core'
 import axios from 'axios'
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { FiCheck } from 'react-icons/fi'
 import { ChefHat } from 'lucide-react'
 
@@ -23,6 +23,7 @@ import type { LoggableMeal } from '../mealLog/mealLogTypes'
 import { resolveWikipediaMealImage } from '../recommendation/wikiMealImages'
 import { RestaurantCard } from '../recommendation/MealDetailPage'
 import type { RestaurantResult } from '../recommendation/recommendationTypes'
+import { loadCurrentRecommendationLocation } from '../recommendation/recommendationStorage'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
@@ -61,7 +62,9 @@ const formatRM = (value: number) => `RM ${value.toFixed(2)}`
 export default function SearchMealDetailPage() {
   const navigate = useNavigate()
   const { source, mealId } = useParams()
+  const [searchParams] = useSearchParams()
   const token = localStorage.getItem('token')
+  const recommendationLocation = loadCurrentRecommendationLocation() || searchParams.get('location') || ''
 
   const [detail, setDetail] = useState<SearchMealDetailResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -82,6 +85,7 @@ export default function SearchMealDetailPage() {
       const response = await axios.get<SearchMealDetailResponse>(
         `${API_BASE_URL}/meals/${source}/${mealId}`,
         {
+          params: recommendationLocation ? { location: recommendationLocation } : undefined,
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -111,7 +115,7 @@ export default function SearchMealDetailPage() {
 
     // Route params drive this page load.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [source, mealId])
+  }, [source, mealId, recommendationLocation])
 
   useEffect(() => {
     if (!successMessage) {

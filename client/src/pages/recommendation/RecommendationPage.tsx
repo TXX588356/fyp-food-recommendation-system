@@ -4,6 +4,7 @@ import {
   Badge,
   Box,
   Button,
+  Select,
   Group,
   SegmentedControl,
   Text,
@@ -22,6 +23,10 @@ import LogMealModal from '@/pages/mealLog/LogMealModal'
 import { FiCheck } from 'react-icons/fi'
 import { Link, useNavigate } from 'react-router-dom'
 import { resolveWikipediaMealImage } from './wikiMealImages'
+import { formatLocation, parseLocation } from '@/preferences/helpers'
+import { parseMalaysiaCitiesCsv, type CityRow } from '@/preferences/options'
+import type { LocationValue, PreferenceData } from '@/preferences/types'
+import { loadCurrentRecommendationLocation, saveCurrentRecommendationLocation } from './recommendationStorage'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
@@ -81,6 +86,11 @@ type GenerateRecommendationsResponse = {
   filtering_applied: boolean
 }
 
+type RecommendationLocationOption = {
+  value: string
+  label: string
+}
+
 type CategoryState<T> = Record<MealCategory, T>
 
 type VisibleRecommendationItem = {
@@ -93,6 +103,7 @@ type PersistedRecommendationState = {
   candidatesByCategory: CategoryState<MatchedMealCandidate[]>
   filteredOutByCategory: CategoryState<FilteredMealCandidate[]>
   generatedByCategory: CategoryState<boolean>
+  locationByCategory: CategoryState<string>
 }
 
 const mealCategoryOptions: Array<{ value: MealCategory; label: string;}> = [
@@ -137,6 +148,13 @@ const emptyGenerated: CategoryState<boolean> = {
   snack: false,
 }
 
+const emptyLocationByCategory: CategoryState<string> = {
+  breakfast: '',
+  lunch: '',
+  dinner: '',
+  snack: '',
+}
+
 const emptyErrors: CategoryState<string | null> = {
   breakfast: null,
   lunch: null,
@@ -171,6 +189,12 @@ const createEmptyPersistedRecommendations =
     dinner: false,
     snack: false,
   },
+  locationByCategory: {
+    breakfast: '',
+    lunch: '',
+    dinner: '',
+    snack: '',
+  },
 })
 
 const loadPersistedRecommendations = (storageKey: string): PersistedRecommendationState => {
@@ -204,6 +228,10 @@ const loadPersistedRecommendations = (storageKey: string): PersistedRecommendati
         ...emptyGenerated,
         ...parsedValue.generatedByCategory,
       },
+      locationByCategory: {
+        ...emptyLocationByCategory,
+        ...parsedValue.locationByCategory,
+      },
     }
   } catch {
     localStorage.removeItem(storageKey)
@@ -226,6 +254,116 @@ const getLocalDateKey = () => {
   const day = String(today.getDate()).padStart(2, '0')
 
   return `${year}-${month}-${day}`
+}
+
+const selectDefaultRecommendationLocation = (preference: PreferenceData) => {
+  const today = new Date().getDay()
+
+  if (today === 0 || today === 6) { 
+    return preference.homeLocation
+  }
+  
+  return preference.workSchoolLocation
+}
+
+function DynamicLocationSelect({
+  selectedLocation,
+  savedLocations,
+  onChange,
+}: {
+  selectedLocation: LocationValue
+  savedLocations: RecommendationLocationOption[]
+  onChange: (value: LocationValue) => void
+}) {
+  const [cities, setCities] = useState<CityRow[]>([])
+  const [states, setStates] = useState<RecommendationLocationOption[]>([])
+
+  useEffect(() => {
+    fetch('/malaysia_cities.csv')
+      .then((response) => response.text())
+      .then((csv) => {
+        const rows = parseMalaysiaCitiesCsv(csv)
+        setCities(rows)
+        setStates(
+          Array.from(new Set(rows.map((row) => row.subcountry)))
+          .sort()
+          .map((state) => ({ value: state, label: state }))
+        )
+      })
+      .catch((error) => {
+        console.error('Error loading Malaysia cities CSV: ', error)
+        setCities([])
+        setStates([])
+      })
+  }, [])
+
+  const districts = useMemo(() => {
+    if (!selectedLocation.state) return []
+
+    return cities
+      .filter((city) => city.subcountry === selectedLocation.state)
+      .map((city) => city.name)
+      .sort()
+      .map((district) => ({ value: district, label: district }))
+  }, [cities, selectedLocation.state])
+
+  return (
+    <Box className='ui-recommendation-location ui-card'>
+      <Box>
+        <Text className='ui-settings-title'>Recommendation Location</Text>
+      </Box>
+
+      <Group grow align="flex-start">
+        <Select 
+          label='Saved'
+          placeholder='Use saved location'
+          data={savedLocations}
+          value={formatLocation(selectedLocation)}
+          onChange={(value) => {
+            if (!value) return
+            onChange(parseLocation(value))
+          }}
+          classNames={{
+            label: 'ui-input-label',
+            input: 'ui-input'
+          }}
+        />
+
+        <Select 
+          label='State'
+          placeholder='Select state'
+          data={states}
+          value={selectedLocation.state || null}
+          allowDeselect={false}
+          onChange={(state) => {
+            if (!state || state === selectedLocation.state) return
+            onChange({ state, district: '' })
+          }}
+          classNames={{
+            label: 'ui-input-label',
+            input: 'ui-input'
+          }}
+        />
+
+        <Select 
+          label='District'
+          placeholder='Select district'
+          data={districts}
+          value={selectedLocation.district || null}
+          allowDeselect={false}
+          disabled={!selectedLocation.state || districts.length === 0}
+          onChange={(district) => {
+            if (!district || district === selectedLocation.district) return
+            onChange({ ...selectedLocation, district: district ?? '' })
+          }}
+          classNames={{
+            label: 'ui-input-label',
+            input: 'ui-input'
+          }}
+        />
+      </Group>
+    </Box>
+  )
 }
 
 type IconName = 'refresh' | 'bowl' | 'fork' | 'sparkle' | 'warning'
@@ -331,6 +469,12 @@ export default function RecommendationPage() {
   const [mealToLog, setMealToLog] = useState<LoggableMeal | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [isDarkMode, setIsDarkMode] = useState(false)
+  const [savedLocations, setSavedLocations] = useState<RecommendationLocationOption[]>([])
+  const [selectedLocation, setSelectedLocation] = useState<LocationValue>({
+    state: '',
+    district: '',
+  })
+  const [locationError, setLocationError] = useState<string | null>(null)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -356,11 +500,52 @@ export default function RecommendationPage() {
 
   const token = localStorage.getItem('token')
 
+  useEffect(() => {
+    const loadPreferences = async () => {
+      try {
+        const response = await axios.get<PreferenceData>(
+          `${API_BASE_URL}/preferences`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            }
+          }
+        )
+
+        const defaultLocation = selectDefaultRecommendationLocation(response.data)
+        const currentLocation = loadCurrentRecommendationLocation()
+        const initialLocation = currentLocation || defaultLocation
+        const nextSavedLocations = [
+          {
+            value: response.data.workSchoolLocation,
+            label: `Work / school: ${response.data.workSchoolLocation}`,
+          },
+          {
+            value: response.data.homeLocation,
+            label: `Home: ${response.data.homeLocation}`,
+          }
+        ].filter((option) => option.value.trim().length > 0)
+
+        setSavedLocations(nextSavedLocations)
+        setSelectedLocation(parseLocation(initialLocation))
+        if (!currentLocation) {
+          saveCurrentRecommendationLocation(defaultLocation)
+        }
+      } catch (error) {
+        console.error('Failed to load recommendation location preference', error)
+        setLocationError('Could not load your saved recommendation location.')
+      }
+    }
+
+    void loadPreferences()
+  }, [token])
+
   const persistRecommendationCategory = (
-    mealCategory: MealCategory,
-    candidates: MatchedMealCandidate[],
-    filteredOut: FilteredMealCandidate[],
-  ) => {
+  mealCategory: MealCategory,
+  candidates: MatchedMealCandidate[],
+  filteredOut: FilteredMealCandidate[],
+  location: string,
+) => {
     const persistedRecommendations = loadPersistedRecommendations(recommendationStorageKey)
 
     // Create new updated copies of recommendation state for one meal category
@@ -376,12 +561,17 @@ export default function RecommendationPage() {
       ...persistedRecommendations.filteredOutByCategory,
       [mealCategory]: filteredOut,
     }
+    const nextLocationByCategory = {
+      ...persistedRecommendations.locationByCategory,
+      [mealCategory]: location,
+    }
 
     savePersistedRecommendations(recommendationStorageKey, {
       generatedDate: getLocalDateKey(),
       candidatesByCategory: nextCandidatesByCategory,
       filteredOutByCategory: nextFilteredOutByCategory,
       generatedByCategory: nextGeneratedByCategory,
+      locationByCategory: nextLocationByCategory,
     })
 
     setCandidatesByCategory((current) => ({
@@ -403,7 +593,17 @@ export default function RecommendationPage() {
       return
     }
 
+    const location = formatLocation(selectedLocation)
+    if (!selectedLocation.state || !selectedLocation.district) {
+      setErrorsByCategory((current) => ({
+        ...current,
+        [mealCategory]: 'Please select a recommendation location.'
+      }))
+      return
+    }
+
     setLoadingByCategory((current) => ({ ...current, [mealCategory]: true }))
+    saveCurrentRecommendationLocation(location)
     setErrorsByCategory((current) => ({ ...current, [mealCategory]: null }))
 
     try {
@@ -424,6 +624,7 @@ export default function RecommendationPage() {
           mealCategory,
           currentMonthSpent,
           perMealBudget: 0,
+          location,
         },
         {
           headers: {
@@ -432,7 +633,7 @@ export default function RecommendationPage() {
         },
       )
 
-      persistRecommendationCategory(mealCategory, response.data.candidates ?? [], response.data.filtered_out ?? [])
+      persistRecommendationCategory(mealCategory, response.data.candidates ?? [], response.data.filtered_out ?? [], location)
     } catch (error) {
       console.error(`Failed to generate ${mealCategory} recommendations`, error)
 
@@ -514,6 +715,7 @@ export default function RecommendationPage() {
             : item
         )),
       },
+      locationByCategory: persistedRecommendations.locationByCategory,
     })
   }, [recommendationStorageKey])
 
@@ -685,6 +887,24 @@ export default function RecommendationPage() {
           marginBottom: '10px',
         }}>{formattedDate}</Text>
 
+        {locationError && (
+          <Alert color='red' icon={< RecommendationIcon name="warning" size={20} />}>
+            {locationError}
+          </Alert>
+        )}
+
+        <DynamicLocationSelect 
+          selectedLocation={selectedLocation}
+          savedLocations={savedLocations}
+          onChange={(location) => {
+            saveCurrentRecommendationLocation(formatLocation(location))
+            setSelectedLocation(location)
+            setGeneratedByCategory(emptyGenerated)
+            setCandidatesByCategory(emptyCandidates)
+            setFilteredOutByCategory(emptyFilteredOut)
+          }}
+        />
+
           <Box component="section" className="ui-recommendation-results">
             <Accordion
               value={activeCategory}
@@ -790,7 +1010,7 @@ export default function RecommendationPage() {
 
                       <Button
                         component={Link}
-                        to={`/meals/add/${option.value}`}
+                        to={`/meals/add/${option.value}?location=${encodeURIComponent(formatLocation(selectedLocation))}`}
                         className="ui-ghost-button ui-recommendation-add-meal"
                         variant="subtle"
                       >

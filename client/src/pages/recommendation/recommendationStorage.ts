@@ -21,6 +21,13 @@ export const emptyGenerated: CategoryState<boolean> = {
   snack: false,
 }
 
+export const emptyLocationByCategory: CategoryState<string> = {
+	breakfast: '',
+	lunch: '',
+	dinner: '',
+	snack: '',
+}
+
 export const getLocalDateKey = () => {
 	const today = new Date()
 	const year = today.getFullYear()
@@ -34,11 +41,28 @@ export const buildRecommendationStorageKey = (userKey: string | undefined) => {
 	return `recommendation:${userKey ?? 'anonymous'}`
 }
 
+const currentRecommendationLocationStorageKey = 'recommendation:current-location'
+
+export const saveCurrentRecommendationLocation = (location: string) => {
+	const trimmedLocation = location.trim()
+	if (!trimmedLocation) {
+		sessionStorage.removeItem(currentRecommendationLocationStorageKey)
+		return
+	}
+
+	sessionStorage.setItem(currentRecommendationLocationStorageKey, trimmedLocation)
+}
+
+export const loadCurrentRecommendationLocation = () => {
+	return sessionStorage.getItem(currentRecommendationLocationStorageKey) ?? ''
+}
+
 export const createEmptyPersistedRecommendation = (): PersistedRecommendationState => ({
 	generatedDate: getLocalDateKey(),
 	candidatesByCategory: {...emptyCandidates},
 	filteredOutByCategory: {...emptyFilteredOut},
 	generatedByCategory: {...emptyGenerated},
+	locationByCategory: {...emptyLocationByCategory},
 })
 
 const hasScoreBreakdown = (candidate: MatchedMealCandidate) => (
@@ -91,6 +115,10 @@ export const loadPersistedRecommendations = (storageKey: string): PersistedRecom
 			...emptyGenerated,
 			...parsedValue.generatedByCategory,
 		}
+		const locationByCategory = {
+			...emptyLocationByCategory,
+			...parsedValue.locationByCategory,
+		}
 
 		for (const category of Object.keys(generatedByCategory) as MealCategory[]) {
 			if (generatedByCategory[category] && needsRegeneration(candidatesByCategory[category], filteredOutByCategory[category])) {
@@ -105,6 +133,7 @@ export const loadPersistedRecommendations = (storageKey: string): PersistedRecom
 			candidatesByCategory,
 			filteredOutByCategory,
 			generatedByCategory,
+			locationByCategory,
 		}
 	} catch {
 		localStorage.removeItem(storageKey)
@@ -139,4 +168,13 @@ export const findPersistedRecommendationCandidate = (
 	}
 
 	return result
+}
+
+export const findPersistedRecommendationLocation = (
+	storageKey: string,
+	mealCategory: MealCategory,
+) => {
+	const persisted = loadPersistedRecommendations(storageKey)
+
+	return persisted.locationByCategory[mealCategory] || ''
 }

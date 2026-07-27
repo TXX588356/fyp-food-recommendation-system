@@ -21,6 +21,7 @@ import type { LoggableMeal } from '../mealLog/mealLogTypes'
 import {
   buildRecommendationStorageKey,
   findPersistedRecommendationCandidate,
+  findPersistedRecommendationLocation,
 } from './recommendationStorage'
 import { resolveWikipediaMealImage } from './wikiMealImages'
 import type {
@@ -190,6 +191,14 @@ export default function MealDetailPage() {
 		return findPersistedRecommendationCandidate(storageKey, mealCategory, mealId)
 	}, [mealCategory, mealId, storageKey])
 
+	const recommendationLocation = useMemo(() => {
+		if (!isMealCategory(mealCategory)) {
+			return ''
+		}
+
+		return findPersistedRecommendationLocation(storageKey, mealCategory)
+	}, [mealCategory, storageKey])
+
 	useEffect(() => {
 		if(!successMessage) {
 			return
@@ -213,6 +222,7 @@ export default function MealDetailPage() {
 				{
 					mealCategory,
 					candidate,
+					location: recommendationLocation,
 				},
 				{
 					headers: {
@@ -250,7 +260,7 @@ export default function MealDetailPage() {
 
 		// candidate is memoized from storage and should trigger reload when route changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [candidate, mealCategory])
+	}, [candidate, mealCategory, recommendationLocation])
 
 	useEffect(() => {
 		if (!detail || detail.meal.imageUrl) {

@@ -15,6 +15,7 @@ import (
 type mealDetailRequest struct {
 	MealCategory string                          `json:"mealCategory"`
 	Candidate    interfaces.MatchedMealCandidate `json:"candidate"`
+	Location     string                          `json:"location"`
 }
 
 type mealDetailResponse struct {
@@ -93,6 +94,7 @@ func (h *recommendationHandler) getMealDetail(c *echo.Context) error {
 	result, err := h.recommendationService.BuildMealDetail(c.Request().Context(), userID, interfaces.MealDetailInput{
 		MealCategory: strings.TrimSpace(request.MealCategory),
 		Candidate:    request.Candidate,
+		Location:     strings.TrimSpace(request.Location),
 	})
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
