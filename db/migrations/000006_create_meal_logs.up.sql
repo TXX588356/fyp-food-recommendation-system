@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS meal_logs (
     meal_name TEXT NOT NULL,
     price NUMERIC(10, 2) NOT NULL,
     eaten_at TIMESTAMPTZ NOT NULL,
+    meal_type TEXT NOT NULL DEFAULT 'other',
     meal_category TEXT[] NOT NULL DEFAULT '{}',
     calories NUMERIC(10, 2) NOT NULL,
 
@@ -19,6 +20,9 @@ CREATE TABLE IF NOT EXISTS meal_logs (
         (custom_meal_item_id IS NOT NULL AND prebuilt_meal_id IS NULL)
         OR
         (custom_meal_item_id IS NULL AND prebuilt_meal_id IS NOT NULL)
+    ),
+    CONSTRAINT chk_meal_logs_meal_type CHECK (
+        meal_type IN ('breakfast', 'lunch', 'dinner', 'other')
     )
 );
 
