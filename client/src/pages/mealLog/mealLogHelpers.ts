@@ -1,4 +1,4 @@
-import type { MealLogItem } from "./mealLogTypes"
+import type { MealLogItem, MealLogType } from "./mealLogTypes"
 
 export const formatRM = (value: number) => `RM ${value.toFixed(2)}`
 export const formatKcal = (value: number) => `${Math.round(value)} kcal`
@@ -73,3 +73,29 @@ export const formatMealTime = (value: string) =>
         hour: 'numeric',
         minute: '2-digit',
     })
+
+export const inferMealTypeFromDate = (date: Date): MealLogType => {
+    const hour = date.getHours()
+
+    if (hour >= 5 && hour <= 10) {
+        return 'breakfast'
+    }
+
+    if (hour >= 11 && hour <= 14) {
+        return 'lunch'
+    }
+
+    if (hour >= 17 && hour <= 21) {
+        return 'dinner'
+    }
+
+    return 'other'
+}
+
+export const formatMealType = (value: MealLogType) => {
+    if (value === 'other') {
+        return 'Other'
+    }
+
+    return value.charAt(0).toUpperCase() + value.slice(1)
+}

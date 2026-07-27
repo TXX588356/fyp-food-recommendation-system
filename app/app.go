@@ -10,6 +10,7 @@ import (
 	customMealService "fyp/food-rs/internal/service/custommeal"
 	"fyp/food-rs/internal/service/llm"
 	"fyp/food-rs/internal/service/meallog"
+	mealLogReportService "fyp/food-rs/internal/service/meallogreport"
 	"fyp/food-rs/internal/service/mealsearch"
 	preferenceService "fyp/food-rs/internal/service/preference"
 	recommendationService "fyp/food-rs/internal/service/recommendation"
@@ -39,6 +40,7 @@ type App struct {
 	aiClient              AIClient
 	catalogService        *catalogService.Service
 	catalogFoodSearcher   interfaces.FoodSearcher
+	mealLogReportService  interfaces.MealLogReportService
 	minIOPublicURL        string
 	minIOBucket           string
 	SerpAPIKey            string
@@ -195,6 +197,23 @@ func (a *App) GetRestaurantSearcher(ctx context.Context) (interfaces.RestaurantS
 
 	a.restaurantSearcher = restaurant.NewSerpAPIClient(a.SerpAPIKey)
 	return a.restaurantSearcher, nil
+}
+
+func (a *App) GetMealLogReportService(ctx context.Context) (interfaces.MealLogReportService, error) {
+	if a.mealLogReportService != nil {
+		return a.mealLogReportService, nil
+	}
+
+	mealLogRepo := postgres.NewMealLogPostgresRepository(a.PostgresDB)
+
+	preferenceService, err := a.GetPreferenceService(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	a.mealLogReportService = mealLogReportService.NewService(mealLogRepo, preferenceService)
+
+	return a.mealLogReportService, nil
 }
 
 // GetRecommendationService builds the recommendation service from Gemini and the prebuilt meal dataset.

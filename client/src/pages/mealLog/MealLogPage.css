@@ -60,6 +60,105 @@
   color: var(--green) !important;
 }
 
+.ui-meal-log-report-actions {
+  margin: 10px 0 18px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  background: rgba(32, 52, 43, 0.06);
+}
+
+.ui-meal-log-report-panel {
+  margin: 0 0 18px;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(32, 52, 43, 0.14);
+  background: rgba(255, 251, 239, 0.72);
+}
+
+.ui-meal-log-report-metrics > div {
+  min-height: 76px;
+  display: grid;
+  align-content: center;
+  gap: 6px;
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(32, 52, 43, 0.05);
+}
+
+.ui-meal-log-report-metrics p {
+  margin: 0;
+}
+
+.ui-meal-log-report-metrics strong {
+  color: var(--ink);
+  font-size: 20px;
+}
+
+.ui-meal-log-report-sections > div {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 8px;
+  background: rgba(32, 52, 43, 0.05);
+}
+
+.ui-meal-log-report-chart {
+  width: 100%;
+  min-height: 260px;
+  margin-top: 8px;
+}
+
+.ui-meal-log-report-empty-state {
+  min-height: 260px;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  margin-top: 8px;
+  border: 1px dashed rgba(32, 52, 43, 0.2);
+  border-radius: 8px;
+  color: rgba(23, 36, 30, 0.62);
+  background: rgba(255, 255, 255, 0.32);
+  text-align: center;
+}
+
+.ui-meal-log-report-chart .recharts-cartesian-grid line {
+  stroke: rgba(32, 52, 43, 0.12);
+}
+
+.ui-meal-log-report-chart .recharts-text {
+  fill: rgba(23, 36, 30, 0.78);
+}
+
+.ui-meal-log-report-chart .recharts-tooltip-wrapper {
+  outline: none;
+}
+
+.ui-meal-log-report-list-row {
+  min-height: 46px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.44);
+}
+
+.ui-meal-log-report-list-row p:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ui-meal-log-report-time-summary {
+  margin-top: 8px;
+}
+
+.ui-meal-log-report-time-summary > div {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.44);
+}
+
+.ui-meal-log-report-time-summary p {
+  margin: 0;
+}
+
 .ui-meal-log-divider {
   height: 2px;
   margin: 12px 0 20px;
@@ -285,6 +384,24 @@
 
 .ui-log-meal-actions {
   padding-top: 4px;
+}
+
+.ui-meal-log-report-chart {
+  width: 100%;
+  min-height: 260px;
+  margin-top: 8px;
+}
+
+.ui-meal-log-report-chart .recharts-cartesian-grid line {
+  stroke: rgba(32, 52, 43, 0.12);
+}
+
+.ui-meal-log-report-chart .recharts-text {
+  fill: rgba(23, 36, 30, 0.78);
+}
+
+.ui-meal-log-report-chart .recharts-tooltip-wrapper {
+  outline: none;
 }
 
 @media (max-width: 780px) {
