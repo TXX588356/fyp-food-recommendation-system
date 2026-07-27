@@ -18,6 +18,9 @@ type MealLog struct {
 	MealType         string         `gorm:"column:meal_type;type:text;not null"`
 	MealCategory     StringArray    `gorm:"column:meal_category;type:text[];not null"`
 	Calories         float64        `gorm:"column:calories;type:numeric(10,2);not null"`
+	ProteinG         float64        `gorm:"column:protein_g;type:numeric(10,2);not null;default:0"`
+	CarbsG           float64        `gorm:"column:carbs_g;type:numeric(10,2);not null;default:0"`
+	FatG             float64        `gorm:"column:fat_g;type:numeric(10,2);not null;default:0"`
 	CreatedAt        time.Time      `gorm:"column:created_at"`
 	UpdatedAt        time.Time      `gorm:"column:updated_at"`
 	DeletedAt        gorm.DeletedAt `gorm:"column:deleted_at;index"`

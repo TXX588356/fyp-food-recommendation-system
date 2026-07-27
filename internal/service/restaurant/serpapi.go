@@ -87,7 +87,7 @@ func (c *SerpAPIClient) SearchRestaurants(ctx context.Context, input interfaces.
 
 	limit := input.Limit
 	if limit <= 0 {
-		limit = 10
+		limit = 30
 	}
 
 	requestURL, err := buildSerpAPIMapsURL(c.apiKey, buildRestaurantQuery(input))

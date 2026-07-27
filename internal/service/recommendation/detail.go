@@ -63,7 +63,7 @@ func (s *service) BuildMealDetail(ctx context.Context, userID uuid.UUID, input i
 		result, err := s.restaurantSearcher.SearchRestaurants(ctx, interfaces.RestaurantSearchInput{
 			MealName: explanationInput.MealName,
 			Location: explanationInput.Location,
-			Limit:    10,
+			Limit:    30,
 		})
 		if err != nil {
 			log.Printf(

@@ -11,6 +11,9 @@ CREATE TABLE IF NOT EXISTS meal_logs (
     meal_type TEXT NOT NULL DEFAULT 'other',
     meal_category TEXT[] NOT NULL DEFAULT '{}',
     calories NUMERIC(10, 2) NOT NULL,
+    protein_g NUMERIC(10, 2) NOT NULL DEFAULT 0,
+    carbs_g NUMERIC(10, 2) NOT NULL DEFAULT 0,
+    fat_g NUMERIC(10, 2) NOT NULL DEFAULT 0,
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),

@@ -7,11 +7,13 @@ import (
 	"time"
 
 	"fyp/food-rs/internal/interfaces"
+	"fyp/food-rs/internal/mocks"
 	"fyp/food-rs/types/model"
 
 	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/mock"
 )
 
 // TestMealLogService runs the meal-log service test suite.
@@ -22,6 +24,9 @@ func TestMealLogService(t *testing.T) {
 
 type testMealLogRepository struct {
 	logs map[uuid.UUID]*model.MealLog
+
+	createdLog *model.MealLog
+	createErr  error
 
 	findID     uuid.UUID
 	findUserID uuid.UUID
@@ -35,8 +40,19 @@ type testMealLogRepository struct {
 	deleteErr     error
 }
 
-func (r *testMealLogRepository) Create(context.Context, *model.MealLog) (*model.MealLog, error) {
-	return nil, nil
+func (r *testMealLogRepository) Create(_ context.Context, mealLog *model.MealLog) (*model.MealLog, error) {
+	if r.createErr != nil {
+		return nil, r.createErr
+	}
+
+	if mealLog.ID == uuid.Nil {
+		mealLog.ID = uuid.New()
+	}
+
+	r.createdLog = mealLog
+	r.logs[mealLog.ID] = mealLog
+
+	return mealLog, nil
 }
 
 func (r *testMealLogRepository) ListByUserAndMonth(context.Context, uuid.UUID, time.Time, time.Time) ([]model.MealLog, error) {
@@ -115,12 +131,66 @@ var _ = Describe("Meal log service", func() {
 			CustomMealItemID: &customMealID,
 			MealName:         "Chicken Rice",
 			Calories:         650,
+			ProteinG:         32,
+			CarbsG:           78,
+			FatG:             21,
 			Price:            8.50,
 			EatenAt:          time.Date(2026, 7, 12, 8, 30, 0, 0, time.UTC),
 			MealType:         "breakfast",
 			MealCategory:     model.StringArray{"rice_dishes", "poultry"},
 		}
 	}
+
+	Describe("Create", func() {
+		It("should store and return the selected meal type for a custom meal log", func() {
+			customMealID := uuid.New()
+			eatenAt := time.Date(2026, 7, 12, 11, 15, 0, 0, time.UTC)
+			customMealService := mocks.NewCustomMealService(GinkgoT())
+
+			customMealService.EXPECT().
+				FindVisibleByID(mock.Anything, userID, customMealID).
+				Return(&interfaces.CustomMealResponse{
+					ID:               customMealID.String(),
+					Name:             "Chicken Rice",
+					Calories:         650,
+					ProteinG:         32,
+					CarbsG:           78,
+					FatG:             21,
+					MealCategoryTags: []string{"rice_dishes", "poultry"},
+				}, nil)
+
+			svc = NewService(repo, customMealService, nil, nil)
+
+			response, err := svc.Create(ctx, userID, interfaces.MealLogInput{
+				Source:   interfaces.MealLogSourceCustom,
+				MealID:   customMealID.String(),
+				Price:    8.50,
+				EatenAt:  eatenAt,
+				MealType: "breakfast",
+			})
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(response).NotTo(BeNil())
+			Expect(response.MealType).To(Equal("breakfast"))
+			Expect(response.MealName).To(Equal("Chicken Rice"))
+			Expect(response.Calories).To(Equal(650.0))
+			Expect(response.ProteinG).To(Equal(32.0))
+			Expect(response.CarbsG).To(Equal(78.0))
+			Expect(response.FatG).To(Equal(21.0))
+			Expect(response.MealCategory).To(Equal([]string{"rice_dishes", "poultry"}))
+
+			Expect(repo.createdLog).NotTo(BeNil())
+			Expect(repo.createdLog.UserID).To(Equal(userID))
+			Expect(repo.createdLog.CustomMealItemID).NotTo(BeNil())
+			Expect(*repo.createdLog.CustomMealItemID).To(Equal(customMealID))
+			Expect(repo.createdLog.MealType).To(Equal("breakfast"))
+			Expect(repo.createdLog.ProteinG).To(Equal(32.0))
+			Expect(repo.createdLog.CarbsG).To(Equal(78.0))
+			Expect(repo.createdLog.FatG).To(Equal(21.0))
+			Expect(repo.createdLog.EatenAt).To(Equal(eatenAt))
+			Expect(repo.createdLog.Price).To(Equal(8.50))
+		})
+	})
 
 	Describe("Update", func() {
 		It("should update meal log price and eaten time without changing meal details", func() {
@@ -138,6 +208,9 @@ var _ = Describe("Meal log service", func() {
 			Expect(response.ID).To(Equal(logID.String()))
 			Expect(response.MealName).To(Equal("Chicken Rice"))
 			Expect(response.Calories).To(Equal(650.0))
+			Expect(response.ProteinG).To(Equal(32.0))
+			Expect(response.CarbsG).To(Equal(78.0))
+			Expect(response.FatG).To(Equal(21.0))
 			Expect(response.MealCategory).To(Equal([]string{"rice_dishes", "poultry"}))
 			Expect(response.Price).To(Equal(9.75))
 			Expect(response.EatenAt).To(Equal(nextEatenAt))

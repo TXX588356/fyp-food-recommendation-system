@@ -323,7 +323,7 @@ func (h *mealSearchHandler) lookupManualMealRestaurants(ctx context.Context, use
 	result, err := h.restaurantSearcher.SearchRestaurants(ctx, interfaces.RestaurantSearchInput{
 		MealName: mealName,
 		Location: location,
-		Limit:    10,
+		Limit:    30,
 	})
 	if err != nil {
 		return location, []restaurantResponse{}, interfaces.RestaurantLookupUnavailable

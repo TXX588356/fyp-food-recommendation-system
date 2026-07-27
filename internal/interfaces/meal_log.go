@@ -30,6 +30,9 @@ type MealLogResponse struct {
 	MealName         string    `json:"mealName"`
 	MealType         string    `json:"mealType"`
 	Calories         float64   `json:"calories"`
+	ProteinG         float64   `json:"proteinG"`
+	CarbsG           float64   `json:"carbsG"`
+	FatG             float64   `json:"fatG"`
 	Price            float64   `json:"price"`
 	MealCategory     []string  `json:"mealCategory"`
 }

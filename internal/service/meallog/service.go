@@ -108,6 +108,9 @@ func (s *service) buildCustomMealLog(ctx context.Context, userID uuid.UUID, meal
 		MealType:         input.MealType,
 		MealCategory:     model.StringArray(meal.MealCategoryTags),
 		Calories:         meal.Calories,
+		ProteinG:         meal.ProteinG,
+		CarbsG:           meal.CarbsG,
+		FatG:             meal.FatG,
 	}, nil
 }
 
@@ -122,6 +125,21 @@ func (s *service) buildPrebuiltMealLog(ctx context.Context, userID uuid.UUID, me
 		calories = *meal.SelectedNutrition.Calories
 	}
 
+	proteinG := 0.0
+	if meal.SelectedNutrition.ProteinG != nil {
+		proteinG = *meal.SelectedNutrition.ProteinG
+	}
+
+	carbsG := 0.0
+	if meal.SelectedNutrition.CarbsG != nil {
+		carbsG = *meal.SelectedNutrition.CarbsG
+	}
+
+	fatG := 0.0
+	if meal.SelectedNutrition.FatG != nil {
+		fatG = *meal.SelectedNutrition.FatG
+	}
+
 	return &model.MealLog{
 		UserID:         userID,
 		PrebuiltMealID: &mealID,
@@ -131,6 +149,9 @@ func (s *service) buildPrebuiltMealLog(ctx context.Context, userID uuid.UUID, me
 		MealType:       input.MealType,
 		MealCategory:   model.StringArray(meal.Categories),
 		Calories:       calories,
+		ProteinG:       proteinG,
+		CarbsG:         carbsG,
+		FatG:           fatG,
 	}, nil
 }
 
@@ -230,6 +251,9 @@ func buildMealLogResponse(log *model.MealLog) *interfaces.MealLogResponse {
 		MealName:         log.MealName,
 		MealType:         log.MealType,
 		Calories:         log.Calories,
+		ProteinG:         log.ProteinG,
+		CarbsG:           log.CarbsG,
+		FatG:             log.FatG,
 		Price:            log.Price,
 		MealCategory:     []string(log.MealCategory),
 	}
