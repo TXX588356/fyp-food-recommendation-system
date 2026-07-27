@@ -117,6 +117,7 @@ var _ = Describe("Meal log service", func() {
 			Calories:         650,
 			Price:            8.50,
 			EatenAt:          time.Date(2026, 7, 12, 8, 30, 0, 0, time.UTC),
+			MealType:         "breakfast",
 			MealCategory:     model.StringArray{"rice_dishes", "poultry"},
 		}
 	}
@@ -127,8 +128,9 @@ var _ = Describe("Meal log service", func() {
 			nextEatenAt := time.Date(2026, 7, 12, 12, 45, 0, 0, time.UTC)
 
 			response, err := svc.Update(ctx, userID, logID, interfaces.MealLogUpdateInput{
-				Price:   9.75,
-				EatenAt: nextEatenAt,
+				Price:    9.75,
+				EatenAt:  nextEatenAt,
+				MealType: "lunch",
 			})
 
 			Expect(err).NotTo(HaveOccurred())
@@ -139,18 +141,21 @@ var _ = Describe("Meal log service", func() {
 			Expect(response.MealCategory).To(Equal([]string{"rice_dishes", "poultry"}))
 			Expect(response.Price).To(Equal(9.75))
 			Expect(response.EatenAt).To(Equal(nextEatenAt))
+			Expect(response.MealType).To(Equal("lunch"))
 
 			Expect(repo.findID).To(Equal(logID))
 			Expect(repo.findUserID).To(Equal(userID))
 			Expect(repo.updatedLog).NotTo(BeNil())
 			Expect(repo.updatedLog.Price).To(Equal(9.75))
 			Expect(repo.updatedLog.EatenAt).To(Equal(nextEatenAt))
+			Expect(repo.updatedLog.MealType).To(Equal("lunch"))
 		})
 
 		It("should reject negative price before loading the meal log", func() {
 			response, err := svc.Update(ctx, userID, logID, interfaces.MealLogUpdateInput{
-				Price:   -1,
-				EatenAt: time.Date(2026, 7, 12, 12, 45, 0, 0, time.UTC),
+				Price:    -1,
+				EatenAt:  time.Date(2026, 7, 12, 12, 45, 0, 0, time.UTC),
+				MealType: "lunch",
 			})
 
 			Expect(err).To(MatchError("price cannot be negative"))
@@ -161,7 +166,8 @@ var _ = Describe("Meal log service", func() {
 
 		It("should reject missing eaten time before loading the meal log", func() {
 			response, err := svc.Update(ctx, userID, logID, interfaces.MealLogUpdateInput{
-				Price: 9.75,
+				Price:    9.75,
+				MealType: "lunch",
 			})
 
 			Expect(err).To(MatchError("eaten time is required"))
@@ -175,8 +181,9 @@ var _ = Describe("Meal log service", func() {
 			otherUserID := uuid.New()
 
 			response, err := svc.Update(ctx, otherUserID, logID, interfaces.MealLogUpdateInput{
-				Price:   9.75,
-				EatenAt: time.Date(2026, 7, 12, 12, 45, 0, 0, time.UTC),
+				Price:    9.75,
+				EatenAt:  time.Date(2026, 7, 12, 12, 45, 0, 0, time.UTC),
+				MealType: "lunch",
 			})
 
 			Expect(err).To(MatchError("meal log not found"))

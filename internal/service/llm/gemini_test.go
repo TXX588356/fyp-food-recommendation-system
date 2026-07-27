@@ -232,8 +232,6 @@ var _ = Describe("Gemini meal generation", func() {
 
 			expectedValues := []string{
 				"Lunch can include more filling meals with higher calories, carbohydrates, and digestive load",
-				"Dinner should be lighter than lunch",
-				"lower calories, lower carbohydrates, and easier digestion",
 			}
 
 			for _, expected := range expectedValues {

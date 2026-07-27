@@ -15,10 +15,11 @@ const (
 )
 
 type MealLogInput struct {
-	Source  MealLogSource `json:"source"`
-	MealID  string        `json:"mealId"`
-	Price   float64       `json:"price"`
-	EatenAt time.Time     `json:"eatenAt"`
+	Source   MealLogSource `json:"source"`
+	MealID   string        `json:"mealId"`
+	Price    float64       `json:"price"`
+	EatenAt  time.Time     `json:"eatenAt"`
+	MealType string        `json:"mealType"`
 }
 
 type MealLogResponse struct {
@@ -27,6 +28,7 @@ type MealLogResponse struct {
 	PrebuiltMealID   *string   `json:"prebuiltMealId,omitempty"`
 	EatenAt          time.Time `json:"eatenAt"`
 	MealName         string    `json:"mealName"`
+	MealType         string    `json:"mealType"`
 	Calories         float64   `json:"calories"`
 	Price            float64   `json:"price"`
 	MealCategory     []string  `json:"mealCategory"`
@@ -47,8 +49,9 @@ type MealLogMonthResponse struct {
 }
 
 type MealLogUpdateInput struct {
-	Price   float64   `json:"price"`
-	EatenAt time.Time `json:"eatenAt"`
+	Price    float64   `json:"price"`
+	EatenAt  time.Time `json:"eatenAt"`
+	MealType string    `json:"mealType"`
 }
 
 type MealLogService interface {

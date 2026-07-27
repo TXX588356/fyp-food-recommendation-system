@@ -15,6 +15,7 @@ type MealLog struct {
 	MealName         string         `gorm:"column:meal_name;type:text;not null"`
 	Price            float64        `gorm:"column:price;type:numeric(10,2);not null"`
 	EatenAt          time.Time      `gorm:"column:eaten_at;type:timestamptz;not null"`
+	MealType         string         `gorm:"column:meal_type;type:text;not null"`
 	MealCategory     StringArray    `gorm:"column:meal_category;type:text[];not null"`
 	Calories         float64        `gorm:"column:calories;type:numeric(10,2);not null"`
 	CreatedAt        time.Time      `gorm:"column:created_at"`

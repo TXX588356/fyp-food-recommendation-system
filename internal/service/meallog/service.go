@@ -74,6 +74,7 @@ func (s *service) Update(ctx context.Context, userID, logID uuid.UUID, input int
 
 	log.Price = input.Price
 	log.EatenAt = input.EatenAt
+	log.MealType = input.MealType
 
 	updated, err := s.mealLogRepo.Update(ctx, log)
 	if err != nil {
@@ -104,6 +105,7 @@ func (s *service) buildCustomMealLog(ctx context.Context, userID uuid.UUID, meal
 		MealName:         meal.Name,
 		Price:            input.Price,
 		EatenAt:          input.EatenAt,
+		MealType:         input.MealType,
 		MealCategory:     model.StringArray(meal.MealCategoryTags),
 		Calories:         meal.Calories,
 	}, nil
@@ -126,6 +128,7 @@ func (s *service) buildPrebuiltMealLog(ctx context.Context, userID uuid.UUID, me
 		MealName:       meal.Name,
 		Price:          input.Price,
 		EatenAt:        input.EatenAt,
+		MealType:       input.MealType,
 		MealCategory:   model.StringArray(meal.Categories),
 		Calories:       calories,
 	}, nil
@@ -225,6 +228,7 @@ func buildMealLogResponse(log *model.MealLog) *interfaces.MealLogResponse {
 		PrebuiltMealID:   prebuiltMealID,
 		EatenAt:          log.EatenAt,
 		MealName:         log.MealName,
+		MealType:         log.MealType,
 		Calories:         log.Calories,
 		Price:            log.Price,
 		MealCategory:     []string(log.MealCategory),
@@ -251,6 +255,10 @@ func validateMealLogUpdateInput(input interfaces.MealLogUpdateInput) error {
 		return errors.New("eaten time is required")
 	}
 
+	if !isSupportedMealType(input.MealType) {
+		return errors.New("unsupported meal type")
+	}
+
 	return nil
 }
 
@@ -271,5 +279,18 @@ func validateMealLogInput(input interfaces.MealLogInput) error {
 		return errors.New("eaten time is required")
 	}
 
+	if !isSupportedMealType(input.MealType) {
+		return errors.New("unsupported meal type")
+	}
+
 	return nil
+}
+
+func isSupportedMealType(value string) bool {
+	switch strings.TrimSpace(value) {
+	case "breakfast", "lunch", "dinner", "other":
+		return true
+	default:
+		return false
+	}
 }

@@ -111,6 +111,7 @@ var _ = Describe("Meal log endpoints", func() {
 			mealLogService.updateResult = &interfaces.MealLogResponse{
 				ID:       logID.String(),
 				MealName: "Chicken Rice",
+				MealType: "lunch",
 				Price:    9.75,
 				EatenAt:  eatenAt,
 			}
@@ -120,8 +121,9 @@ var _ = Describe("Meal log endpoints", func() {
 				http.MethodPatch,
 				"/meal-logs/"+logID.String(),
 				interfaces.MealLogUpdateInput{
-					Price:   9.75,
-					EatenAt: eatenAt,
+					Price:    9.75,
+					EatenAt:  eatenAt,
+					MealType: "lunch",
 				},
 				token,
 			)
@@ -131,11 +133,13 @@ var _ = Describe("Meal log endpoints", func() {
 			Expect(mealLogService.updateLogID).To(Equal(logID))
 			Expect(mealLogService.updateInput.Price).To(Equal(9.75))
 			Expect(mealLogService.updateInput.EatenAt).To(Equal(eatenAt))
+			Expect(mealLogService.updateInput.MealType).To(Equal("lunch"))
 
 			var result interfaces.MealLogResponse
 			Expect(json.Unmarshal(response.Body.Bytes(), &result)).To(Succeed())
 			Expect(result.ID).To(Equal(logID.String()))
 			Expect(result.MealName).To(Equal("Chicken Rice"))
+			Expect(result.MealType).To(Equal("lunch"))
 			Expect(result.Price).To(Equal(9.75))
 		})
 
@@ -145,8 +149,9 @@ var _ = Describe("Meal log endpoints", func() {
 				http.MethodPatch,
 				"/meal-logs/not-a-uuid",
 				interfaces.MealLogUpdateInput{
-					Price:   9.75,
-					EatenAt: time.Date(2026, 7, 12, 12, 45, 0, 0, time.UTC),
+					Price:    9.75,
+					EatenAt:  time.Date(2026, 7, 12, 12, 45, 0, 0, time.UTC),
+					MealType: "lunch",
 				},
 				token,
 			)
@@ -165,8 +170,9 @@ var _ = Describe("Meal log endpoints", func() {
 				http.MethodPatch,
 				"/meal-logs/"+logID.String(),
 				interfaces.MealLogUpdateInput{
-					Price:   -1,
-					EatenAt: time.Date(2026, 7, 12, 12, 45, 0, 0, time.UTC),
+					Price:    -1,
+					EatenAt:  time.Date(2026, 7, 12, 12, 45, 0, 0, time.UTC),
+					MealType: "lunch",
 				},
 				token,
 			)
