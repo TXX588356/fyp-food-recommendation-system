@@ -5,6 +5,14 @@ import type { AuthContextType, User } from './auth-context'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
+type RefreshResponse = {
+    accessToken: string
+    refreshToken: string
+    user: User
+}
+
+let refreshSessionPromise: Promise<RefreshResponse> | null = null
+
 // Restore the saved user safely. If localStorage contains invalid JSON,
 // clear it so the app falls back to a logged-out state.
 const safeParseUser = (): User | null => {
@@ -26,6 +34,35 @@ const AuthProvider = ({ children }: LayoutProps) => {
     // A user is considered authenticated when a token is present.
     const isAuthenticated = Boolean(token)
     const [isAuthLoading, setIsAuthLoading] = useState(true)
+
+    const applyAuthSession = (session: RefreshResponse) => {
+        setToken(session.accessToken)
+        setUser(session.user)
+
+        localStorage.setItem('token', session.accessToken)
+        localStorage.setItem('refreshToken', session.refreshToken)
+        localStorage.setItem('user', JSON.stringify(session.user))
+    }
+
+    const refreshSession = async () => {
+        if (refreshSessionPromise) {
+            return refreshSessionPromise
+        }
+
+        const refreshToken = localStorage.getItem('refreshToken')
+        if (!refreshToken) {
+            return Promise.reject(new Error('missing refresh token'))
+        }
+
+        refreshSessionPromise = axios.post<RefreshResponse>(`${API_BASE_URL}/auth/refresh`, {
+            refreshToken,
+        }).then((response) => response.data)
+            .finally(() => {
+                refreshSessionPromise = null
+            })
+
+        return refreshSessionPromise
+    }
 
     const clearAuth = () => {
         setToken(null)
@@ -51,20 +88,8 @@ const AuthProvider = ({ children }: LayoutProps) => {
 				}
 
 				try {
-					const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-						refreshToken,
-					})
-
-					const nextAccessToken = response.data.accessToken
-					const nextRefreshToken = response.data.refreshToken
-					const nextUser = response.data.user
-
-					setToken(nextAccessToken)
-					setUser(nextUser)
-
-					localStorage.setItem('token', nextAccessToken)
-					localStorage.setItem('refreshToken', nextRefreshToken)
-					localStorage.setItem('user', JSON.stringify(nextUser))
+					const nextSession = await refreshSession()
+					applyAuthSession(nextSession)
 				} catch {
 					clearAuth()
 				} finally {
@@ -82,7 +107,25 @@ const AuthProvider = ({ children }: LayoutProps) => {
 		// -> retry original req -> if refresh fails, clearAuth()
 		// handles token expiry during active usage
     useEffect(() => {
-			const interceptor = axios.interceptors.response.use(
+			const requestInterceptor = axios.interceptors.request.use((config) => {
+				if (
+					config.url?.includes('/auth/login') ||
+					config.url?.includes('/auth/register') ||
+					config.url?.includes('/auth/refresh')
+				) {
+					return config
+				}
+
+				const currentToken = localStorage.getItem('token')
+				if (currentToken) {
+					config.headers = config.headers ?? {}
+					config.headers.Authorization = `Bearer ${currentToken}`
+				}
+
+				return config
+			})
+
+			const responseInterceptor = axios.interceptors.response.use(
 				(response) => response,
 					async (error) => {
 						const originalRequest = error.config as typeof error.config & { _retry?: boolean }
@@ -100,21 +143,11 @@ const AuthProvider = ({ children }: LayoutProps) => {
 						originalRequest._retry = true
 
 						try {
-							const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-									refreshToken,
-							})
-							const nextAccessToken = response.data.accessToken
-							const nextRefreshToken = response.data.refreshToken
-							const nextUser = response.data.user
-
-							setToken(nextAccessToken)
-							setUser(nextUser)
-							localStorage.setItem('token', nextAccessToken)
-							localStorage.setItem('refreshToken', nextRefreshToken)
-							localStorage.setItem('user', JSON.stringify(nextUser))
+							const nextSession = await refreshSession()
+							applyAuthSession(nextSession)
 
 							originalRequest.headers = originalRequest.headers ?? {}
-							originalRequest.headers.Authorization = `Bearer ${nextAccessToken}`
+							originalRequest.headers.Authorization = `Bearer ${nextSession.accessToken}`
 
 							return axios(originalRequest)
 						} catch (refreshError) {
@@ -124,7 +157,10 @@ const AuthProvider = ({ children }: LayoutProps) => {
 				},
 			)
 
-			return () => axios.interceptors.response.eject(interceptor)
+			return () => {
+				axios.interceptors.request.eject(requestInterceptor)
+				axios.interceptors.response.eject(responseInterceptor)
+			}
     }, [])
 
     // Keep React state and localStorage in sync after a successful login.
