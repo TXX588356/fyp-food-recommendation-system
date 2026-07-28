@@ -94,6 +94,13 @@ function LogMealForm({
     }
   }
 
+  const getEndOfTodayDateTimeLocalValue = () => {
+    const endOfToday = new Date()
+    endOfToday.setHours(23, 59, 0, 0)
+
+    return toDateTimeLocalValue(endOfToday)
+  }
+
   return (
     <Stack gap="md" className="ui-log-meal-form">
       <Stack gap={4} className="ui-log-meal-summary">
@@ -118,7 +125,7 @@ function LogMealForm({
         value={eatenAt}
         onChange={(event) => setEatenAt(event.currentTarget.value)}
         classNames={{ input: 'ui-input' }}
-        max={toDateTimeLocalValue(new Date())}
+        max={getEndOfTodayDateTimeLocalValue()}
       />
 
       <Select
