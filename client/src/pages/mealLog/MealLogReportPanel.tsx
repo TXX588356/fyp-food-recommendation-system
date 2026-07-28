@@ -1,5 +1,6 @@
 import {
   Alert,
+  Badge,
   Box,
   Button,
   Group,
@@ -47,6 +48,28 @@ const formatShortNumber = (value: number) => {
   }
 
   return `${value.toFixed(0)}`
+}
+
+const buildBudgetOutlook = (summary: MealLogReportResponse['summary']) => {
+  if (
+    summary.monthlyMealBudget === undefined ||
+    summary.projectedMonthSpend === undefined ||
+    summary.budgetSpendStatus === undefined
+  ) {
+    return null
+  }
+
+  const projectedDifference = Math.abs(summary.monthlyMealBudget - summary.projectedMonthSpend)
+  const isOverspending = summary.budgetSpendStatus === 'overspending'
+
+  return {
+    color: isOverspending ? 'red' : 'green',
+    label: isOverspending ? 'Overspending' : 'On track',
+    headline: isOverspending
+      ? `${formatRM(projectedDifference)} over budget`
+      : `${formatRM(projectedDifference)} under budget`,
+    detail: `${formatRM(summary.projectedMonthSpend)} projected of ${formatRM(summary.monthlyMealBudget)} budget.`,
+  }
 }
 
 const formatMinutesAsTime = (minutes: number) => {
@@ -158,6 +181,7 @@ export default function MealLogReportPanel({
   const hasMacroData = macroChartData.some((item) => item.grams > 0)
 
   const showBudgetCard = report.summary.remainingUsableBudget !== undefined
+  const budgetOutlook = buildBudgetOutlook(report.summary)
 
   return (
     <Box className="ui-meal-log-report-panel">
@@ -200,11 +224,18 @@ export default function MealLogReportPanel({
             </Box>
 
             {showBudgetCard && (
-              <Box>
-                <Text>Remaining usable budget</Text>
-                <strong>{formatRM(report.summary.remainingUsableBudget ?? 0)}</strong>
+              <Box className={`ui-meal-log-budget-outlook ${budgetOutlook?.color === 'red' ? 'ui-meal-log-budget-outlook-risk' : ''}`}>
+                <Group justify="space-between" gap="xs">
+                  <Text>Budget outlook</Text>
+                  {budgetOutlook && (
+                    <Badge color={budgetOutlook.color} variant="light">
+                      {budgetOutlook.label}
+                    </Badge>
+                  )}
+                </Group>
+                <strong>{budgetOutlook?.headline ?? formatRM(report.summary.remainingUsableBudget ?? 0)}</strong>
                 <Text size="xs" className="ui-field-copy">
-                  Current month only.
+                  {budgetOutlook?.detail ?? 'Current month only.'}
                 </Text>
               </Box>
             )}

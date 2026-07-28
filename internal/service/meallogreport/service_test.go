@@ -204,6 +204,39 @@ var _ = Describe("Meal log report service", func() {
 			// July has 31 days. RM30 spent by day 10 projects to RM93.
 			Expect(summary.ProjectedMonthSpend).NotTo(BeNil())
 			Expect(*summary.ProjectedMonthSpend).To(Equal(93.0))
+			Expect(summary.MonthlyMealBudget).NotTo(BeNil())
+			Expect(*summary.MonthlyMealBudget).To(Equal(100.0))
+			Expect(summary.BudgetSpendStatus).NotTo(BeNil())
+			Expect(*summary.BudgetSpendStatus).To(Equal("on_track"))
+		})
+
+		It("predicts overspending when projected spend exceeds monthly budget", func() {
+			svc := &service{
+				now: func() time.Time {
+					return time.Date(2026, 7, 10, 12, 0, 0, 0, loc)
+				},
+			}
+
+			start := time.Date(2026, 7, 1, 0, 0, 0, 0, loc)
+			end := start.AddDate(0, 1, 0)
+
+			logs := []model.MealLog{
+				{
+					Price:   50,
+					EatenAt: time.Date(2026, 7, 1, 8, 0, 0, 0, loc),
+				},
+			}
+
+			prefs := &interfaces.PreferenceResponse{
+				MonthlyMealBudget: 100,
+			}
+
+			summary := svc.buildSummary(logs, start, end, prefs)
+
+			Expect(summary.ProjectedMonthSpend).NotTo(BeNil())
+			Expect(*summary.ProjectedMonthSpend).To(Equal(155.0))
+			Expect(summary.BudgetSpendStatus).NotTo(BeNil())
+			Expect(*summary.BudgetSpendStatus).To(Equal("overspending"))
 		})
 
 		It("hides budget values for past months", func() {
@@ -230,8 +263,10 @@ var _ = Describe("Meal log report service", func() {
 			summary := svc.buildSummary(logs, start, end, prefs)
 
 			// Requirement: past month should hide remaining budget and projection.
+			Expect(summary.MonthlyMealBudget).To(BeNil())
 			Expect(summary.RemainingUsableBudget).To(BeNil())
 			Expect(summary.ProjectedMonthSpend).To(BeNil())
+			Expect(summary.BudgetSpendStatus).To(BeNil())
 		})
 	})
 

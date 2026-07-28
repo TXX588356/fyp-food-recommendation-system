@@ -94,6 +94,24 @@
   font-size: 20px;
 }
 
+.ui-meal-log-report-metrics .ui-meal-log-budget-outlook {
+  border: 1px solid rgba(15, 107, 67, 0.18);
+  background: rgba(15, 107, 67, 0.08);
+}
+
+.ui-meal-log-report-metrics .ui-meal-log-budget-outlook strong {
+  color: var(--green-dark);
+}
+
+.ui-meal-log-report-metrics .ui-meal-log-budget-outlook-risk {
+  border-color: rgba(185, 57, 57, 0.24);
+  background: rgba(185, 57, 57, 0.08);
+}
+
+.ui-meal-log-report-metrics .ui-meal-log-budget-outlook-risk strong {
+  color: #991b1b;
+}
+
 .ui-meal-log-report-sections > div {
   display: grid;
   gap: 12px;

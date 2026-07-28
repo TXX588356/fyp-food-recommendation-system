@@ -223,12 +223,19 @@ func (s *service) buildSummary(
 
 		totalDaysInMonth := start.AddDate(0, 1, -1).Day()
 		projected := totalSpent / float64(now.Day()) * float64(totalDaysInMonth)
+		status := "on_track"
+		if projected > prefs.MonthlyMealBudget {
+			status = "overspending"
+		}
 
+		monthlyBudget := math.Round(prefs.MonthlyMealBudget*100) / 100
 		remaining = math.Round(remaining*100) / 100
 		projected = math.Round(projected*100) / 100
 
+		summary.MonthlyMealBudget = &monthlyBudget
 		summary.RemainingUsableBudget = &remaining
 		summary.ProjectedMonthSpend = &projected
+		summary.BudgetSpendStatus = &status
 	}
 
 	return summary
@@ -465,12 +472,26 @@ func buildInsights(logs []model.MealLog, summary interfaces.ReportSummary, macro
 	}
 
 	if summary.ProjectedMonthSpend != nil {
+		severity := "note"
+		title := "Current spending pace is projected"
+		recommendation := "Compare this with your monthly budget before choosing higher-cost meals."
+
+		if summary.BudgetSpendStatus != nil && *summary.BudgetSpendStatus == "overspending" {
+			severity = "warning"
+			title = "Current pace is overspending"
+			recommendation = "Choose lower-cost meals for the rest of the month to get closer to your budget."
+		} else if summary.BudgetSpendStatus != nil && *summary.BudgetSpendStatus == "on_track" {
+			severity = "positive"
+			title = "Current pace is on track"
+			recommendation = "Keep roughly the same daily spending pace to stay within your budget."
+		}
+
 		insights = append(insights, interfaces.ReportInsight{
 			Type:           "budget_projection",
-			Severity:       "note",
-			Title:          "Current spending pace is projected",
+			Severity:       severity,
+			Title:          title,
 			Evidence:       fmt.Sprintf("At the current pace, projected monthly spend is RM%.2f.", *summary.ProjectedMonthSpend),
-			Recommendation: "Compare this with your monthly budget before choosing higher-cost meals.",
+			Recommendation: recommendation,
 		})
 	}
 

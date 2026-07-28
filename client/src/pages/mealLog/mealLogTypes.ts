@@ -63,8 +63,10 @@ export type ReportSummary = {
     totalSpent: number
     averagePricePerMeal: number
     averageDailySpend: number
+    monthlyMealBudget?: number
     remainingUsableBudget?: number
     projectedMonthSpend?: number
+    budgetSpendStatus?: 'on_track' | 'overspending'
     totalCalories: number
     averageCaloriesPerMeal: number
 }

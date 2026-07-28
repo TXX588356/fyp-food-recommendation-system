@@ -36,8 +36,10 @@ type ReportSummary struct {
 	TotalSpent             float64  `json:"totalSpent"`
 	AveragePricePerMeal    float64  `json:"averagePricePerMeal"`
 	AverageDailySpend      float64  `json:"averageDailySpend"`
+	MonthlyMealBudget      *float64 `json:"monthlyMealBudget,omitempty"`
 	RemainingUsableBudget  *float64 `json:"remainingUsableBudget,omitempty"`
 	ProjectedMonthSpend    *float64 `json:"projectedMonthSpend,omitempty"`
+	BudgetSpendStatus      *string  `json:"budgetSpendStatus,omitempty"` // on_track, overspending
 	TotalCalories          float64  `json:"totalCalories"`
 	AverageCaloriesPerMeal float64  `json:"averageCaloriesPerMeal"`
 }
