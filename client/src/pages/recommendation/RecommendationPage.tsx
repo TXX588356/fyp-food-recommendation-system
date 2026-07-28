@@ -12,7 +12,7 @@ import {
 } from '@mantine/core'
 import axios from 'axios'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { Moon, Sun } from 'lucide-react'
+import { MapPin, Moon, Sun } from 'lucide-react'
 
 import { useAuth } from '@/auth/useAuth'
 import './RecommendationPage.css'
@@ -308,17 +308,19 @@ function DynamicLocationSelect({
   }, [cities, selectedLocation.state])
 
   return (
-    <Box className='ui-recommendation-location ui-card'>
-      <Box>
-        <Text className='ui-settings-title'>Recommendation Location</Text>
-      </Box>
+    <Box className='ui-recommendation-location'>
+      <Group className='ui-recommendation-location-title' gap={6}>
+        <MapPin size={15} strokeWidth={2.3} aria-hidden="true" />
+        <Text>Recommendation Location</Text>
+      </Group>
 
-      <Group grow align="flex-start">
+      <Group className='ui-recommendation-location-fields' align="flex-start">
         <Select 
           label='Saved'
           placeholder='Use saved location'
           data={savedLocations}
           value={formatLocation(selectedLocation)}
+          size="xs"
           onChange={(value) => {
             if (!value) return
             onChange(parseLocation(value))
@@ -335,6 +337,7 @@ function DynamicLocationSelect({
           data={states}
           value={selectedLocation.state || null}
           allowDeselect={false}
+          size="xs"
           onChange={(state) => {
             if (!state || state === selectedLocation.state) return
             onChange({ state, district: '' })
@@ -352,6 +355,7 @@ function DynamicLocationSelect({
           value={selectedLocation.district || null}
           allowDeselect={false}
           disabled={!selectedLocation.state || districts.length === 0}
+          size="xs"
           onChange={(district) => {
             if (!district || district === selectedLocation.district) return
             onChange({ ...selectedLocation, district: district ?? '' })
