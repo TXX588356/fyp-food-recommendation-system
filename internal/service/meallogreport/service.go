@@ -29,9 +29,18 @@ func NewService(repo interfaces.MealLogRepository, prefs interfaces.PreferenceSe
 }
 
 func (s *service) GenerateMonth(ctx context.Context, userID uuid.UUID, month string) (*interfaces.MealLogReportResponse, error) {
+	return s.Generate(ctx, userID, "month", month, "", "", "")
+}
+
+func (s *service) Generate(ctx context.Context, userID uuid.UUID, period string, month string, week string, weekStart string, weekEnd string) (*interfaces.MealLogReportResponse, error) {
 	loc, _ := time.LoadLocation("Asia/Singapore")
 
-	start, end, err := parseMonthInLocation(month, loc)
+	period = strings.ToLower(strings.TrimSpace(period))
+	if period == "" {
+		period = "month"
+	}
+
+	start, end, label, err := parseReportPeriodInLocation(period, month, week, weekStart, weekEnd, loc)
 	if err != nil {
 		return nil, err
 	}
@@ -43,19 +52,20 @@ func (s *service) GenerateMonth(ctx context.Context, userID uuid.UUID, month str
 
 	// Endpoint can disable generation when no logs exists, but service should still be safe.
 	if len(logs) == 0 {
-		return emptyReport(start, end), nil
+		return emptyReport(start, end, label, period), nil
 	}
 
 	prefs, _ := s.preferenceService.GetByUserID(ctx, userID)
 	// If preference fail, still return non-budget report instead of failing the whole report
 
-	summary := s.buildSummary(logs, start, end, prefs)
+	summary := s.buildSummary(logs, start, end, prefs, period)
 	macroSummary := buildMacroSummary(logs)
 	report := &interfaces.MealLogReportResponse{
 		Period: interfaces.ReportPeriod{
 			Start: start,
 			End:   end,
-			Label: start.Format("January 2006"),
+			Label: label,
+			Kind:  period,
 		},
 		Summary:           summary,
 		MacroSummary:      macroSummary,
@@ -68,11 +78,33 @@ func (s *service) GenerateMonth(ctx context.Context, userID uuid.UUID, month str
 	}
 
 	if len(logs) < 5 {
-		msg := fmt.Sprintf("You logged %d meals this month. The dataset is small, so the summary may not fully capture your usual eating pattern yet.", len(logs))
+		msg := fmt.Sprintf("You logged %d meals for this %s. The dataset is small, so the summary may not fully capture your usual eating pattern yet.", len(logs), period)
 		report.LowDataWarning = &msg
 	}
 
 	return report, nil
+}
+
+func parseReportPeriodInLocation(period string, month string, week string, weekStart string, weekEnd string, loc *time.Location) (time.Time, time.Time, string, error) {
+	switch period {
+	case "month":
+		start, end, err := parseMonthInLocation(month, loc)
+		if err != nil {
+			return time.Time{}, time.Time{}, "", err
+		}
+
+		return start, end, start.Format("January 2006"), nil
+	case "week":
+		start, end, err := parseWeekInLocation(week, weekStart, weekEnd, loc)
+		if err != nil {
+			return time.Time{}, time.Time{}, "", err
+		}
+
+		label := fmt.Sprintf("%s - %s", start.Format("Jan 2"), end.Add(-time.Nanosecond).Format("Jan 2, 2006"))
+		return start, end, label, nil
+	default:
+		return time.Time{}, time.Time{}, "", errors.New("period must be month or week")
+	}
 }
 
 func classifyTimeWindow(t time.Time, loc *time.Location) string {
@@ -141,12 +173,61 @@ func parseMonthInLocation(value string, loc *time.Location) (time.Time, time.Tim
 	return start, start.AddDate(0, 1, 0), nil
 }
 
-func emptyReport(start, end time.Time) *interfaces.MealLogReportResponse {
+func parseWeekInLocation(value string, weekStart string, weekEnd string, loc *time.Location) (time.Time, time.Time, error) {
+	value = strings.TrimSpace(value)
+	weekStart = strings.TrimSpace(weekStart)
+	weekEnd = strings.TrimSpace(weekEnd)
+
+	if weekStart != "" || weekEnd != "" {
+		if weekStart == "" || weekEnd == "" {
+			return time.Time{}, time.Time{}, errors.New("weekStart and weekEnd must be provided together")
+		}
+
+		start, err := time.ParseInLocation("2006-01-02", weekStart, loc)
+		if err != nil {
+			return time.Time{}, time.Time{}, errors.New("weekStart must use YYYY-MM-DD format")
+		}
+
+		endDay, err := time.ParseInLocation("2006-01-02", weekEnd, loc)
+		if err != nil {
+			return time.Time{}, time.Time{}, errors.New("weekEnd must use YYYY-MM-DD format")
+		}
+
+		end := endDay.AddDate(0, 0, 1)
+		if !end.After(start) {
+			return time.Time{}, time.Time{}, errors.New("weekEnd must be on or after weekStart")
+		}
+
+		if end.Sub(start) > 7*24*time.Hour {
+			return time.Time{}, time.Time{}, errors.New("weekly report range cannot exceed 7 days")
+		}
+
+		return start, end, nil
+	}
+
+	var selected time.Time
+	if value == "" {
+		selected = time.Now().In(loc)
+	} else {
+		parsed, err := time.ParseInLocation("2006-01-02", value, loc)
+		if err != nil {
+			return time.Time{}, time.Time{}, errors.New("week must use YYYY-MM-DD format")
+		}
+		selected = parsed
+	}
+
+	weekdayOffset := (int(selected.Weekday()) + 6) % 7
+	start := time.Date(selected.Year(), selected.Month(), selected.Day()-weekdayOffset, 0, 0, 0, 0, loc)
+	return start, start.AddDate(0, 0, 7), nil
+}
+
+func emptyReport(start, end time.Time, label string, period string) *interfaces.MealLogReportResponse {
 	return &interfaces.MealLogReportResponse{
 		Period: interfaces.ReportPeriod{
 			Start: start,
 			End:   end,
-			Label: start.Format("January 2006"),
+			Label: label,
+			Kind:  period,
 		},
 		Summary:      interfaces.ReportSummary{},
 		MacroSummary: interfaces.MacroSummary{},
@@ -165,6 +246,7 @@ func (s *service) buildSummary(
 	start time.Time,
 	end time.Time,
 	prefs *interfaces.PreferenceResponse,
+	period string,
 ) interfaces.ReportSummary {
 	totalSpent := 0.0
 	totalCalories := 0.0
@@ -215,30 +297,47 @@ func (s *service) buildSummary(
 
 	now := s.now().In(loc)
 
-	if start.Year() == now.Year() && start.Month() == now.Month() {
+	if isCurrentReportPeriod(now, start, end) {
 		remaining := prefs.MonthlyMealBudget - totalSpent
 		if remaining < 0 {
 			remaining = 0
 		}
 
-		totalDaysInMonth := start.AddDate(0, 1, -1).Day()
-		projected := totalSpent / float64(now.Day()) * float64(totalDaysInMonth)
+		elapsedDays := math.Max(1, math.Ceil(now.Sub(start).Hours()/24))
+		totalPeriodDays := math.Ceil(end.Sub(start).Hours() / 24)
+		projected := totalSpent / elapsedDays * totalPeriodDays
+		budgetLimit := prefs.MonthlyMealBudget
+		budgetLabel := "monthly budget"
+		if period == "week" {
+			daysInMonth := time.Date(now.Year(), now.Month()+1, 0, 0, 0, 0, 0, start.Location()).Day()
+			budgetLimit = prefs.MonthlyMealBudget / float64(daysInMonth) * totalPeriodDays
+			budgetLabel = "weekly budget"
+		}
 		status := "on_track"
-		if projected > prefs.MonthlyMealBudget {
+		if projected > budgetLimit {
 			status = "overspending"
 		}
 
 		monthlyBudget := math.Round(prefs.MonthlyMealBudget*100) / 100
+		roundedBudgetLimit := math.Round(budgetLimit*100) / 100
 		remaining = math.Round(remaining*100) / 100
 		projected = math.Round(projected*100) / 100
 
 		summary.MonthlyMealBudget = &monthlyBudget
+		summary.BudgetLimit = &roundedBudgetLimit
+		summary.BudgetLabel = &budgetLabel
 		summary.RemainingUsableBudget = &remaining
 		summary.ProjectedMonthSpend = &projected
+		summary.ProjectedPeriodSpend = &projected
 		summary.BudgetSpendStatus = &status
 	}
 
 	return summary
+}
+
+func isCurrentReportPeriod(now time.Time, start time.Time, end time.Time) bool {
+	now = now.In(start.Location())
+	return !now.Before(start) && now.Before(end)
 }
 
 func buildMacroSummary(logs []model.MealLog) interfaces.MacroSummary {
@@ -475,11 +574,19 @@ func buildInsights(logs []model.MealLog, summary interfaces.ReportSummary, macro
 		severity := "note"
 		title := "Current spending pace is projected"
 		recommendation := "Compare this with your monthly budget before choosing higher-cost meals."
+		projectedLabel := "monthly spend"
+		if summary.BudgetLabel != nil && *summary.BudgetLabel == "weekly budget" {
+			projectedLabel = "weekly spend"
+			recommendation = "Compare this with your weekly budget before choosing higher-cost meals."
+		}
 
 		if summary.BudgetSpendStatus != nil && *summary.BudgetSpendStatus == "overspending" {
 			severity = "warning"
 			title = "Current pace is overspending"
 			recommendation = "Choose lower-cost meals for the rest of the month to get closer to your budget."
+			if projectedLabel == "weekly spend" {
+				recommendation = "Choose lower-cost meals for the rest of the week to get closer to your budget."
+			}
 		} else if summary.BudgetSpendStatus != nil && *summary.BudgetSpendStatus == "on_track" {
 			severity = "positive"
 			title = "Current pace is on track"
@@ -490,7 +597,7 @@ func buildInsights(logs []model.MealLog, summary interfaces.ReportSummary, macro
 			Type:           "budget_projection",
 			Severity:       severity,
 			Title:          title,
-			Evidence:       fmt.Sprintf("At the current pace, projected monthly spend is RM%.2f.", *summary.ProjectedMonthSpend),
+			Evidence:       fmt.Sprintf("At the current pace, projected %s is RM%.2f.", projectedLabel, *summary.ProjectedMonthSpend),
 			Recommendation: recommendation,
 		})
 	}

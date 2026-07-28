@@ -188,7 +188,7 @@ var _ = Describe("Meal log report service", func() {
 				MonthlyMealBudget: 100,
 			}
 
-			summary := svc.buildSummary(logs, start, end, prefs)
+			summary := svc.buildSummary(logs, start, end, prefs, "month")
 
 			Expect(summary.TotalMeals).To(Equal(2))
 			Expect(summary.ActiveLoggingDays).To(Equal(2))
@@ -231,12 +231,47 @@ var _ = Describe("Meal log report service", func() {
 				MonthlyMealBudget: 100,
 			}
 
-			summary := svc.buildSummary(logs, start, end, prefs)
+			summary := svc.buildSummary(logs, start, end, prefs, "month")
 
 			Expect(summary.ProjectedMonthSpend).NotTo(BeNil())
 			Expect(*summary.ProjectedMonthSpend).To(Equal(155.0))
 			Expect(summary.BudgetSpendStatus).NotTo(BeNil())
 			Expect(*summary.BudgetSpendStatus).To(Equal("overspending"))
+		})
+
+		It("calculates weekly budget outlook from a prorated monthly budget", func() {
+			svc := &service{
+				now: func() time.Time {
+					return time.Date(2026, 7, 28, 12, 0, 0, 0, loc)
+				},
+			}
+
+			start, end, err := parseWeekInLocation("", "2026-07-27", "2026-08-02", loc)
+			Expect(err).NotTo(HaveOccurred())
+
+			logs := []model.MealLog{
+				{
+					Price:   20,
+					EatenAt: time.Date(2026, 7, 27, 8, 0, 0, 0, loc),
+				},
+			}
+
+			prefs := &interfaces.PreferenceResponse{
+				MonthlyMealBudget: 310,
+			}
+
+			summary := svc.buildSummary(logs, start, end, prefs, "week")
+
+			Expect(start).To(Equal(time.Date(2026, 7, 27, 0, 0, 0, 0, loc)))
+			Expect(end).To(Equal(time.Date(2026, 8, 3, 0, 0, 0, 0, loc)))
+			Expect(summary.BudgetLimit).NotTo(BeNil())
+			Expect(*summary.BudgetLimit).To(Equal(70.0))
+			Expect(summary.ProjectedPeriodSpend).NotTo(BeNil())
+			Expect(*summary.ProjectedPeriodSpend).To(Equal(70.0))
+			Expect(summary.BudgetLabel).NotTo(BeNil())
+			Expect(*summary.BudgetLabel).To(Equal("weekly budget"))
+			Expect(summary.BudgetSpendStatus).NotTo(BeNil())
+			Expect(*summary.BudgetSpendStatus).To(Equal("on_track"))
 		})
 
 		It("hides budget values for past months", func() {
@@ -260,7 +295,7 @@ var _ = Describe("Meal log report service", func() {
 				MonthlyMealBudget: 100,
 			}
 
-			summary := svc.buildSummary(logs, start, end, prefs)
+			summary := svc.buildSummary(logs, start, end, prefs, "month")
 
 			// Requirement: past month should hide remaining budget and projection.
 			Expect(summary.MonthlyMealBudget).To(BeNil())

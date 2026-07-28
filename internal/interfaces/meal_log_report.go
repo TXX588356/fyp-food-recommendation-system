@@ -9,6 +9,7 @@ import (
 
 type MealLogReportService interface {
 	GenerateMonth(ctx context.Context, userID uuid.UUID, month string) (*MealLogReportResponse, error)
+	Generate(ctx context.Context, userID uuid.UUID, period string, month string, week string, weekStart string, weekEnd string) (*MealLogReportResponse, error)
 }
 
 type MealLogReportResponse struct {
@@ -28,6 +29,7 @@ type ReportPeriod struct {
 	Start time.Time `json:"start"`
 	End   time.Time `json:"end"`
 	Label string    `json:"label"`
+	Kind  string    `json:"kind"`
 }
 
 type ReportSummary struct {
@@ -37,8 +39,11 @@ type ReportSummary struct {
 	AveragePricePerMeal    float64  `json:"averagePricePerMeal"`
 	AverageDailySpend      float64  `json:"averageDailySpend"`
 	MonthlyMealBudget      *float64 `json:"monthlyMealBudget,omitempty"`
+	BudgetLimit            *float64 `json:"budgetLimit,omitempty"`
+	BudgetLabel            *string  `json:"budgetLabel,omitempty"`
 	RemainingUsableBudget  *float64 `json:"remainingUsableBudget,omitempty"`
 	ProjectedMonthSpend    *float64 `json:"projectedMonthSpend,omitempty"`
+	ProjectedPeriodSpend   *float64 `json:"projectedPeriodSpend,omitempty"`
 	BudgetSpendStatus      *string  `json:"budgetSpendStatus,omitempty"` // on_track, overspending
 	TotalCalories          float64  `json:"totalCalories"`
 	AverageCaloriesPerMeal float64  `json:"averageCaloriesPerMeal"`

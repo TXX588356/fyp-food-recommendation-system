@@ -9,6 +9,7 @@ import {
   Modal,
   NumberInput,
   Select,
+  SegmentedControl,
   SimpleGrid,
   Stack,
   Text,
@@ -35,7 +36,10 @@ import {
   formatRM,
   getNextMonthKey,
   getPreviousMonthKey,
+  getWeekRangeForDate,
   groupLogsByDay,
+  parseDateKey,
+  shiftDateKeyByDays,
   sumCalories,
   sumPrice,
   toDateTimeLocalValue,
@@ -44,7 +48,7 @@ import {
 import './MealLogPage.css'
 import { FiCheck } from 'react-icons/fi'
 import MealLogReportPanel from './MealLogReportPanel'
-import { Pencil, Trash2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
@@ -54,6 +58,9 @@ const mealTypeOptions = [
   { value: 'dinner', label: 'Dinner' },
   { value: 'other', label: 'Other' },
 ]
+
+type ReportPeriodMode = 'month' | 'week'
+const defaultReportWeekRange = getWeekRangeForDate(new Date())
 
 export default function MealLogPage() {
   // State
@@ -73,6 +80,9 @@ export default function MealLogPage() {
   const [isDeleting, setIsDeleting] = useState(false)
 
   const [report, setReport] = useState<MealLogReportResponse | null>(null)
+  const [reportPeriod, setReportPeriod] = useState<ReportPeriodMode>('month')
+  const [reportWeekStart, setReportWeekStart] = useState(defaultReportWeekRange.start)
+  const [reportWeekEnd, setReportWeekEnd] = useState(defaultReportWeekRange.end)
   const [isReportOpen, setIsReportOpen] = useState(false)
   const [isReportLoading, setIsReportLoading] = useState(false)
   const [reportError, setReportError] = useState<string | null>(null)
@@ -87,7 +97,9 @@ export default function MealLogPage() {
       const response = await axios.get<MealLogReportResponse>(
         `${API_BASE_URL}/meal-logs/report`,
         {
-          params: { month },
+          params: reportPeriod === 'week'
+            ? { period: reportPeriod, month, weekStart: reportWeekStart, weekEnd: reportWeekEnd }
+            : { period: reportPeriod, month },
           headers: {
             Authorization: `Bearer ${token}`,
           }
@@ -103,13 +115,13 @@ export default function MealLogPage() {
     } finally {
       setIsReportLoading(false)
     }
-  }, [month])
+  }, [month, reportPeriod, reportWeekStart, reportWeekEnd])
 
   useEffect(() => {
     setReport(null)
     setIsReportOpen(false)
     setReportError(null)
-  }, [month])
+  }, [month, reportPeriod, reportWeekStart, reportWeekEnd])
 
   const loadLogs = useCallback(async (signal?: AbortSignal) => {
     const token = localStorage.getItem('token')
@@ -283,6 +295,43 @@ export default function MealLogPage() {
     ([left], [right]) => Number(right) - Number(left),
   )
   const canGenerateReport = (data?.items.length ?? 0) > 0
+  const canGenerateSelectedReport =
+    reportPeriod === 'week'
+      ? reportWeekStart.length > 0 && reportWeekEnd.length > 0
+      : canGenerateReport
+
+  const updateReportWeekStart = (value: string) => {
+    setReportWeekStart(value)
+
+    if (!value || !reportWeekEnd || parseDateKey(reportWeekEnd) < parseDateKey(value)) {
+      setReportWeekEnd(value)
+      return
+    }
+
+    const maxEnd = shiftDateKeyByDays(value, 6)
+    if (parseDateKey(reportWeekEnd) > parseDateKey(maxEnd)) {
+      setReportWeekEnd(maxEnd)
+    }
+  }
+
+  const updateReportWeekEnd = (value: string) => {
+    setReportWeekEnd(value)
+
+    if (!value || !reportWeekStart || parseDateKey(value) < parseDateKey(reportWeekStart)) {
+      setReportWeekStart(value)
+      return
+    }
+
+    const minStart = shiftDateKeyByDays(value, -6)
+    if (parseDateKey(reportWeekStart) < parseDateKey(minStart)) {
+      setReportWeekStart(minStart)
+    }
+  }
+
+  const shiftReportWeekRange = (days: number) => {
+    setReportWeekStart((current) => shiftDateKeyByDays(current, days))
+    setReportWeekEnd((current) => shiftDateKeyByDays(current, days))
+  }
 
   return (
     <Box className='ui-settings-page ui-meal-log-page'>
@@ -362,8 +411,8 @@ export default function MealLogPage() {
 
               <Group justify="space-between" className="ui-meal-log-report-actions">
                 <Box>
-                  <Text fw={900}>Monthly report</Text>
-                  {data.items.length === 0 && (
+                  <Text fw={900}>{reportPeriod === 'week' ? 'Weekly report' : 'Monthly report'}</Text>
+                  {reportPeriod === 'month' && data.items.length === 0 && (
                     <Text size="sm" className="ui-field-copy">
                       Add at least one meal log for this month to generate a report.
                     </Text>
@@ -375,14 +424,72 @@ export default function MealLogPage() {
                   )}
                 </Box>
 
-                <Button
-                  className="ui-primary-button"
-                  loading={isReportLoading}
-                  disabled={!canGenerateReport}
-                  onClick={generateReport}
-                >
-                  Generate report
-                </Button>
+                <Group className="ui-meal-log-report-controls" gap="sm">
+                  <SegmentedControl
+                    className="ui-meal-log-report-period-toggle"
+                    value={reportPeriod}
+                    onChange={(value) => setReportPeriod(value as ReportPeriodMode)}
+                    data={[
+                      { value: 'month', label: 'Month' },
+                      { value: 'week', label: 'Week' },
+                    ]}
+                  />
+
+                  {reportPeriod === 'week' && (
+                    <Group className="ui-meal-log-report-week-range" gap={6}>
+                      <ActionIcon
+                        variant="subtle"
+                        className="ui-meal-log-report-week-shift"
+                        aria-label="Previous week"
+                        onClick={() => shiftReportWeekRange(-7)}
+                      >
+                        <ChevronLeft size={16} />
+                      </ActionIcon>
+
+                      <TextInput
+                        className="ui-meal-log-report-week-input"
+                        type="date"
+                        aria-label="Weekly report start date"
+                        value={reportWeekStart}
+                        onChange={(event) => updateReportWeekStart(event.currentTarget.value)}
+                        classNames={{
+                          input: 'ui-input',
+                        }}
+                      />
+
+                      <Text size="sm" className="ui-meal-log-report-week-separator">to</Text>
+
+                      <TextInput
+                        className="ui-meal-log-report-week-input"
+                        type="date"
+                        aria-label="Weekly report end date"
+                        value={reportWeekEnd}
+                        onChange={(event) => updateReportWeekEnd(event.currentTarget.value)}
+                        classNames={{
+                          input: 'ui-input',
+                        }}
+                      />
+
+                      <ActionIcon
+                        variant="subtle"
+                        className="ui-meal-log-report-week-shift"
+                        aria-label="Next week"
+                        onClick={() => shiftReportWeekRange(7)}
+                      >
+                        <ChevronRight size={16} />
+                      </ActionIcon>
+                    </Group>
+                  )}
+
+                  <Button
+                    className="ui-primary-button"
+                    loading={isReportLoading}
+                    disabled={!canGenerateSelectedReport}
+                    onClick={generateReport}
+                  >
+                    Generate report
+                  </Button>
+                </Group>
               </Group>
 
               {report && (

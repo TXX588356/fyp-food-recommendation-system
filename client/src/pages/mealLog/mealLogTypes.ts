@@ -55,6 +55,7 @@ export type ReportPeriod = {
     start: string
     end: string
     label: string
+    kind: 'month' | 'week'
 }
 
 export type ReportSummary = {
@@ -64,8 +65,11 @@ export type ReportSummary = {
     averagePricePerMeal: number
     averageDailySpend: number
     monthlyMealBudget?: number
+    budgetLimit?: number
+    budgetLabel?: string
     remainingUsableBudget?: number
     projectedMonthSpend?: number
+    projectedPeriodSpend?: number
     budgetSpendStatus?: 'on_track' | 'overspending'
     totalCalories: number
     averageCaloriesPerMeal: number

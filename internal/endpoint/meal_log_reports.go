@@ -45,8 +45,12 @@ func (h *mealLogReportHandler) getMonthReport(c *echo.Context) error {
 	}
 
 	month := strings.TrimSpace(c.QueryParam("month"))
+	week := strings.TrimSpace(c.QueryParam("week"))
+	weekStart := strings.TrimSpace(c.QueryParam("weekStart"))
+	weekEnd := strings.TrimSpace(c.QueryParam("weekEnd"))
+	period := strings.TrimSpace(c.QueryParam("period"))
 
-	report, err := h.reportService.GenerateMonth(c.Request().Context(), userID, month)
+	report, err := h.reportService.Generate(c.Request().Context(), userID, period, month, week, weekStart, weekEnd)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"error": err.Error(),

@@ -51,15 +51,19 @@ const formatShortNumber = (value: number) => {
 }
 
 const buildBudgetOutlook = (summary: MealLogReportResponse['summary']) => {
+  const budgetLimit = summary.budgetLimit ?? summary.monthlyMealBudget
+  const projectedSpend = summary.projectedPeriodSpend ?? summary.projectedMonthSpend
+  const budgetLabel = summary.budgetLabel ?? 'monthly budget'
+
   if (
-    summary.monthlyMealBudget === undefined ||
-    summary.projectedMonthSpend === undefined ||
+    budgetLimit === undefined ||
+    projectedSpend === undefined ||
     summary.budgetSpendStatus === undefined
   ) {
     return null
   }
 
-  const projectedDifference = Math.abs(summary.monthlyMealBudget - summary.projectedMonthSpend)
+  const projectedDifference = Math.abs(budgetLimit - projectedSpend)
   const isOverspending = summary.budgetSpendStatus === 'overspending'
 
   return {
@@ -68,7 +72,7 @@ const buildBudgetOutlook = (summary: MealLogReportResponse['summary']) => {
     headline: isOverspending
       ? `${formatRM(projectedDifference)} over budget`
       : `${formatRM(projectedDifference)} under budget`,
-    detail: `${formatRM(summary.projectedMonthSpend)} projected of ${formatRM(summary.monthlyMealBudget)} budget.`,
+    detail: `${formatRM(projectedSpend)} projected of ${formatRM(budgetLimit)} ${budgetLabel}.`,
   }
 }
 
