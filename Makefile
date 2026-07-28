@@ -10,8 +10,9 @@ POSTGRES_CONTAINER ?= fyp-postgres
 CATALOG_DATA_DUMP ?= data/catalog-data.sql
 CATALOG_DUMP_TABLES := meal_categories prebuilt_meals
 MIGRATION_FILES := $(sort $(wildcard db/migrations/*.up.sql))
+GO_CACHE_DIR ?= $(CURDIR)/out/go-build-cache
 
-.PHONY: dev-env-start dev dev-client dev-start generate dev-migrate migrate-up catalog-dump catalog-seed
+.PHONY: dev-env-start dev dev-client dev-start generate dev-migrate migrate-up catalog-dump catalog-seed test
 
 dev-env-start:
 	@if podman container exists $(POSTGRES_CONTAINER); then \
@@ -109,3 +110,12 @@ catalog-seed:
 $(MOCKERY_STAMP):
 	GOBIN=$(CURDIR)/bin go install github.com/vektra/mockery/v3@$(MOCKERY_VERSION)
 	touch $(MOCKERY_STAMP)
+
+
+out:
+	mkdir -p out $(GO_CACHE_DIR)
+
+test: export ENVIRONMENT := TEST
+test: out
+	@packages="$$(GOCACHE="$(GO_CACHE_DIR)" go list ./... | grep -v '^fyp/food-rs/client/')" ; \
+	GOCACHE="$(GO_CACHE_DIR)" go test $$packages -vet=all -failfast -timeout=30s -coverprofile out/coverage.out
