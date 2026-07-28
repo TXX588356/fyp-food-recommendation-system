@@ -50,10 +50,48 @@ const formatShortNumber = (value: number) => {
 }
 
 const formatMinutesAsTime = (minutes: number) => {
-  const hour = Math.floor(minutes / 60)
-  const minute = minutes % 60
+  if (!Number.isFinite(minutes)) {
+    return ''
+  }
+
+  const roundedMinutes = Math.round(minutes)
+  const hour = Math.floor(roundedMinutes / 60)
+  const minute = roundedMinutes % 60
 
   return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
+}
+
+type MealTimingTooltipPayload = {
+  payload?: {
+    name: string
+    count: number
+    usualTime: string
+  }
+}
+
+const MealTimingTooltip = ({
+  active,
+  payload,
+}: {
+  active?: boolean
+  payload?: MealTimingTooltipPayload[]
+}) => {
+  if (!active || !payload || payload.length === 0) {
+    return null
+  }
+
+  const item = payload[0]?.payload
+  if (!item) {
+    return null
+  }
+
+  return (
+    <Box className="ui-card" p="sm">
+      <Text size="sm" fw={900}>{item.name}</Text>
+      <Text size="sm">Usual time: {item.usualTime}</Text>
+      <Text size="xs" className="ui-field-copy">{item.count} logs</Text>
+    </Box>
+  )
 }
 
 const EmptyReportState = ({ message }: { message: string }) => (
@@ -228,14 +266,7 @@ export default function MealLogReportPanel({
                         />
                         <Tooltip
                           cursor={{ strokeDasharray: '3 3' }}
-                          formatter={(value) => [
-                            formatMinutesAsTime(Number(value)),
-                            'Usual time',
-                          ]}
-                          labelFormatter={(_, payload) => {
-                            const item = payload?.[0]?.payload
-                            return item ? `${item.name} from ${item.count} logs` : ''
-                          }}
+                          content={<MealTimingTooltip />}
                         />
                         <Scatter data={timeChartData} fill="#e78b00">
                           <LabelList dataKey="usualTime" position="top" />
