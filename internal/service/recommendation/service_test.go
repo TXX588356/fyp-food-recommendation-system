@@ -30,6 +30,11 @@ type testMealLogRepository struct {
 	err  error
 }
 
+type testCustomMealRepository struct {
+	meal *model.CustomMealItem
+	err  error
+}
+
 type testCandidateSearchCall struct {
 	userID  uuid.UUID
 	queries []string
@@ -169,6 +174,30 @@ func (r *testMealLogRepository) Delete(context.Context, uuid.UUID, uuid.UUID) er
 	return nil
 }
 
+func (r *testCustomMealRepository) Create(context.Context, *model.CustomMealItem) (*model.CustomMealItem, error) {
+	return nil, nil
+}
+
+func (r *testCustomMealRepository) ListOwnedByUser(context.Context, uuid.UUID, string) ([]model.CustomMealItem, error) {
+	return nil, nil
+}
+
+func (r *testCustomMealRepository) ListSharedFromOtherUsers(context.Context, uuid.UUID, string) ([]model.CustomMealItem, error) {
+	return nil, nil
+}
+
+func (r *testCustomMealRepository) FindVisibleByID(context.Context, uuid.UUID, uuid.UUID) (*model.CustomMealItem, error) {
+	return r.meal, r.err
+}
+
+func (r *testCustomMealRepository) UpdateOwned(context.Context, uuid.UUID, *model.CustomMealItem) (*model.CustomMealItem, error) {
+	return nil, nil
+}
+
+func (r *testCustomMealRepository) DeleteOwned(context.Context, uuid.UUID, uuid.UUID) error {
+	return nil
+}
+
 func (s *testCatalogService) CreateGeneratedMeal(ctx context.Context, input interfaces.GeneratedCatalogMealInput) (interfaces.CatalogMeal, error) {
 	s.createdInput = &input
 	if s.createErr != nil {
@@ -248,6 +277,7 @@ var _ = Describe("Recommendation candidate generation", func() {
 			catalogService,
 			customMealAutocompleter,
 			&testMealLogRepository{},
+			&testCustomMealRepository{},
 			&testPreferenceService{},
 			&testMealDetailExplainer{},
 			&testRestaurantSearcher{},
@@ -692,6 +722,7 @@ var _ = Describe("Recommendation meal detail", func() {
 			catalogService,
 			mocks.NewCustomMealAutocompleter(GinkgoT()),
 			&testMealLogRepository{},
+			&testCustomMealRepository{},
 			&testPreferenceService{},
 			explainer,
 			&testRestaurantSearcher{},
@@ -718,6 +749,106 @@ var _ = Describe("Recommendation meal detail", func() {
 		Expect(result.Meal.ServingDescription).To(Equal("1 bowl (350g)"))
 		Expect(explainer.input).NotTo(BeNil())
 		Expect(explainer.input.MealName).To(Equal("Chicken Rice"))
+	})
+
+	It("should include a custom meal restaurant when its state matches the current location state", func() {
+		ctx := context.Background()
+		userID := uuid.New()
+		mealID := uuid.MustParse("55555555-5555-5555-5555-555555555555")
+		customMealRepository := &testCustomMealRepository{
+			meal: &model.CustomMealItem{
+				ID:             mealID,
+				Name:           "Custom Chicken Rice",
+				State:          "Selangor",
+				District:       "Shah Alam",
+				RestaurantName: "User Chicken Shop",
+			},
+		}
+		svc := NewService(
+			mocks.NewMealGenerator(GinkgoT()),
+			&testCandidateSearcher{},
+			&testMatchAdjudicator{},
+			newTestCatalogService(),
+			mocks.NewCustomMealAutocompleter(GinkgoT()),
+			&testMealLogRepository{},
+			customMealRepository,
+			&testPreferenceService{},
+			&testMealDetailExplainer{},
+			&testRestaurantSearcher{},
+		).(*service)
+
+		result, err := svc.BuildMealDetail(ctx, userID, interfaces.MealDetailInput{
+			MealCategory: "lunch",
+			Location:     "Kajang, Selangor",
+			Candidate: interfaces.MatchedMealCandidate{
+				GeneratedMeal: interfaces.GeneratedMeal{
+					EstimatedPriceRange: interfaces.PriceRange{Min: 8, Max: 12},
+				},
+				Food: interfaces.FoodSearchResult{
+					ID:       mealID.String(),
+					Name:     "Custom Chicken Rice",
+					Source:   "custom",
+					Calories: 500,
+					FatG:     12,
+					ProteinG: 28,
+					CarbsG:   60,
+				},
+			},
+		})
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result.Restaurants).To(HaveLen(1))
+		Expect(result.Restaurants[0].Name).To(Equal("User Chicken Shop"))
+		Expect(result.Restaurants[0].Source).To(Equal("user_recommended"))
+	})
+
+	It("should exclude a custom meal restaurant when its state does not match the current location state", func() {
+		ctx := context.Background()
+		userID := uuid.New()
+		mealID := uuid.MustParse("66666666-6666-6666-6666-666666666666")
+		customMealRepository := &testCustomMealRepository{
+			meal: &model.CustomMealItem{
+				ID:             mealID,
+				Name:           "Sabah Custom Meal",
+				State:          "Sabah",
+				District:       "Kota Kinabalu",
+				RestaurantName: "Sabah Food Place",
+			},
+		}
+		svc := NewService(
+			mocks.NewMealGenerator(GinkgoT()),
+			&testCandidateSearcher{},
+			&testMatchAdjudicator{},
+			newTestCatalogService(),
+			mocks.NewCustomMealAutocompleter(GinkgoT()),
+			&testMealLogRepository{},
+			customMealRepository,
+			&testPreferenceService{},
+			&testMealDetailExplainer{},
+			&testRestaurantSearcher{},
+		).(*service)
+
+		result, err := svc.BuildMealDetail(ctx, userID, interfaces.MealDetailInput{
+			MealCategory: "lunch",
+			Location:     "Kajang, Selangor",
+			Candidate: interfaces.MatchedMealCandidate{
+				GeneratedMeal: interfaces.GeneratedMeal{
+					EstimatedPriceRange: interfaces.PriceRange{Min: 8, Max: 12},
+				},
+				Food: interfaces.FoodSearchResult{
+					ID:       mealID.String(),
+					Name:     "Sabah Custom Meal",
+					Source:   "custom",
+					Calories: 500,
+					FatG:     12,
+					ProteinG: 28,
+					CarbsG:   60,
+				},
+			},
+		})
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result.Restaurants).To(BeEmpty())
 	})
 })
 

@@ -95,7 +95,7 @@ export type MealDetailResponse = {
 }
 
 export type RestaurantResult = {
-	name: string
+  name: string
   address: string
   rating: number
   reviewCount: number
@@ -103,4 +103,5 @@ export type RestaurantResult = {
   openNow?: boolean
   thumbnailUrl?: string
   sourceUrl?: string
+  source?: 'external' | 'user_recommended'
 }

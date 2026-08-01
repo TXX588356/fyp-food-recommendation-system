@@ -40,6 +40,7 @@ type restaurantResponse struct {
 	OpenNow      *bool   `json:"openNow,omitempty"`
 	ThumbnailURL string  `json:"thumbnailUrl,omitempty"`
 	SourceURL    string  `json:"sourceUrl,omitempty"`
+	Source       string  `json:"source,omitempty"`
 }
 
 type mealDetailMealResponse struct {
@@ -267,6 +268,7 @@ func buildRestaurantResponses(restaurants []interfaces.RestaurantResult) []resta
 			OpenNow:      restaurant.OpenNow,
 			ThumbnailURL: restaurant.ThumbnailURL,
 			SourceURL:    restaurant.SourceURL,
+			Source:       restaurant.Source,
 		})
 	}
 

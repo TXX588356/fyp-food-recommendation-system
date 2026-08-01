@@ -215,6 +215,7 @@ func (h *mealSearchHandler) getMealDetail(c *echo.Context) error {
 	}
 
 	var meal manualMealDetailMealResponse
+	var customMeal *interfaces.CustomMealResponse
 
 	switch source {
 	case "prebuilt":
@@ -231,7 +232,7 @@ func (h *mealSearchHandler) getMealDetail(c *echo.Context) error {
 		}
 		meal = manualPrebuiltMealDetail(catalogMeal)
 	case "custom":
-		customMeal, err := h.customMealService.FindVisibleByID(c.Request().Context(), userID, mealID)
+		customMeal, err = h.customMealService.FindVisibleByID(c.Request().Context(), userID, mealID)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return c.JSON(http.StatusNotFound, map[string]string{
@@ -251,6 +252,21 @@ func (h *mealSearchHandler) getMealDetail(c *echo.Context) error {
 
 	locationOverride := strings.TrimSpace(c.QueryParam("location"))
 	location, basis, restaurants, status := h.lookupManualMealRestaurants(c.Request().Context(), userID, meal.Name, locationOverride)
+
+	if customMeal != nil && customMealStateMatchesLocation(customMeal.State, location) {
+		if restaurantName := strings.TrimSpace(customMeal.RestaurantName); restaurantName != "" {
+			customRestaurant := restaurantResponse{
+				Name: restaurantName,
+				Address: strings.TrimSpace(strings.Join([]string{
+					customMeal.District,
+					customMeal.State,
+				}, ", ")),
+				Source: "user_recommended",
+			}
+
+			restaurants = append([]restaurantResponse{customRestaurant}, restaurants...)
+		}
+	}
 
 	return c.JSON(http.StatusOK, manualMealDetailResponse{
 		Meal: meal,
@@ -343,6 +359,34 @@ func (h *mealSearchHandler) lookupManualMealRestaurants(ctx context.Context, use
 	}
 
 	return location, basis, buildRestaurantResponses(result.Restaurants), result.Status
+}
+
+func customMealStateMatchesLocation(mealState string, currentLocation string) bool {
+	mealState = normalizeCustomMealState(mealState)
+	if mealState == "" {
+		return false
+	}
+
+	locationState := normalizeCustomMealState(extractStateFromLocation(currentLocation))
+	return mealState == locationState
+}
+
+func extractStateFromLocation(location string) string {
+	location = strings.TrimSpace(location)
+	if location == "" {
+		return ""
+	}
+
+	separatorIndex := strings.LastIndex(location, ",")
+	if separatorIndex == -1 {
+		return location
+	}
+
+	return location[separatorIndex+1:]
+}
+
+func normalizeCustomMealState(value string) string {
+	return strings.ToLower(strings.Join(strings.Fields(value), " "))
 }
 
 func float64Value(value *float64) float64 {

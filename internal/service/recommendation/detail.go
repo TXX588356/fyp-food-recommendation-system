@@ -90,6 +90,50 @@ func (s *service) BuildMealDetail(ctx context.Context, userID uuid.UUID, input i
 		)
 	}
 
+	if candidate.Food.Source == "custom" {
+		// get location from custom meal data
+		mealID, err := uuid.Parse(strings.TrimSpace(candidate.Food.ID))
+		if err != nil {
+			return interfaces.MealDetailResult{}, err
+		}
+
+		// check if the restaurant name for that custom meal is empty or not
+		// if not empty, add it to the Restaurants
+		customMealItem, err := s.customMealRepository.FindVisibleByID(ctx, userID, mealID)
+		if err != nil {
+			return interfaces.MealDetailResult{}, err
+		}
+
+		restaurants := restaurantResult.Restaurants
+
+		if restaurantName := strings.TrimSpace(customMealItem.RestaurantName); restaurantName != "" &&
+			customMealStateMatchesLocation(customMealItem.State, explanationInput.Location) {
+			customRestaurant := interfaces.RestaurantResult{
+				Name: restaurantName,
+				Address: strings.TrimSpace(
+					strings.Join([]string{
+						customMealItem.District,
+						customMealItem.State,
+					}, ", "),
+				),
+				Source: "user_recommended",
+			}
+
+			restaurants = append([]interfaces.RestaurantResult{customRestaurant}, restaurants...)
+		}
+
+		return interfaces.MealDetailResult{
+			Meal:                      buildMealDetailMeal(input.MealCategory, candidate),
+			RecommendationExplanation: explanation,
+			Location: interfaces.MealDetailLocation{
+				Query: explanationInput.Location,
+				Basis: explanationInput.LocationBasis,
+			},
+			Restaurants:            restaurants,
+			RestaurantLookupStatus: restaurantResult.Status,
+		}, nil
+	}
+
 	return interfaces.MealDetailResult{
 		Meal:                      buildMealDetailMeal(input.MealCategory, candidate),
 		RecommendationExplanation: explanation,
@@ -100,7 +144,34 @@ func (s *service) BuildMealDetail(ctx context.Context, userID uuid.UUID, input i
 		Restaurants:            restaurantResult.Restaurants,
 		RestaurantLookupStatus: restaurantResult.Status,
 	}, nil
+}
 
+func customMealStateMatchesLocation(mealState string, currentLocation string) bool {
+	mealState = normalizeCustomMealState(mealState)
+	if mealState == "" {
+		return false
+	}
+
+	locationState := normalizeCustomMealState(extractStateFromLocation(currentLocation))
+	return mealState == locationState
+}
+
+func extractStateFromLocation(location string) string {
+	location = strings.TrimSpace(location)
+	if location == "" {
+		return ""
+	}
+
+	separatorIndex := strings.LastIndex(location, ",")
+	if separatorIndex == -1 {
+		return location
+	}
+
+	return location[separatorIndex+1:]
+}
+
+func normalizeCustomMealState(value string) string {
+	return strings.ToLower(strings.Join(strings.Fields(value), " "))
 }
 
 func (s *service) hydrateMealDetailCandidate(

@@ -337,4 +337,40 @@ var _ = Describe("Meal search endpoints", func() {
 		Expect(location["query"]).To(Equal("Bangsar, Kuala Lumpur"))
 		Expect(location["basis"]).To(Equal("selected"))
 	})
+
+	It("should hide a manual custom meal restaurant when the selected state does not match", func() {
+		preferenceService := mocks.NewPreferenceService(GinkgoT())
+		restaurantSearcher := &fakeRestaurantSearcher{
+			result: interfaces.RestaurantSearchResult{
+				Status:      interfaces.RestaurantLookupOK,
+				Restaurants: []interfaces.RestaurantResult{},
+			},
+		}
+		mealID := uuid.New()
+
+		customMealService.EXPECT().
+			FindVisibleByID(mock.Anything, userID, mealID).
+			Return(&interfaces.CustomMealResponse{
+				ID:             mealID.String(),
+				Name:           "Sabah Custom Meal",
+				State:          "Sabah",
+				District:       "Kota Kinabalu",
+				RestaurantName: "Sabah Food Place",
+				Calories:       500,
+			}, nil).
+			Once()
+
+		e = echo.New()
+		registerMealDetailTestRoutes(e, customMealService, catalogService, preferenceService, restaurantSearcher, jwtSecret)
+
+		response := performMealSearchRequest(e, "/meals/custom/"+mealID.String()+"?location=Kajang%2C%20Selangor", token)
+
+		Expect(response.Code).To(Equal(http.StatusOK))
+
+		var result map[string]any
+		Expect(json.Unmarshal(response.Body.Bytes(), &result)).To(Succeed())
+
+		restaurants := result["restaurants"].([]any)
+		Expect(restaurants).To(BeEmpty())
+	})
 })

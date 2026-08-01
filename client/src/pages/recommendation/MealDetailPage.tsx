@@ -118,6 +118,11 @@ export function RestaurantCard({ restaurant }: { restaurant: RestaurantResult })
 							{restaurant.openNow ? 'Open' : 'Closed'}
 						</Badge>
 					)}
+					{restaurant.source === 'user_recommended' &&( 
+						<Badge variant='light' color='yellow'>
+							User recommended
+						</Badge>
+					)}
 				</Group>
 
 				{restaurant.sourceUrl && (
@@ -448,7 +453,7 @@ export default function MealDetailPage() {
 											</Text>
 										)}
 
-										{detail.restaurantLookupStatus === 'ok' && detail.restaurants.length > 0 && (
+										{detail.restaurants.length > 0 && (
 											<Stack gap="sm">
 												{detail.restaurants.map((restaurant) => (
 													<RestaurantCard restaurant={restaurant} key={`${restaurant.name}-${restaurant.address}`}/>
@@ -456,11 +461,11 @@ export default function MealDetailPage() {
 											</Stack>
 										)}
 
-										{detail.restaurantLookupStatus === 'no_results' && (
+										{detail.restaurants.length === 0 && detail.restaurantLookupStatus === 'no_results' && (
 											<Text className='ui-field-copy'>No nearby restaurant matches found.</Text>
 										)}
 
-										{detail.restaurantLookupStatus === 'unavailable' && (
+										{detail.restaurants.length === 0 && detail.restaurantLookupStatus === 'unavailable' && (
 											<Text className='ui-field-copy'>Restaurant lookup is unavailable right now.</Text>
 										)}
 									</Box>
