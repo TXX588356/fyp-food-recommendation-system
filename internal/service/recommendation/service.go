@@ -28,6 +28,7 @@ type service struct {
 	mealDetailExplainer     interfaces.MealDetailExplainer
 	customMealAutocompleter interfaces.CustomMealAutocompleter
 	mealLogRepository       interfaces.MealLogRepository
+	customMealRepository    interfaces.CustomMealRepository
 	restaurantSearcher      interfaces.RestaurantSearcher
 	now                     func() time.Time
 
@@ -58,6 +59,7 @@ func NewService(
 	catalogService interfaces.CatalogService,
 	customMealAutocompleter interfaces.CustomMealAutocompleter,
 	mealLogRepository interfaces.MealLogRepository,
+	customMealRepository interfaces.CustomMealRepository,
 	preferenceService interfaces.PreferenceService,
 	mealDetailExplainer interfaces.MealDetailExplainer,
 	restaurantSearcher interfaces.RestaurantSearcher,
@@ -69,6 +71,7 @@ func NewService(
 		catalogService:          catalogService,
 		customMealAutocompleter: customMealAutocompleter,
 		mealLogRepository:       mealLogRepository,
+		customMealRepository:    customMealRepository,
 		preferenceService:       preferenceService,
 		mealDetailExplainer:     mealDetailExplainer,
 		autoCreateLimiter:       make(chan struct{}, 2),

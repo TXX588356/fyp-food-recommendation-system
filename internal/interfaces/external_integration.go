@@ -154,6 +154,7 @@ type RestaurantResult struct {
 	OpenNow      *bool
 	ThumbnailURL string
 	SourceURL    string
+	Source       string
 }
 
 type MealGenerator interface {

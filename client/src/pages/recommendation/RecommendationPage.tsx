@@ -307,6 +307,11 @@ function DynamicLocationSelect({
       .map((district) => ({ value: district, label: district }))
   }, [cities, selectedLocation.state])
 
+  const selectedLocationValue = formatLocation(selectedLocation)
+  const selectedSavedLocationValue = savedLocations.some((location) => location.value === selectedLocationValue)
+    ? selectedLocationValue
+    : null
+
   return (
     <Box className='ui-recommendation-location'>
       <Group className='ui-recommendation-location-title' gap={6}>
@@ -319,7 +324,7 @@ function DynamicLocationSelect({
           label='Saved'
           placeholder='Use saved location'
           data={savedLocations}
-          value={formatLocation(selectedLocation)}
+          value={selectedSavedLocationValue}
           size="xs"
           onChange={(value) => {
             if (!value) return

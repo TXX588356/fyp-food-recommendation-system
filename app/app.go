@@ -223,6 +223,7 @@ func (a *App) GetRecommendationService(ctx context.Context) (interfaces.Recommen
 	}
 
 	mealLogRepo := postgres.NewMealLogPostgresRepository(a.PostgresDB)
+	customMealRepo := postgres.NewCustomMealPostgresRepository(a.PostgresDB)
 
 	mealGenerator, err := a.GetAIClient(ctx)
 	if err != nil {
@@ -264,6 +265,7 @@ func (a *App) GetRecommendationService(ctx context.Context) (interfaces.Recommen
 		catalogSvc,
 		customMealAutocompleter,
 		mealLogRepo,
+		customMealRepo,
 		preferenceService,
 		mealGenerator,
 		restaurantSearcher,
