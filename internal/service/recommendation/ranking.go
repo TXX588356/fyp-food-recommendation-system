@@ -97,18 +97,35 @@ func budgetFitScore(minPrice, maxPrice, perMealBudget float64) float64 {
 		return 20
 	}
 
-	price := maxPrice
+	price := expectedBudgetPrice(minPrice, maxPrice)
 	if price <= 0 {
-		price = minPrice
+		return 20
 	}
+
 	ratio := price / perMealBudget
 	if ratio <= 1 {
 		return 20
 	}
-	if ratio <= 1.2 {
-		return 20 * (1 - ((ratio - 1) / 0.2))
+	if ratio <= 1.25 {
+		return 20 - ((ratio - 1) / 0.25 * 12)
+	}
+	if ratio <= 1.5 {
+		return 8 * (1 - ((ratio - 1.25) / 0.25))
 	}
 	return 0
+}
+
+func expectedBudgetPrice(minPrice, maxPrice float64) float64 {
+	if maxPrice <= 0 {
+		return minPrice
+	}
+
+	if minPrice <= 0 || minPrice > maxPrice {
+		return maxPrice
+	}
+
+	midpoint := (minPrice + maxPrice) / 2
+	return maxPrice*0.7 + midpoint*0.3
 }
 
 func recencyPenaltyScore(name string, history interfaces.MealHistoryContext) float64 {

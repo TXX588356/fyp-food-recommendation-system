@@ -67,6 +67,7 @@ RULES:
 - Explain the 2 strongest reasons this specific food makes sense for this user.
 - If nutrition matters, interpret it in plain language instead of repeating exact macro values.
 - If budget matters, explain whether it is comfortably within budget, slightly above target, or a reasonable tradeoff. Do not repeat every budget number.
+- When judging budget fit, compare the upper end of the estimated price range against the per-meal budget. Only call it comfortably within budget if the upper end is at or below the per-meal budget.
 - If there is a concern or tradeoff, mention it honestly and briefly.
 - Mention at most one budget point and one health point.
 - Prefer concrete food descriptions over generic praise.

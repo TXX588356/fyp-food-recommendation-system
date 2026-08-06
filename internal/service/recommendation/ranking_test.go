@@ -88,4 +88,24 @@ var _ = Describe("recommendation ranking", func() {
 
 		Expect(got[0].Food.ID).To(Equal("new_food"))
 	})
+
+	Describe("budgetFitScore", func() {
+		It("should keep partial budget credit for a modestly over-budget price range", func() {
+			got := budgetFitScore(8.5, 12.5, 10.13)
+
+			Expect(got).To(BeNumerically("~", 11.61, 0.01))
+		})
+
+		It("should keep a floor score at twenty-five percent over budget", func() {
+			got := budgetFitScore(12.5, 12.5, 10)
+
+			Expect(got).To(Equal(float64(8)))
+		})
+
+		It("should return zero at fifty percent over budget", func() {
+			got := budgetFitScore(15, 15, 10)
+
+			Expect(got).To(Equal(float64(0)))
+		})
+	})
 })
