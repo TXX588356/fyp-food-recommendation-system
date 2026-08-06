@@ -61,6 +61,25 @@ var _ = Describe("Gemini meal generation", func() {
 		})
 	})
 
+	Describe("BuildMealDetailExplanationPrompt", func() {
+		It("should anchor budget wording to the upper end of the price range", func() {
+			prompt := BuildMealDetailExplanationPrompt(interfaces.MealDetailExplanationInput{
+				MealName:     "Braised Pork Rice",
+				MealCategory: "lunch",
+				PriceRange: interfaces.PriceRange{
+					Min: 8.5,
+					Max: 12.5,
+				},
+				PerMealBudget: 10.13,
+			})
+
+			Expect(prompt).To(ContainSubstring("Estimated price range: RM8.50 - RM12.50"))
+			Expect(prompt).To(ContainSubstring("Per-meal budget: RM10.13"))
+			Expect(prompt).To(ContainSubstring("compare the upper end of the estimated price range against the per-meal budget"))
+			Expect(prompt).To(ContainSubstring("Only call it comfortably within budget if the upper end is at or below the per-meal budget"))
+		})
+	})
+
 	Describe("ParseMeals", func() {
 		It("should accept a valid JSON response", func() {
 			response := `{
