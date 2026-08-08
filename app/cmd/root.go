@@ -11,9 +11,18 @@ var rootCmd = &cobra.Command{
 	Use:   "backend",
 	Short: "backend CLI",
 	Long:  "backend CLI Handler",
+}
+
+var serverCmd = &cobra.Command{
+	Use:   "server",
+	Short: "Run HTTP server",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return server.Run(cmd.Context())
 	},
+}
+
+func init() {
+	rootCmd.AddCommand(serverCmd)
 }
 
 func Execute(ctx context.Context) error {
