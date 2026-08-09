@@ -45,7 +45,7 @@ dev-env-start:
 		'mc alias set local http://${MINIO_ENDPOINT} ${MINIO_ACCESS_KEY} ${MINIO_SECRET_KEY} >/dev/null && mc mb --ignore-existing local/${MINIO_BUCKET}'
 
 dev:
-	go run main.go
+	go run main.go server
 
 dev-client:
 	pnpm -C client dev
