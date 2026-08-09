@@ -1,0 +1,29 @@
+server:
+  port: "8080"
+
+database:
+  host: localhost
+  port: 5433
+  name: fyp_food_recommendation
+  user: postgresdb
+  password: postgresdb
+
+security:
+  jwt_secret: <redacted>
+
+gemini:
+  api_key: <redacted>
+
+client:
+  dir: static
+
+object_storage:
+  endpoint: localhost:9000
+  access_key: <redacted>
+  secret_key: <redacted>
+  bucket: images
+  use_ssl: false
+  public_url: http://localhost:9000
+
+serpapi:
+  api_key: <redacted>
