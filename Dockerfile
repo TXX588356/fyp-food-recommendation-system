@@ -24,4 +24,4 @@ COPY --from=frontend /app/client/dist ./static
 
 EXPOSE 8080
 
-CMD ["./food-rs"]
+CMD ["./food-rs", "server]
