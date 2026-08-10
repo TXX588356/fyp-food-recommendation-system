@@ -22,25 +22,25 @@ var _ = Describe("Config", func() {
 	It("should load runtime config from config/config.yaml", func() {
 		root := useTempWorkingDir()
 		writeConfig(root, `
-server:
-  port: "9090"
-database:
-  url: postgres://yaml
-security:
-  jwt_secret: test-secret
-gemini:
-  api_key: test-gemini-key
-client:
-  dir: web
-object_storage:
-  endpoint: storage.example.com
-  access_key: access
-  secret_key: secret
-  bucket: meals
-  use_ssl: true
-  public_url: https://cdn.example.com
-serpapi:
-  api_key: serp
+			server:
+			port: "9090"
+			database:
+			url: postgres://yaml
+			security:
+			jwt_secret: test-secret
+			gemini:
+			api_key: test-gemini-key
+			client:
+			dir: web
+			object_storage:
+			endpoint: storage.example.com
+			access_key: access
+			secret_key: secret
+			bucket: meals
+			use_ssl: true
+			public_url: https://cdn.example.com
+			serpapi:
+			api_key: serp
 `)
 
 		cfg := Load()
@@ -48,7 +48,7 @@ serpapi:
 		Expect(cfg.Server.Port).To(Equal("9090"))
 		Expect(cfg.Database.URL).To(Equal("postgres://yaml"))
 		Expect(cfg.Security.JWTSecret).To(Equal("test-secret"))
-		Expect(cfg.AI.GeminiAPIKey).To(Equal("test-gemini-key"))
+		Expect(cfg.Gemini.APIKey).To(Equal("test-gemini-key"))
 		Expect(cfg.Client.Dir).To(Equal("web"))
 		Expect(cfg.ObjectStorage.Endpoint).To(Equal("storage.example.com"))
 		Expect(cfg.ObjectStorage.AccessKey).To(Equal("access"))
@@ -86,7 +86,7 @@ gemini:
 
 		cfg := Load()
 
-		Expect(cfg.AI.GeminiAPIKey).To(Equal("env-file-gemini-key"))
+		Expect(cfg.Gemini.APIKey).To(Equal("env-file-gemini-key"))
 	})
 
 	It("should find .env by walking up from a nested directory", func() {
@@ -102,7 +102,7 @@ gemini:
 
 		cfg := Load()
 
-		Expect(cfg.AI.GeminiAPIKey).To(Equal("nested-env-file-key"))
+		Expect(cfg.Gemini.APIKey).To(Equal("nested-env-file-key"))
 	})
 
 	It("should build database url from database parts when url is omitted", func() {
