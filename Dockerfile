@@ -19,16 +19,16 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN go build -o food-rs ./main.go
+RUN go build -o fyp-smart-meal ./main.go
 
 # runtime image
 FROM alpine:latest
 WORKDIR /app
 
-COPY --from=backend /app/food-rs ./food-rs
+COPY --from=backend /app/fyp-smart-meal ./fyp-smart-meal
 COPY --from=frontend /app/client/dist ./static
 COPY config ./config
 
 EXPOSE 8080
 
-CMD ["./food-rs", "server"]
+CMD ["./fyp-smart-meal", "server"]
