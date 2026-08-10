@@ -31,4 +31,4 @@ COPY config ./config
 
 EXPOSE 8080
 
-CMD ["./food-rs", "server"]
+CMD ["./fyp-smart-meal", "server"]
