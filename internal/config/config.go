@@ -31,8 +31,8 @@ type Config struct {
 		JWTSecret string `mapstructure:"jwt_secret"`
 	} `mapstructure:"security"`
 
-	AI struct {
-		GeminiAPIKey string `mapstructure:"api_key"`
+	Gemini struct {
+		APIKey string `mapstructure:"api_key"`
 	} `mapstructure:"gemini"`
 
 	Client struct {
@@ -116,7 +116,7 @@ func normalize(cfg *Config) {
 	cfg.Database.User = strings.TrimSpace(cfg.Database.User)
 	cfg.Database.Password = strings.TrimSpace(cfg.Database.Password)
 	cfg.Security.JWTSecret = strings.TrimSpace(cfg.Security.JWTSecret)
-	cfg.AI.GeminiAPIKey = strings.TrimSpace(cfg.AI.GeminiAPIKey)
+	cfg.Gemini.APIKey = strings.TrimSpace(cfg.Gemini.APIKey)
 	cfg.ObjectStorage.Endpoint = strings.TrimSpace(cfg.ObjectStorage.Endpoint)
 	cfg.ObjectStorage.AccessKey = strings.TrimSpace(cfg.ObjectStorage.AccessKey)
 	cfg.ObjectStorage.SecretKey = strings.TrimSpace(cfg.ObjectStorage.SecretKey)
