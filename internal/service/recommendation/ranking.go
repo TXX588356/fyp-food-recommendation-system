@@ -63,7 +63,7 @@ func scoreCandidate(candidate interfaces.MatchedMealCandidate, input interfaces.
 		candidate.GeneratedMeal.EstimatedPriceRange.Max,
 		input.PerMealBudget,
 	)
-	recencyPenalty := recencyPenaltyScore(candidate.Food.Name, history)
+	recencyPenalty := recencyPenaltyScore(candidate.Food.Name, candidate.Food.Tags, history)
 	preference := preferenceScore(candidate.Food.Tags, input.PreferredMealTags)
 
 	return CandidateScore{
@@ -128,7 +128,14 @@ func expectedBudgetPrice(minPrice, maxPrice float64) float64 {
 	return maxPrice*0.7 + midpoint*0.3
 }
 
-func recencyPenaltyScore(name string, history interfaces.MealHistoryContext) float64 {
+func recencyPenaltyScore(name string, tags []string, history interfaces.MealHistoryContext) float64 {
+	nameScore := mealNameRecencyScore(name, history)
+	categoryScore := categoryRecencyScore(tags, history.FatiguedCategoryCounts)
+
+	return math.Min(nameScore, categoryScore)
+}
+
+func mealNameRecencyScore(name string, history interfaces.MealHistoryContext) float64 {
 	daysAgo, found := history.RecentlyEatenByName[normalizeHistoryName(name)]
 	if !found {
 		return 20
@@ -140,6 +147,29 @@ func recencyPenaltyScore(name string, history interfaces.MealHistoryContext) flo
 		return 8
 	case daysAgo == 3:
 		return 14
+	default:
+		return 20
+	}
+}
+
+func categoryRecencyScore(tags []string, counts map[string]int) float64 {
+	maxCount := 0
+	for _, tag := range tags {
+		if !shouldUseCategoryForRecency(tag) {
+			continue
+		}
+		if counts[tag] > maxCount {
+			maxCount = counts[tag]
+		}
+	}
+
+	switch {
+	case maxCount >= 3:
+		return 4
+	case maxCount == 2:
+		return 10
+	case maxCount == 1:
+		return 16
 	default:
 		return 20
 	}
