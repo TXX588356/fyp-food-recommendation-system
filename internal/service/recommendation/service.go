@@ -99,7 +99,7 @@ func (s *service) GenerateRecommendationResult(ctx context.Context, userID uuid.
 	historyStartTime := time.Now()
 
 	// Load history
-	historyStart := s.now().AddDate(0, 0, -30)
+	historyStart := s.now().AddDate(0, 0, -90)
 	historyLogs, err := s.mealLogRepository.ListByUserAndRange(ctx, userID, historyStart, s.now().AddDate(0, 0, 1))
 	if err != nil {
 		return interfaces.RecommendationResult{}, fmt.Errorf("load recommendation history: %w", err)
