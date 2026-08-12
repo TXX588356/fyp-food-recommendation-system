@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"fyp/food-rs/internal/interfaces"
 	"log/slog"
+	"sort"
 	"strings"
 
 	"google.golang.org/genai"
@@ -183,10 +184,14 @@ func BuildMealRecommendationPrompt(input interfaces.MealPromptInput) string {
 	USER RECENT MEAL HISTORY:
 	- Recent meals: %s
 	- Recently repeated meals: %s
+	- Long-term learned categories: %s
+	- Recent fatigued categories: %s
 
 	HISTORY RULES: 
 	- Rank recently repeated meals lower unless they are strongly aligned with user goals.
-	- Prefer variety across meal names and meal categories.
+	- Treat long-term learned categories as mild preference signals, weaker than explicit preferred meal tags.
+	- Avoid repeating exact meals and avoid generating several meals from recent fatigued categories.
+	- Prefer variety across meal names and meaningful meal categories.
 	- Do not use calorie totals to decide recommendations; calories are tracked separately in meal logs.
 
 	HEALTH CONCERN MAPPINGS:
@@ -206,9 +211,6 @@ func BuildMealRecommendationPrompt(input interfaces.MealPromptInput) string {
 	1. Return the shortest recognizable base food name suitable for exact food API search.
 	Do not append flavours, toppings, cooking styles, or ingredients.
 	Prefer names with at most 3 words.
-
-	GOOD: "Oatmeal", "Roti Canai", "Nasi Lemak", "Bubur Ayam", "Tom Yum", "Wantan Mee"
-	BAD: "Pancake Butter Maple Syrup", "Nasi Minyak Ayam Masak Merah", "Mee Goreng Pedas Tambah Telur"
 
 	2. Return up to 3 alternative exact search terms when useful.
 	Return an empty array if the meal has one obvious fixed name.
@@ -260,7 +262,70 @@ func BuildMealRecommendationPrompt(input interfaces.MealPromptInput) string {
 		input.PriceMarketLocation,
 		displayHistoryList(input.History.RecentMealNames),
 		displayHistoryList(input.History.RepeatedMealNames),
+		displayCategoryCounts(input.History.LearnedCategoryCounts),
+		displayCategoryCounts(input.History.FatiguedCategoryCounts),
 	)
+}
+
+var promptIgnoredHistoryCategories = map[string]bool{
+	"malaysian":      true,
+	"singaporean":    true,
+	"indonesian":     true,
+	"chinese":        true,
+	"indian":         true,
+	"thai":           true,
+	"vietnamese":     true,
+	"japanese":       true,
+	"korean":         true,
+	"middle_eastern": true,
+	"american":       true,
+	"mexican":        true,
+	"italian":        true,
+	"french":         true,
+	"greek":          true,
+	"spanish":        true,
+	"western":        true,
+}
+
+func displayCategoryCounts(counts map[string]int) string {
+	if len(counts) == 0 {
+		return "none"
+	}
+
+	type categoryCount struct {
+		category string
+		count    int
+	}
+
+	values := make([]categoryCount, 0, len(counts))
+	for category, count := range counts {
+		if category == "" || count <= 0 || promptIgnoredHistoryCategories[category] {
+			continue
+		}
+		values = append(values, categoryCount{category: category, count: count})
+	}
+
+	if len(values) == 0 {
+		return "none"
+	}
+
+	sort.Slice(values, func(i, j int) bool {
+		if values[i].count == values[j].count {
+			return values[i].category < values[j].category
+		}
+		return values[i].count > values[j].count
+	})
+
+	if len(values) > 8 {
+		values = values[:8]
+	}
+
+	parts := make([]string, 0, len(values))
+	for _, value := range values {
+		parts = append(parts, fmt.Sprintf("%s %d", value.category, value.count))
+	}
+
+	return strings.Join(parts, ", ")
 }
 
 // ParseMeals removes optional Markdown fencing, decodes Gemini's JSON response,

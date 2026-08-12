@@ -256,10 +256,12 @@ var _ = Describe("Recommendation candidate generation", func() {
 		ctx = context.Background()
 		input = interfaces.MealPromptInput{
 			History: interfaces.MealHistoryContext{
-				RecentMealNames:      []string{},
-				RecentCategoryCounts: map[string]int{},
-				RepeatedMealNames:    []string{},
-				RecentlyEatenByName:  map[string]int{},
+				RecentMealNames:        []string{},
+				RecentCategoryCounts:   map[string]int{},
+				RepeatedMealNames:      []string{},
+				RecentlyEatenByName:    map[string]int{},
+				LearnedCategoryCounts:  map[string]int{},
+				FatiguedCategoryCounts: map[string]int{},
 			},
 		}
 		userID = uuid.New()

@@ -51,13 +51,18 @@ var _ = Describe("Gemini meal generation", func() {
 				Goal:         "eat_healthier",
 				MealCategory: "dinner",
 				History: interfaces.MealHistoryContext{
-					RecentMealNames:   []string{"Nasi Lemak", "Fried Chicken"},
-					RepeatedMealNames: []string{"Nasi Lemak"},
+					RecentMealNames:        []string{"Nasi Lemak", "Fried Chicken"},
+					RepeatedMealNames:      []string{"Nasi Lemak"},
+					LearnedCategoryCounts:  map[string]int{"poultry": 8, "rice_dishes": 5, "chinese": 20},
+					FatiguedCategoryCounts: map[string]int{"poultry": 3, "chinese": 3},
 				},
 			})
 
 			Expect(prompt).To(ContainSubstring("Recent meals: Nasi Lemak, Fried Chicken"))
 			Expect(prompt).To(ContainSubstring("Recently repeated meals: Nasi Lemak"))
+			Expect(prompt).To(ContainSubstring("Long-term learned categories: poultry 8, rice_dishes 5"))
+			Expect(prompt).To(ContainSubstring("Recent fatigued categories: poultry 3"))
+			Expect(prompt).NotTo(ContainSubstring("chinese 20"))
 		})
 	})
 

@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -22,30 +23,30 @@ var _ = Describe("Config", func() {
 	It("should load runtime config from config/config.yaml", func() {
 		root := useTempWorkingDir()
 		writeConfig(root, `
-			server:
-			port: "9090"
-			database:
-			url: postgres://yaml
-			security:
-			jwt_secret: test-secret
-			gemini:
-			api_key: test-gemini-key
-			client:
-			dir: web
-			object_storage:
-			endpoint: storage.example.com
-			access_key: access
-			secret_key: secret
-			bucket: meals
-			use_ssl: true
-			public_url: https://cdn.example.com
-			serpapi:
-			api_key: serp
-`)
+server:
+  port: "8080"
+database:
+  url: postgres://yaml
+security:
+  jwt_secret: test-secret
+gemini:
+  api_key: test-gemini-key
+client:
+  dir: web
+object_storage:
+  endpoint: storage.example.com
+  access_key: access
+  secret_key: secret
+  bucket: meals
+  use_ssl: true
+  public_url: https://cdn.example.com
+serpapi:
+  api_key: serp
+	`)
 
 		cfg := Load()
 
-		Expect(cfg.Server.Port).To(Equal("9090"))
+		Expect(cfg.Server.Port).To(Equal("8080"))
 		Expect(cfg.Database.URL).To(Equal("postgres://yaml"))
 		Expect(cfg.Security.JWTSecret).To(Equal("test-secret"))
 		Expect(cfg.Gemini.APIKey).To(Equal("test-gemini-key"))
@@ -137,7 +138,7 @@ func useTempWorkingDir() string {
 func writeConfig(root string, content string) {
 	configDir := filepath.Join(root, "config")
 	Expect(os.MkdirAll(configDir, 0o755)).To(Succeed())
-	Expect(os.WriteFile(filepath.Join(configDir, "config.yaml"), []byte(content), 0o600)).To(Succeed())
+	Expect(os.WriteFile(filepath.Join(configDir, "config.yaml"), []byte(strings.TrimSpace(content)+"\n"), 0o600)).To(Succeed())
 }
 
 func clearConfigEnv() {

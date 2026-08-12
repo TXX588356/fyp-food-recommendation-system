@@ -13,16 +13,30 @@ func buildMealHistoryContext(logs []model.MealLog, now time.Time) interfaces.Mea
 		return logs[i].EatenAt.After(logs[j].EatenAt)
 	})
 
-	monthStart := now.AddDate(0, 0, -30)
+	recentStart := now.AddDate(0, 0, -30)
+	fatigueStart := now.AddDate(0, 0, -7)
+	learnedStart := now.AddDate(0, 0, -90)
 	recentNames := make([]string, 0, len(logs))
 	categoryCounts := map[string]int{}
+	fatiguedCategoryCounts := map[string]int{}
+	learnedCategoryCounts := map[string]int{}
 	nameCounts := map[string]int{}
 	recentlyEatenByName := map[string]int{}
 
 	for _, log := range logs {
-		if log.EatenAt.Before(monthStart) {
+		if log.EatenAt.Before(learnedStart) {
 			continue
 		}
+		for _, category := range log.MealCategory {
+			if shouldUseCategoryForRecency(category) {
+				learnedCategoryCounts[category]++
+			}
+		}
+
+		if log.EatenAt.Before(recentStart) {
+			continue
+		}
+
 		recentNames = appendUniqueLimited(recentNames, log.MealName, 10)
 		normalizedName := normalizeHistoryName(log.MealName)
 		nameCounts[normalizedName]++
@@ -30,7 +44,12 @@ func buildMealHistoryContext(logs []model.MealLog, now time.Time) interfaces.Mea
 			recentlyEatenByName[normalizedName] = daysBetween(log.EatenAt, now)
 		}
 		for _, category := range log.MealCategory {
-			categoryCounts[category]++
+			if shouldUseCategoryForRecency(category) {
+				categoryCounts[category]++
+				if !log.EatenAt.Before(fatigueStart) {
+					fatiguedCategoryCounts[category]++
+				}
+			}
 		}
 	}
 
@@ -42,10 +61,12 @@ func buildMealHistoryContext(logs []model.MealLog, now time.Time) interfaces.Mea
 	}
 
 	return interfaces.MealHistoryContext{
-		RecentMealNames:      recentNames,
-		RecentCategoryCounts: categoryCounts,
-		RepeatedMealNames:    repeated,
-		RecentlyEatenByName:  recentlyEatenByName,
+		RecentMealNames:        recentNames,
+		RecentCategoryCounts:   categoryCounts,
+		RepeatedMealNames:      repeated,
+		RecentlyEatenByName:    recentlyEatenByName,
+		LearnedCategoryCounts:  learnedCategoryCounts,
+		FatiguedCategoryCounts: fatiguedCategoryCounts,
 	}
 }
 

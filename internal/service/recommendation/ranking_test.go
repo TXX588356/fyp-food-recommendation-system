@@ -89,6 +89,38 @@ var _ = Describe("recommendation ranking", func() {
 		Expect(got[0].Food.ID).To(Equal("new_food"))
 	})
 
+	It("should penalize candidates from short-term fatigued meaningful categories", func() {
+		candidates := []interfaces.MatchedMealCandidate{
+			{
+				Food: interfaces.FoodSearchResult{
+					ID:       "chicken",
+					Name:     "Steamed Chicken",
+					Tags:     []string{"poultry"},
+					ProteinG: 30,
+				},
+			},
+			{
+				Food: interfaces.FoodSearchResult{
+					ID:       "tofu",
+					Name:     "Tofu Soup",
+					Tags:     []string{"tofu_soy", "soups"},
+					ProteinG: 18,
+				},
+			},
+		}
+
+		got := rankCandidates(candidates, interfaces.MealPromptInput{
+			Goal:          "muscle_gain",
+			PerMealBudget: 10,
+		}, interfaces.MealHistoryContext{
+			RecentlyEatenByName:    map[string]int{},
+			FatiguedCategoryCounts: map[string]int{"poultry": 3},
+		})
+
+		Expect(got[0].Food.ID).To(Equal("tofu"))
+		Expect(got[1].ScoreBreakdown.RecencyPenalty).To(Equal(float64(4)))
+	})
+
 	Describe("budgetFitScore", func() {
 		It("should keep partial budget credit for a modestly over-budget price range", func() {
 			got := budgetFitScore(8.5, 12.5, 10.13)
