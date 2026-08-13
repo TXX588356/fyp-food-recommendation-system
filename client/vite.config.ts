@@ -10,4 +10,16 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+
+  server: {
+    proxy: {
+      "/auth": "http://localhost:8080",
+      "/preferences": "http://localhost:8080",
+      "/recommendations": "http://localhost:8080",
+      "/meal-logs": "http://localhost:8080",
+      "/meals": "http://localhost:8080",
+      "/custom-meals": "http://localhost:8080",
+      "/catalog": "http://localhost:8080",
+    }
+  }
 })

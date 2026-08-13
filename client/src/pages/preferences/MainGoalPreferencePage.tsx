@@ -6,7 +6,6 @@ import { useEffect, useState } from "react"
 import { GoalStep } from "../steps/MainGoalPage"
 import { useNavigate } from "react-router-dom"
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 export default function MainGoalPreferencePage() {
   const navigate = useNavigate()
@@ -24,7 +23,7 @@ export default function MainGoalPreferencePage() {
 
 			try {
 				const response = await axios.get<PreferenceData>(
-					`${API_BASE_URL}/preferences`,
+					"/preferences",
 				{
 					headers: {
 						Authorization: `Bearer ${token}`,
@@ -59,7 +58,7 @@ export default function MainGoalPreferencePage() {
 
 		try {
 			await axios.put<PreferenceData>(
-				`${API_BASE_URL}/preferences`, draft,
+				"/preferences", draft,
 				{
 					headers: {
 						Authorization: `Bearer ${token}`,

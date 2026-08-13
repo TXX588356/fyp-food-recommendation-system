@@ -76,7 +76,7 @@ var _ = Describe("Custom meal service", func() {
 			DietaryRestrictionTags: []model.CustomMealDietaryRestrictionTag{
 				{DietaryRestrictionTag: "halal"},
 			},
-			MealCategoryTags: []model.CustomMealCategoryTag{
+			MealCategoryTags: []model.CustomMealCategory{
 				{MealCategory: "nuts_seeds"},
 				{MealCategory: "snacks"},
 			},

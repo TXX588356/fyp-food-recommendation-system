@@ -19,7 +19,7 @@ import {
 } from '@mantine/core'
 import axios from 'axios'
 import { useEffect, useState, type KeyboardEvent } from 'react'
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { FiCheck } from 'react-icons/fi'
 
 import {
@@ -33,13 +33,19 @@ import {
   customMealCreatedNavigationState,
   getCustomMealSuccessMessage,
 } from './customMealNavigation'
+import MainNav from '@/theme/MainNav'
 import type { PreferenceData } from '@/preferences/types'
 import LogMealModal from '../mealLog/LogMealModal'
 import type { LoggableMeal } from '../mealLog/mealLogTypes'
 import { resolveWikipediaMealImage } from '../recommendation/wikiMealImages'
-import { loadCurrentRecommendationLocation } from '../recommendation/recommendationStorage'
+import {
+  appendPersistedRecommendationCandidate,
+  buildRecommendationStorageKey,
+  loadCurrentRecommendationLocation,
+} from '../recommendation/recommendationStorage'
+import type { MatchedMealCandidate } from '../recommendation/recommendationTypes'
+import { useAuth } from '@/auth/useAuth'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 type MealTime = 'breakfast' | 'lunch' | 'dinner' | 'snack'
 
@@ -235,22 +241,6 @@ function MealAddIcon({ name }: { name: 'search' | 'plus' | 'bowl' }) {
   )
 }
 
-function MainNav({ active }: { active: 'recommendation' | 'logs' | 'preferences' }) {
-  return (
-    <nav className="ui-settings-nav ui-surface" aria-label="Main navigation">
-      <Link to="/recommendation" aria-current={active === 'recommendation' ? 'page' : undefined}>
-        Recommendations
-      </Link>
-      <Link to="/meal-logs" aria-current={active === 'logs' ? 'page' : undefined}>
-        Logs
-      </Link>
-      <Link to="/preferences" aria-current={active === 'preferences' ? 'page' : undefined}>
-        Preferences
-      </Link>
-    </nav>
-  )
-}
-
 function toExistingMeal(meal: MealSearchResult): ExistingMeal {
   return {
     id: meal.id,
@@ -263,10 +253,41 @@ function toExistingMeal(meal: MealSearchResult): ExistingMeal {
   }
 }
 
+function toCustomRecommendationCandidate(meal: CustomMealResponse): MatchedMealCandidate {
+  return {
+    generated_meal: {
+      name: meal.name,
+      alternative_search_terms: [],
+      estimated_price_range: {
+        min: meal.price,
+        max: meal.price,
+      },
+      sodium_level: '',
+      sugar_level: '',
+      purine_risk: '',
+      health_flags: {},
+    },
+    food: {
+      id: meal.id,
+      name: meal.name,
+      source: 'custom',
+      tags: meal.mealCategoryTags,
+      calories: meal.calories,
+      fat_g: meal.fatG,
+      protein_g: meal.proteinG,
+      carbs_g: meal.carbsG,
+      price: meal.price,
+      image_url: meal.imageURL,
+    },
+    matched_query: meal.name,
+  }
+}
+
 export function CustomMealSearchPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { mealCategory } = useParams()
+  const { user } = useAuth()  
   const mealTime = isMealTime(mealCategory) ? mealCategory : 'breakfast'
   const recommendationLocation = new URLSearchParams(location.search).get('location') ?? ''
   const [query, setQuery] = useState('')
@@ -279,6 +300,7 @@ export function CustomMealSearchPage() {
   )
 
   const token = localStorage.getItem('token')
+  const userKey = user?.id ?? user?.email
 
   const updateSearchQuery = (nextQuery: string) => {
     setQuery(nextQuery)
@@ -322,7 +344,7 @@ export function CustomMealSearchPage() {
 
       try {
         const response = await axios.get<MealSearchResult[]>(
-          `${API_BASE_URL}/meals/search`,
+          "/meals/search",
           {
             params: {
               q: normalizedQuery,
@@ -398,7 +420,7 @@ export function CustomMealSearchPage() {
   }
 
   const openMealDetail = (meal: ExistingMeal) => {
-    const currentRecommendationLocation = loadCurrentRecommendationLocation()
+    const currentRecommendationLocation = loadCurrentRecommendationLocation(userKey)
     const detailLocation = currentRecommendationLocation || recommendationLocation
     const locationSearch = detailLocation
       ? `?location=${encodeURIComponent(detailLocation)}`
@@ -554,6 +576,7 @@ export function CustomMealSearchPage() {
 export function CustomMealFormPage() {
   const navigate = useNavigate()
   const { mealCategory } = useParams()
+  const { user } = useAuth()
   const mealTime = isMealTime(mealCategory) ? mealCategory : 'breakfast'
   const [draft, setDraft] = useState<CustomMealDraft>(emptyDraft)
   const [isSaving, setIsSaving] = useState(false)
@@ -565,6 +588,7 @@ export function CustomMealFormPage() {
   const [isAutocompleting, setIsAutocompleting] = useState(false)
 
   const token = localStorage.getItem('token')
+  const userKey = user?.id ?? user?.email
   const restrictedMealCategoryTags = getRestrictedMealCategoryTags(draft.dietaryRestrictionTags)
 
   const updateDraft = <Key extends keyof CustomMealDraft>(key: Key, value: CustomMealDraft[Key]) => {
@@ -595,7 +619,7 @@ export function CustomMealFormPage() {
 
     try {
       const response = await axios.post<CustomMealAutocompleteResponse>(
-        `${API_BASE_URL}/custom-meals/autocomplete`,
+        "/custom-meals/autocomplete",
         { name: draft.name },
         {
           headers: {
@@ -721,8 +745,8 @@ export function CustomMealFormPage() {
     setError(null)
 
     try {
-      await axios.post<CustomMealResponse>(
-        `${API_BASE_URL}/custom-meals`,
+      const response = await axios.post<CustomMealResponse>(
+        "/custom-meals",
         formData,
         {
           headers: {
@@ -731,8 +755,15 @@ export function CustomMealFormPage() {
         },
       )
 
-      navigate(`/meals/add/${mealTime}`, {
-        state: customMealCreatedNavigationState,
+      appendPersistedRecommendationCandidate(
+        buildRecommendationStorageKey(userKey),
+        mealTime,
+        toCustomRecommendationCandidate(response.data),
+        loadCurrentRecommendationLocation(userKey),
+      )
+
+      navigate('/recommendation', {
+        state: customMealCreatedNavigationState(mealTime),
       })
     } catch (error) {
       console.error('Failed to save custom meal', error)
@@ -760,7 +791,7 @@ export function CustomMealFormPage() {
 
     try {
       const response = await axios.get<PreferenceData>(
-        `${API_BASE_URL}/preferences`,
+        "/preferences",
         {
           headers: {
             Authorization: `Bearer ${token}`
@@ -790,7 +821,7 @@ export function CustomMealFormPage() {
 
     try {
       await axios.put(
-        `${API_BASE_URL}/preferences/data-sharing`,
+        "/preferences/data-sharing",
         {
           dataSharingConsent: consent,
         },

@@ -31,18 +31,18 @@ dev-env-start:
 	else \
 		podman run -d \
 			--name $(MINIO_CONTAINER) \
-			-e MINIO_ROOT_USER=${MINIO_ACCESS_KEY} \
-			-e MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY} \
+			-e MINIO_ROOT_USER=${OBJECT_STORAGE_ACCESS_KEY} \
+			-e MINIO_ROOT_PASSWORD=${OBJECT_STORAGE_SECRET_KEY} \
 			-p 9000:9000 \
 			-p 9001:9001 \
 			-v minio_data:/data \
 			minio/minio server /data --console-address ":9001"; \
 	fi
-	@until curl -fsS http://${MINIO_ENDPOINT}/minio/health/ready >/dev/null 2>&1; do \
+	@until curl -fsS http://${OBJECT_STORAGE_ENDPOINT}/minio/health/ready >/dev/null 2>&1; do \
 		sleep 1; \
 	done
 	@podman run --rm --network host --entrypoint /bin/sh minio/mc -c \
-		'mc alias set local http://${MINIO_ENDPOINT} ${MINIO_ACCESS_KEY} ${MINIO_SECRET_KEY} >/dev/null && mc mb --ignore-existing local/${MINIO_BUCKET}'
+		'mc alias set local http://${OBJECT_STORAGE_ENDPOINT} ${OBJECT_STORAGE_ACCESS_KEY} ${OBJECT_STORAGE_SECRET_KEY} >/dev/null && mc mb --ignore-existing local/${OBJECT_STORAGE_BUCKET}'
 
 dev:
 	go run main.go server
@@ -117,5 +117,40 @@ out:
 
 test: export ENVIRONMENT := TEST
 test: out
-	@packages="$$(GOCACHE="$(GO_CACHE_DIR)" go list ./... | grep -v '^fyp/food-rs/client/')" ; \
-	GOCACHE="$(GO_CACHE_DIR)" go test $$packages -vet=all -failfast -timeout=30s -coverprofile out/coverage.out
+	@packages="$$(GOCACHE="$(GO_CACHE_DIR)" go list ./... | grep -v '^fyp/food-rs/client/' | grep -v '^fyp/food-rs/internal/mocks$$')" ; \
+	coverage_file="out/coverage.out"; \
+	test_log="out/test.log"; \
+	echo "==> Running Go tests"; \
+	if GOCACHE="$(GO_CACHE_DIR)" go test $$packages -vet=all -failfast -timeout=30s -coverprofile "$$coverage_file" 2>&1 | tee "$$test_log"; then \
+		status=0; \
+	else \
+		status=$$?; \
+	fi; \
+	echo; \
+	echo "==> Package summary"; \
+	awk ' \
+		/^\?/ { printf "SKIP  %-58s %s\n", $$2, "no test files"; next } \
+		/^ok/ { \
+			coverage = ""; \
+			for (i = 4; i <= NF; i++) { \
+				if ($$i == "coverage:") { coverage = $$(i + 1); break } \
+			} \
+			printf "PASS  %-58s %-8s %s\n", $$2, $$3, coverage; \
+			next \
+		} \
+		/^[[:space:]]*fyp\/food-rs\// { \
+			coverage = ""; \
+			for (i = 2; i <= NF; i++) { \
+				if ($$i == "coverage:") { coverage = $$(i + 1); break } \
+			} \
+			printf "SKIP  %-58s %-8s %s\n", $$1, "no tests", coverage; \
+			next \
+		} \
+		/^FAIL/ { printf "FAIL  %-58s %s\n", $$2, $$3; next } \
+	' "$$test_log"; \
+	if [ -f "$$coverage_file" ]; then \
+		echo; \
+		echo "==> Overall coverage"; \
+		GOCACHE="$(GO_CACHE_DIR)" go tool cover -func "$$coverage_file" | awk '/^total:/ { printf "TOTAL %-58s %s\n", $$2, $$3 }'; \
+	fi; \
+	exit $$status

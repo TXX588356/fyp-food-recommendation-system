@@ -6,6 +6,7 @@ bin/
 *.test
 *.out
 coverage.out
+out/
 .agents
 .codex
 doc
@@ -22,7 +23,10 @@ build/
 .next/
 
 data/*
+!data/catalog-data.sql
 docs/*
 
 static/
 client/dist/
+requirements/
+CONTEXT.md

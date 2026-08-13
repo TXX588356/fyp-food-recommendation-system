@@ -6,8 +6,6 @@ COPY client/package.json client/pnpm-lock.yaml ./
 RUN corepack enable && pnpm install --frozen-lockfile
 
 COPY client ./
-ARG VITE_API_BASE_URL=""
-ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 
 RUN pnpm build
 
@@ -27,7 +25,6 @@ WORKDIR /app
 
 COPY --from=backend /app/fyp-smart-meal ./fyp-smart-meal
 COPY --from=frontend /app/client/dist ./static
-COPY config ./config
 
 EXPOSE 8080
 

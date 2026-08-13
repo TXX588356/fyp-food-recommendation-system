@@ -42,39 +42,51 @@ func (r *catalogRepository) SearchMeals(ctx context.Context, query interfaces.Ca
 			value = fried rice
 
 			phrasePattern = %fried rice%
-			condition = (name ILIKE ? OR normalized_name ILIKE ?)
-			args = [%fried rice%, %fried rice%]
+			condition = prebuilt_meals.name ILIKE ?
+			args = ["%fried rice%"]
 
 			strings.Fields(value) = ["fried", "rice"]
 
-			Loop 1:
-			wordPattern = "%fried%"
-			wordConditions = (name ILIKE ? OR normalized_name ILIKE ?)
-			wordArgs = ["%fried", "%fried%"]
+			For each word, add one name condition:
+			wordConditions = [
+				prebuilt_meals.name ILIKE ?,
+				prebuilt_meals.name ILIKE ?,
+			]
+			wordArgs = ["%fried%", "%rice%"]
 
-			Loop 2:
-			wordPattern = "%rice%"
-			wordConditions = [(name ILIKE ? OR normalized_name ILIKE ?), (name ILIKE ? OR normalized_name ILIKE ?)],
-			wordArgs = ["%fried", "fried%", "%rice", "rice%"]
+			Because there is more than one word, append an order-independent
+			all-words match:
 
-			len(wordConditions) > 1  => true
-			condition = name ILIKE ? OR normalized_name ILIKE ? OR (name ILIKE ? OR normalized_name ILIKE ? AND name ILIKE ? OR normalized_name ILIKE ?)
-			args = [%fried rice%, %fried rice%, "%fried"%, "%fried%", "%rice%", "%rice%"]
+			condition =
+				prebuilt_meals.name ILIKE ?
+				OR (
+					prebuilt_meals.name ILIKE ?
+					AND prebuilt_meals.name ILIKE ?
+				)
 
-			conditions =( name ILIKE ? OR normalized_name ILIKE ?) OR ((name ILIKE ? OR normalized_name ILIKE ?) AND (name ILIKE ? OR normalized_name ILIKE ?))
+				args = ["%fried rice", "fried%", "rice%"]
+
+				This lets query "fried rice" match name "rice fried" because
+				both words appear somewhere in the name.
+
 		*/
 
 		phrasePattern := "%" + value + "%"
-		condition := `(prebuilt_meals.name ILIKE ? OR prebuilt_meals.normalized_name ILIKE ?)`
-		args = append(args, phrasePattern, phrasePattern)
+		condition := `prebuilt_meals.name ILIKE ?`
+		args = append(args, phrasePattern)
 
 		wordConditions := make([]string, 0)
 		wordArgs := make([]any, 0)
+
 		for _, word := range strings.Fields(value) {
 			wordPattern := "%" + word + "%"
-			wordConditions = append(wordConditions, `(prebuilt_meals.name ILIKE ? OR prebuilt_meals.normalized_name ILIKE ?)`)
-			wordArgs = append(wordArgs, wordPattern, wordPattern)
+
+			// Each query word must appear somewhere in the name
+			// This keeps "a b" able to match with "b a"
+			wordConditions = append(wordConditions, `prebuilt_meals.name ILIKE ?`)
+			wordArgs = append(wordArgs, wordPattern)
 		}
+
 		if len(wordConditions) > 1 {
 			condition = condition + ` OR (` + strings.Join(wordConditions, ` AND `) + `)`
 			args = append(args, wordArgs...)
@@ -90,7 +102,15 @@ func (r *catalogRepository) SearchMeals(ctx context.Context, query interfaces.Ca
 		args = append(args, pgTextArrayLiteral(query.Categories))
 	}
 	if query.AfterID != nil {
-		conditions = append(conditions, "(prebuilt_meals.normalized_name, prebuilt_meals.id) > (?::text, ?::uuid)")
+		conditions = append(conditions,
+			// key-set pagination
+			// create a 2-column tuple (e.g. ("apple"), 123acbdef) and compare with the
+			// provided meal name and meal id lexicographically
+			// 1. if name > input meal: true
+			// 2. if name = input meal: compare id
+			// 3. else false
+			"(lower(btrim(prebuilt_meals.name)), prebuilt_meals.id) > (?::text, ?::uuid)",
+		)
 		args = append(args, query.AfterName, *query.AfterID)
 	}
 	limit := query.Limit
@@ -103,7 +123,8 @@ func (r *catalogRepository) SearchMeals(ctx context.Context, query interfaces.Ca
 	if len(conditions) > 0 {
 		sql += " WHERE " + strings.Join(conditions, " AND ")
 	}
-	sql += fmt.Sprintf(" ORDER BY prebuilt_meals.normalized_name, prebuilt_meals.id LIMIT %d", limit+1)
+
+	sql += fmt.Sprintf(" ORDER BY lower(btrim(prebuilt_meals.name)), prebuilt_meals.id LIMIT %d", limit+1)
 	if err := r.db.WithContext(ctx).Raw(sql, args...).Scan(&ids).Error; err != nil {
 		return nil, err
 	}
@@ -117,7 +138,7 @@ func (r *catalogRepository) hydrateMeals(ctx context.Context, ids []uuid.UUID) (
 	var meals []model.PrebuiltMeal
 	err := r.db.WithContext(ctx).
 		Where("prebuilt_meals.id IN ?", ids).
-		Order("prebuilt_meals.normalized_name, prebuilt_meals.id").Find(&meals).Error
+		Order("lower(btrim(prebuilt_meals.name)), prebuilt_meals.id").Find(&meals).Error
 	return meals, err
 }
 
@@ -164,7 +185,6 @@ func (r *catalogRepository) CreateGeneratedMeal(ctx context.Context, input inter
 		SourceCode:         aiGeneratedMealSourceCode,
 		SourceRecordID:     aiGeneratedMealSourceRecordID(normalizedName),
 		Name:               strings.TrimSpace(input.Name),
-		NormalizedName:     normalizedName,
 		CategoryCodes:      model.StringArray(input.CategoryCodes),
 		ServingDescription: strings.TrimSpace(input.ServingDescription),
 		Calories:           floatPtr(input.Calories),

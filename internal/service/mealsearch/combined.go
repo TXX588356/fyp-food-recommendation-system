@@ -103,5 +103,6 @@ func (s *CombinedSearcher) searchCustomMeals(ctx context.Context, userID uuid.UU
 		FatG:     meal.FatG,
 		ProteinG: meal.ProteinG,
 		CarbsG:   meal.CarbsG,
+		Price:    customMealPricePtr(meal.Price),
 	}, true, nil
 }

@@ -14,7 +14,6 @@ import { useForm } from '@mantine/form'
 
 import { useNavigate, useLocation } from 'react-router-dom'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 const thumbnailImage = 'https://images.unsplash.com/photo-1606756790138-261d2b21cd75?q=80&w=765&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
 
 export default function LoginPage() {
@@ -43,7 +42,7 @@ export default function LoginPage() {
       setIsSubmitting(true)
 
       try {
-        const response = await axios.post(`${API_BASE_URL}/auth/login`, values)
+        const response = await axios.post("/auth/login", values)
 
         login(response.data.user, response.data.accessToken, response.data.refreshToken)
 

@@ -25,7 +25,7 @@ type CustomMealItem struct {
 	DeletedAt      gorm.DeletedAt `gorm:"index"`
 
 	DietaryRestrictionTags []CustomMealDietaryRestrictionTag `gorm:"foreignKey:CustomMealItemID"`
-	MealCategoryTags       []CustomMealCategoryTag           `gorm:"foreignKey:CustomMealItemID"`
+	MealCategoryTags       []CustomMealCategory               `gorm:"foreignKey:CustomMealItemID"`
 }
 
 type CustomMealDietaryRestrictionTag struct {
@@ -33,22 +33,7 @@ type CustomMealDietaryRestrictionTag struct {
 	DietaryRestrictionTag string    `gorm:"type:text;primaryKey"`
 }
 
-type CustomMealCategoryTag struct {
+type CustomMealCategory struct {
 	CustomMealItemID uuid.UUID `gorm:"type:uuid;primaryKey"`
 	MealCategory     string    `gorm:"type:text;primaryKey"`
-}
-
-// TableName maps custom meals to the migration-created table name.
-func (CustomMealItem) TableName() string {
-	return "custom_meal_items"
-}
-
-// TableName maps dietary restriction tags to the migration-created table name.
-func (CustomMealDietaryRestrictionTag) TableName() string {
-	return "custom_meal_dietary_restriction_tags"
-}
-
-// TableName maps category tags to the migration-created table name.
-func (CustomMealCategoryTag) TableName() string {
-	return "custom_meal_categories"
 }

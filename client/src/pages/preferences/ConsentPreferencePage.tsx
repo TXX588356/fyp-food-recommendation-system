@@ -5,7 +5,6 @@ import axios from "axios"
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 
 export default function ConsentPreferencePage() {
@@ -24,7 +23,7 @@ export default function ConsentPreferencePage() {
 
 			try {
 				const response = await axios.get<PreferenceData>(
-					`${API_BASE_URL}/preferences`,
+					"/preferences",
 				{
 					headers: {
 						Authorization: `Bearer ${token}`,
@@ -51,7 +50,7 @@ export default function ConsentPreferencePage() {
 		setError(null)
 
 		if (draft.dataSharingConsent === null) {
-			setError("Please choose whether you agree to share your meal logs.")
+			setError("Please choose whether you agree to share your custom meal item.")
 			return
 		}
 
@@ -59,7 +58,7 @@ export default function ConsentPreferencePage() {
 
 		try {
 			await axios.put(
-				`${API_BASE_URL}/preferences/data-sharing`,
+				"/preferences/data-sharing",
 				{ dataSharingConsent: draft.dataSharingConsent },
 				{
 					headers: {
@@ -89,7 +88,7 @@ export default function ConsentPreferencePage() {
 
 						<Title order={1}>Update data sharing consent</Title>
 						<Text className="ui-page-copy">
-							Choose whether anonymised meal logs can help improve recommendations.
+							Choose whether anonymised meal item can help improve recommendations.
 						</Text>
 					</Box>
 
@@ -105,7 +104,7 @@ export default function ConsentPreferencePage() {
 						<Box className="ui-question ui-field-group">
 							<Title order={2} className="ui-section-title">Help improve meal recommendations</Title>
 							<Text className="ui-page-copy">
-								Your manually logged meals can be used anonymously to enrich the recommendation dataset. You can change this choice at any time.
+								Your custom created meal items can be used anonymously to enrich the recommendation dataset. You can change this choice at any time.
 							</Text>
 
 							<Box className="ui-form-grid">
@@ -129,7 +128,7 @@ export default function ConsentPreferencePage() {
 							</Box>
 
 							<Text className="ui-field-title">
-								Do you agree to share your manually logged meal data anonymously?
+								Do you agree to share your custom meal item anonymously?
 							</Text>
 
 							<Box className="ui-stack ui-stack-compact">

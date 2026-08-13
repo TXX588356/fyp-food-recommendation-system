@@ -6,7 +6,6 @@ import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { BudgetLocationStep } from "../steps/BudgetLocationPage"
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 export default function BudgetLocationPreferencePage() {
 	const navigate = useNavigate()
@@ -24,7 +23,7 @@ export default function BudgetLocationPreferencePage() {
 
 			try {
 				const response = await axios.get<PreferenceData>(
-					`${API_BASE_URL}/preferences`,
+					"/preferences",
 				{
 					headers: {
 						Authorization: `Bearer ${token}`,
@@ -79,7 +78,7 @@ export default function BudgetLocationPreferencePage() {
 
 		try {
 			await axios.put<PreferenceData>(
-				`${API_BASE_URL}/preferences`, payload,
+				"/preferences", payload,
 				{
 					headers: {
 						Authorization: `Bearer ${token}`,

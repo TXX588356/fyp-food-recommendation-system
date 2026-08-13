@@ -46,7 +46,6 @@ func (r *testRepository) CreateGeneratedMeal(ctx context.Context, input interfac
 		SourceCode:         "ai_generated",
 		SourceRecordID:     "gemini:test-meal",
 		Name:               input.Name,
-		NormalizedName:     "test meal",
 		CategoryCodes:      model.StringArray(input.CategoryCodes),
 		ServingDescription: input.ServingDescription,
 		Calories:           &input.Calories,

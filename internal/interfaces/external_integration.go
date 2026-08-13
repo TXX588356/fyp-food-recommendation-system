@@ -59,6 +59,7 @@ type FoodSearchResult struct {
 	FatG               float64  `json:"fat_g"`
 	ProteinG           float64  `json:"protein_g"`
 	CarbsG             float64  `json:"carbs_g"`
+	Price              *float64 `json:"price,omitempty"`
 	ServingDescription string   `json:"serving_description,omitempty"`
 	ImageURL           string   `json:"image_url,omitempty"`
 }

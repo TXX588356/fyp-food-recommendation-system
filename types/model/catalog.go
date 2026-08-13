@@ -46,17 +46,12 @@ type PrebuiltMeal struct {
 	SourceCode         string
 	SourceRecordID     string
 	Name               string
-	NormalizedName     string
 	CategoryCodes      StringArray `gorm:"type:text[]"`
 	ServingDescription string
 	Calories           *float64
 	ProteinG           *float64
 	CarbsG             *float64
 	FatG               *float64
-	FiberG             *float64
-	SugarG             *float64
-	SodiumMg           *float64
-	CholesterolMg      *float64
 	CreatedAt          time.Time
 	UpdatedAt          time.Time
 }

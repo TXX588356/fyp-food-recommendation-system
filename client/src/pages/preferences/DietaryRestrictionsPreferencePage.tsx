@@ -7,7 +7,6 @@ import axios from "axios";
 import { Alert, Box, Button, Group, Text, Title } from "@mantine/core";
 
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 export default function DietaryRestrictionsPreferencePage() {
   const navigate = useNavigate()
@@ -25,7 +24,7 @@ export default function DietaryRestrictionsPreferencePage() {
 
       try {
         const response = await axios.get<PreferenceData>(
-          `${API_BASE_URL}/preferences`,
+          "/preferences",
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -72,7 +71,7 @@ export default function DietaryRestrictionsPreferencePage() {
 
     try {
       await axios.put<PreferenceData>(
-        `${API_BASE_URL}/preferences`, payload,
+        "/preferences", payload,
         {
           headers: {
             Authorization: `Bearer ${token}`,

@@ -241,7 +241,7 @@ func buildCustomMealModel(userID uuid.UUID, input interfaces.CustomMealInput) *m
 	}
 
 	for _, tag := range input.MealCategoryTags {
-		meal.MealCategoryTags = append(meal.MealCategoryTags, model.CustomMealCategoryTag{
+		meal.MealCategoryTags = append(meal.MealCategoryTags, model.CustomMealCategory{
 			MealCategory: tag,
 		})
 	}

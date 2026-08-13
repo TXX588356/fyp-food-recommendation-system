@@ -158,8 +158,13 @@ func customMealToCandidateFood(meal *interfaces.CustomMealResponse) interfaces.F
 		FatG:     meal.FatG,
 		ProteinG: meal.ProteinG,
 		CarbsG:   meal.CarbsG,
+		Price:    customMealPricePtr(meal.Price),
 		ImageURL: meal.ImageURL,
 	}
+}
+
+func customMealPricePtr(price float64) *float64 {
+	return &price
 }
 
 // upsertBestCandidate stores candidate under key when no candidate exists yet,

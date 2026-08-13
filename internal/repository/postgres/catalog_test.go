@@ -57,7 +57,6 @@ var _ = Describe("catalog repository SQL", func() {
 			SourceCode:         aiGeneratedMealSourceCode,
 			SourceRecordID:     aiGeneratedMealSourceRecordID(normalizedName),
 			Name:               input.Name,
-			NormalizedName:     normalizedName,
 			CategoryCodes:      model.StringArray(input.CategoryCodes),
 			ServingDescription: input.ServingDescription,
 			Calories:           floatPtr(input.Calories),

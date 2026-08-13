@@ -3,7 +3,6 @@ import axios from 'axios'
 import { AuthContext } from './auth-context'
 import type { AuthContextType, User } from './auth-context'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 type RefreshResponse = {
     accessToken: string
@@ -54,7 +53,7 @@ const AuthProvider = ({ children }: LayoutProps) => {
             return Promise.reject(new Error('missing refresh token'))
         }
 
-        refreshSessionPromise = axios.post<RefreshResponse>(`${API_BASE_URL}/auth/refresh`, {
+        refreshSessionPromise = axios.post<RefreshResponse>("/auth/refresh", {
             refreshToken,
         }).then((response) => response.data)
             .finally(() => {
@@ -184,7 +183,7 @@ const AuthProvider = ({ children }: LayoutProps) => {
     const logout = () => {
 			const refreshToken = localStorage.getItem('refreshToken')
 			if (refreshToken) {
-					void axios.post(`${API_BASE_URL}/auth/logout`, { refreshToken }).catch(() => undefined)
+					void axios.post("/auth/logout", { refreshToken }).catch(() => undefined)
 			}
 
 			clearAuth()

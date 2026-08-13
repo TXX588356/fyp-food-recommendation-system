@@ -41,20 +41,24 @@ export const buildRecommendationStorageKey = (userKey: string | undefined) => {
 	return `recommendation:${userKey ?? 'anonymous'}`
 }
 
-const currentRecommendationLocationStorageKey = 'recommendation:current-location'
+const buildCurrentRecommendationLocationStorageKey = (userKey: string | undefined) => {
+	return `${buildRecommendationStorageKey(userKey)}:current-location`
+}
 
-export const saveCurrentRecommendationLocation = (location: string) => {
+export const saveCurrentRecommendationLocation = (userKey: string | undefined, location: string) => {
 	const trimmedLocation = location.trim()
+	const storageKey = buildCurrentRecommendationLocationStorageKey(userKey)
+
 	if (!trimmedLocation) {
-		sessionStorage.removeItem(currentRecommendationLocationStorageKey)
+		sessionStorage.removeItem(storageKey)
 		return
 	}
 
-	sessionStorage.setItem(currentRecommendationLocationStorageKey, trimmedLocation)
+	sessionStorage.setItem(storageKey, trimmedLocation)
 }
 
-export const loadCurrentRecommendationLocation = () => {
-	return sessionStorage.getItem(currentRecommendationLocationStorageKey) ?? ''
+export const loadCurrentRecommendationLocation = (userKey: string | undefined) => {
+	return sessionStorage.getItem(buildCurrentRecommendationLocationStorageKey(userKey)) ?? ''
 }
 
 export const createEmptyPersistedRecommendation = (): PersistedRecommendationState => ({
@@ -66,6 +70,7 @@ export const createEmptyPersistedRecommendation = (): PersistedRecommendationSta
 })
 
 const hasScoreBreakdown = (candidate: MatchedMealCandidate) => (
+	candidate.food.source === 'custom' ||
 	typeof candidate.score === 'number' &&
 	typeof candidate.score_breakdown?.goal_alignment === 'number' &&
 	typeof candidate.score_breakdown?.budget_fit === 'number' &&
@@ -146,6 +151,37 @@ export const savePersistedRecommendations = (
 	nextState: PersistedRecommendationState,
 ) => {
 	localStorage.setItem(storageKey, JSON.stringify(nextState))
+}
+
+export const appendPersistedRecommendationCandidate = (
+	storageKey: string,
+	mealCategory: MealCategory,
+	candidate: MatchedMealCandidate,
+	location: string,
+) => {
+	const persisted = loadPersistedRecommendations(storageKey)
+	const existingCandidates = persisted.candidatesByCategory[mealCategory]
+	const nextCandidates = [
+		candidate,
+		...existingCandidates.filter((item) => item.food.id !== candidate.food.id),
+	]
+
+	savePersistedRecommendations(storageKey, {
+		generatedDate: getLocalDateKey(),
+		candidatesByCategory: {
+			...persisted.candidatesByCategory,
+			[mealCategory]: nextCandidates,
+		},
+		filteredOutByCategory: persisted.filteredOutByCategory,
+		generatedByCategory: {
+			...persisted.generatedByCategory,
+			[mealCategory]: true,
+		},
+		locationByCategory: {
+			...persisted.locationByCategory,
+			[mealCategory]: location || persisted.locationByCategory[mealCategory],
+		},
+	})
 }
 
 export const findPersistedRecommendationCandidate = (

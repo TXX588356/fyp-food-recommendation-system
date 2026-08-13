@@ -3,25 +3,21 @@ CREATE TABLE IF NOT EXISTS prebuilt_meals (
     source_code TEXT NOT NULL,
     source_record_id TEXT NOT NULL,
     name TEXT NOT NULL,
-    normalized_name TEXT NOT NULL CHECK (btrim(normalized_name) <> ''),
     category_codes TEXT[] NOT NULL DEFAULT '{}'::text[],
     serving_description TEXT NOT NULL CHECK (btrim(serving_description) <> ''),
     calories NUMERIC CHECK (calories >= 0),
     protein_g NUMERIC CHECK (protein_g >= 0),
     carbs_g NUMERIC CHECK (carbs_g >= 0),
     fat_g NUMERIC CHECK (fat_g >= 0),
-    fiber_g NUMERIC CHECK (fiber_g >= 0),
-    sugar_g NUMERIC CHECK (sugar_g >= 0),
-    sodium_mg NUMERIC CHECK (sodium_mg >= 0),
-    cholesterol_mg NUMERIC CHECK (cholesterol_mg >= 0),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     UNIQUE (source_code, source_record_id)
 );
 
-CREATE INDEX IF NOT EXISTS prebuilt_meals_normalized_name_idx ON prebuilt_meals(normalized_name, id);
-CREATE INDEX IF NOT EXISTS prebuilt_meals_source_idx ON prebuilt_meals(source_code);
-CREATE INDEX IF NOT EXISTS prebuilt_meals_category_codes_idx ON prebuilt_meals USING GIN(category_codes);
+CREATE INDEX IF NOT EXISTS idx_prebuilt_meals_name_order
+ON prebuilt_meals (lower(btrim(name)), id);
+CREATE INDEX IF NOT EXISTS idx_prebuilt_meals_source ON prebuilt_meals(source_code);
+CREATE INDEX IF NOT EXISTS idx_prebuilt_meals_category_codes ON prebuilt_meals USING GIN(category_codes);
 
 CREATE TABLE IF NOT EXISTS meal_categories (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

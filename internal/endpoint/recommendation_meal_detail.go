@@ -143,6 +143,10 @@ func validateMealDetailRequest(input mealDetailRequest) error {
 		return errors.New("carbs cannot be negative")
 	}
 
+	if food.Price != nil && *food.Price < 0 {
+		return errors.New("price cannot be negative")
+	}
+
 	generated := input.Candidate.GeneratedMeal
 	priceRange := input.Candidate.GeneratedMeal.EstimatedPriceRange
 

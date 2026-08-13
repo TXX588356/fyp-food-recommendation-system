@@ -12,7 +12,6 @@ import { HealthConcernStep } from "../steps/HealthConcernPage"
 import { BudgetLocationStep } from "../steps/BudgetLocationPage"
 import { MealPreferenceStep } from "../steps/PreferredMealPage"
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 const stepLabels = [
   'Goal',
@@ -89,7 +88,7 @@ export default function PreferencesOnboardingPage() {
       const preferencePayload = buildPreferencePayload(form.values)
       console.debug('Preference onboarding payload', preferencePayload)
 
-      await axios.post(`${API_BASE_URL}/preferences`, preferencePayload, {
+      await axios.post("/preferences", preferencePayload, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

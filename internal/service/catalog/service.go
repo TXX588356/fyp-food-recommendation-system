@@ -56,7 +56,10 @@ func (s *Service) SearchMeals(ctx context.Context, query interfaces.CatalogQuery
 	if len(page.Items) > query.Limit {
 		page.Items = page.Items[:query.Limit]
 		last := meals[query.Limit-1]
-		raw, _ := json.Marshal(cursor{Name: last.NormalizedName, ID: last.ID})
+		raw, _ := json.Marshal(cursor{
+			Name: strings.ToLower(strings.TrimSpace(last.Name)),
+			ID:   last.ID,
+		})
 		page.NextCursor = base64.RawURLEncoding.EncodeToString(raw)
 	}
 	return page, nil
@@ -118,5 +121,10 @@ func (s *Service) CreateGeneratedMeal(ctx context.Context, input interfaces.Gene
 }
 
 func nutrition(meal model.PrebuiltMeal) interfaces.CatalogNutrition {
-	return interfaces.CatalogNutrition{Calories: meal.Calories, ProteinG: meal.ProteinG, CarbsG: meal.CarbsG, FatG: meal.FatG, FiberG: meal.FiberG, SugarG: meal.SugarG, SodiumMg: meal.SodiumMg, CholesterolMg: meal.CholesterolMg}
+	return interfaces.CatalogNutrition{
+		Calories: meal.Calories,
+		ProteinG: meal.ProteinG,
+		CarbsG:   meal.CarbsG,
+		FatG:     meal.FatG,
+	}
 }

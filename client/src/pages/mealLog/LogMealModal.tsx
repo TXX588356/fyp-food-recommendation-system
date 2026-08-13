@@ -20,7 +20,6 @@ import {
 } from './mealLogHelpers'
 import type { LoggableMeal, MealLogInput, MealLogType } from './mealLogTypes'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 const mealTypeOptions = [
   { value: 'breakfast', label: 'Breakfast' },
@@ -78,7 +77,7 @@ function LogMealForm({
     setError(null)
 
     try {
-      await axios.post(`${API_BASE_URL}/meal-logs`, payload, {
+      await axios.post("/meal-logs", payload, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

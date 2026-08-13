@@ -12,7 +12,7 @@ import {
 } from '@mantine/core'
 import axios from 'axios'
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { FiCheck } from 'react-icons/fi'
 import { ChefHat } from 'lucide-react'
 
@@ -24,8 +24,9 @@ import { resolveWikipediaMealImage } from '../recommendation/wikiMealImages'
 import { RestaurantCard } from '../recommendation/MealDetailPage'
 import type { RestaurantResult } from '../recommendation/recommendationTypes'
 import { loadCurrentRecommendationLocation } from '../recommendation/recommendationStorage'
+import MainNav from '@/theme/MainNav'
+import { useAuth } from '@/auth/useAuth'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 type MealSource = 'prebuilt' | 'custom'
 
@@ -61,10 +62,12 @@ const formatRM = (value: number) => `RM ${value.toFixed(2)}`
 
 export default function SearchMealDetailPage() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const { source, mealId } = useParams()
   const [searchParams] = useSearchParams()
   const token = localStorage.getItem('token')
-  const recommendationLocation = loadCurrentRecommendationLocation() || searchParams.get('location') || ''
+  const userKey = user?.id ?? user?.email
+  const recommendationLocation = loadCurrentRecommendationLocation(userKey) || searchParams.get('location') || ''
 
   const [detail, setDetail] = useState<SearchMealDetailResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -83,7 +86,7 @@ export default function SearchMealDetailPage() {
 
     try {
       const response = await axios.get<SearchMealDetailResponse>(
-        `${API_BASE_URL}/meals/${source}/${mealId}`,
+        `/meals/${source}/${mealId}`,
         {
           params: recommendationLocation ? { location: recommendationLocation } : undefined,
           headers: {
@@ -173,11 +176,7 @@ export default function SearchMealDetailPage() {
   return (
     <Box className="ui-settings-page ui-meal-detail-page">
       <Box component="main" className="ui-settings-frame">
-        <nav className="ui-settings-nav ui-surface" aria-label="Main navigation">
-          <Link to="/recommendation">Recommendation</Link>
-          <Link to="/meal-logs">Logs</Link>
-          <Link to="/preferences">Preferences</Link>
-        </nav>
+        <MainNav active="recommendation" />
 
         {successMessage && (
           <Box className="ui-success-toast" role="status" aria-live="polite">

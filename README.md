@@ -32,12 +32,6 @@ The application reads configuration from `config/config.yaml`, `.env`, and opera
 
 Create a local `.env` file in the project root. Refer to `.env.example`.
 
-For the frontend, create `client/.env.local`:
-
-```env
-VITE_API_BASE_URL=http://localhost:8080
-```
-
 ## Project Scaffolding
 
 The backend is a Go module:

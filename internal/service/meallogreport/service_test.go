@@ -158,6 +158,26 @@ var _ = Describe("Meal log report service", func() {
 		})
 	})
 
+	Describe("parseReportPeriodInLocation", func() {
+		It("falls back to Singapore time when the provided location is nil for monthly reports", func() {
+			start, end, label, err := parseReportPeriodInLocation("month", "2026-07", "", "", "", nil)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(start.Format(time.RFC3339)).To(Equal("2026-07-01T00:00:00+08:00"))
+			Expect(end.Format(time.RFC3339)).To(Equal("2026-08-01T00:00:00+08:00"))
+			Expect(label).To(Equal("July 2026"))
+		})
+
+		It("falls back to Singapore time when the provided location is nil for weekly reports", func() {
+			start, end, label, err := parseReportPeriodInLocation("week", "", "", "2026-07-27", "2026-08-02", nil)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(start.Format(time.RFC3339)).To(Equal("2026-07-27T00:00:00+08:00"))
+			Expect(end.Format(time.RFC3339)).To(Equal("2026-08-03T00:00:00+08:00"))
+			Expect(label).To(Equal("Jul 27 - Aug 2, 2026"))
+		})
+	})
+
 	Describe("buildSummary", func() {
 		It("calculates current-month budget remaining and projected spend", func() {
 			svc := &service{

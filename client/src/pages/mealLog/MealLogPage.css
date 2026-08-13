@@ -9,6 +9,12 @@
   background: rgba(255, 251, 239, 0.78);
 }
 
+.ui-theme-dark .ui-meal-log-shell {
+  border-color: rgba(237, 244, 245, 0.13);
+  background: rgba(21, 26, 31, 0.86);
+  box-shadow: var(--shadow-md);
+}
+
 .ui-meal-log-monthbar {
   margin-bottom: clamp(24px, 4vw, 36px);
   align-items: center;
@@ -67,6 +73,10 @@
   background: rgba(32, 52, 43, 0.06);
 }
 
+.ui-theme-dark .ui-meal-log-report-actions {
+  background: rgba(237, 244, 245, 0.06);
+}
+
 .ui-meal-log-report-controls {
   justify-content: flex-end;
 }
@@ -77,6 +87,11 @@
   border: 1px solid rgba(32, 52, 43, 0.14);
   border-radius: 999px;
   background: rgba(255, 251, 239, 0.74);
+}
+
+.ui-theme-dark .ui-meal-log-report-period-toggle {
+  border-color: rgba(237, 244, 245, 0.13);
+  background: rgba(237, 244, 245, 0.07);
 }
 
 .ui-meal-log-report-period-toggle .mantine-SegmentedControl-indicator {
@@ -97,11 +112,20 @@
   color: #fff8e8;
 }
 
+.ui-theme-dark .ui-meal-log-report-period-toggle .mantine-SegmentedControl-control[data-active] .mantine-SegmentedControl-label {
+  color: #0c1518;
+}
+
 .ui-meal-log-report-week-range {
   padding: 3px;
   border: 1px solid rgba(32, 52, 43, 0.12);
   border-radius: 14px;
   background: rgba(255, 251, 239, 0.58);
+}
+
+.ui-theme-dark .ui-meal-log-report-week-range {
+  border-color: rgba(237, 244, 245, 0.13);
+  background: rgba(237, 244, 245, 0.05);
 }
 
 .ui-meal-log-report-week-input {
@@ -139,6 +163,11 @@
   background: rgba(255, 251, 239, 0.72);
 }
 
+.ui-theme-dark .ui-meal-log-report-panel {
+  border-color: rgba(237, 244, 245, 0.13);
+  background: rgba(237, 244, 245, 0.05);
+}
+
 .ui-meal-log-report-metrics > div {
   min-height: 76px;
   display: grid;
@@ -147,6 +176,12 @@
   padding: 12px;
   border-radius: 8px;
   background: rgba(32, 52, 43, 0.05);
+}
+
+.ui-theme-dark .ui-meal-log-report-metrics > div,
+.ui-theme-dark .ui-meal-log-report-sections > div,
+.ui-theme-dark .ui-meal-log-day {
+  background: rgba(237, 244, 245, 0.06);
 }
 
 .ui-meal-log-report-metrics p {
@@ -203,6 +238,12 @@
   text-align: center;
 }
 
+.ui-theme-dark .ui-meal-log-report-empty-state {
+  border-color: rgba(237, 244, 245, 0.16);
+  color: var(--muted);
+  background: rgba(237, 244, 245, 0.04);
+}
+
 .ui-meal-log-report-chart .recharts-cartesian-grid line {
   stroke: rgba(32, 52, 43, 0.12);
 }
@@ -220,6 +261,11 @@
   padding: 8px 10px;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.44);
+}
+
+.ui-theme-dark .ui-meal-log-report-list-row,
+.ui-theme-dark .ui-meal-log-report-time-summary > div {
+  background: rgba(237, 244, 245, 0.06);
 }
 
 .ui-meal-log-report-list-row p:first-child {

@@ -82,6 +82,7 @@ var _ = Describe("CandidateSearcher", func() {
 					FatG:             18,
 					ProteinG:         20,
 					CarbsG:           75,
+					Price:            8.75,
 					MealCategoryTags: []string{"rice_dishes"},
 					ImageURL:         "https://example.test/custom.jpg",
 				},
@@ -120,6 +121,8 @@ var _ = Describe("CandidateSearcher", func() {
 		Expect(candidates[0].Food.ID).To(Equal("custom-1"))
 		Expect(candidates[0].Food.Name).To(Equal("Nasi Lemak"))
 		Expect(candidates[0].Food.Source).To(Equal("custom"))
+		Expect(candidates[0].Food.Price).NotTo(BeNil())
+		Expect(*candidates[0].Food.Price).To(Equal(8.75))
 		Expect(candidates[0].MatchKind).To(Equal(interfaces.FoodMatchExactName))
 		Expect(candidates[0].MatchedTerm).To(Equal("Nasi Lemak"))
 		Expect(candidates[0].Score).To(Equal(float64(1)))

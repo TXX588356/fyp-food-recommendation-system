@@ -33,7 +33,10 @@ func (s *service) GenerateMonth(ctx context.Context, userID uuid.UUID, month str
 }
 
 func (s *service) Generate(ctx context.Context, userID uuid.UUID, period string, month string, week string, weekStart string, weekEnd string) (*interfaces.MealLogReportResponse, error) {
-	loc, _ := time.LoadLocation("Asia/Singapore")
+	loc, err := time.LoadLocation("Asia/Singapore")
+	if err != nil || loc == nil {
+		loc = time.FixedZone("Asia/Singapore", 8*60*60)
+	}
 
 	period = strings.ToLower(strings.TrimSpace(period))
 	if period == "" {
@@ -86,6 +89,8 @@ func (s *service) Generate(ctx context.Context, userID uuid.UUID, period string,
 }
 
 func parseReportPeriodInLocation(period string, month string, week string, weekStart string, weekEnd string, loc *time.Location) (time.Time, time.Time, string, error) {
+	loc = nonNilLocation(loc)
+
 	switch period {
 	case "month":
 		start, end, err := parseMonthInLocation(month, loc)
@@ -107,7 +112,17 @@ func parseReportPeriodInLocation(period string, month string, week string, weekS
 	}
 }
 
+func nonNilLocation(loc *time.Location) *time.Location {
+	if loc != nil {
+		return loc
+	}
+
+	return time.FixedZone("Asia/Singapore", 8*60*60)
+}
+
 func classifyTimeWindow(t time.Time, loc *time.Location) string {
+	loc = nonNilLocation(loc)
+
 	hour := t.In(loc).Hour()
 
 	switch {
@@ -156,6 +171,7 @@ func buildCategoryBreakdown(logs []model.MealLog) []interfaces.CategoryMetric {
 }
 
 func parseMonthInLocation(value string, loc *time.Location) (time.Time, time.Time, error) {
+	loc = nonNilLocation(loc)
 	value = strings.TrimSpace(value)
 
 	if value == "" {
@@ -174,6 +190,7 @@ func parseMonthInLocation(value string, loc *time.Location) (time.Time, time.Tim
 }
 
 func parseWeekInLocation(value string, weekStart string, weekEnd string, loc *time.Location) (time.Time, time.Time, error) {
+	loc = nonNilLocation(loc)
 	value = strings.TrimSpace(value)
 	weekStart = strings.TrimSpace(weekStart)
 	weekEnd = strings.TrimSpace(weekEnd)

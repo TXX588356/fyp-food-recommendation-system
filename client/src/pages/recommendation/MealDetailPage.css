@@ -45,6 +45,12 @@
   transition: background 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
 }
 
+.ui-theme-dark .ui-meal-detail-back {
+  border-color: rgba(237, 244, 245, 0.14);
+  background: rgba(237, 244, 245, 0.07);
+  color: var(--green-dark);
+}
+
 .ui-meal-detail-back::before {
   content: "←";
   width: 20px;
@@ -88,6 +94,11 @@
   background: rgba(15, 107, 67, 0.1);
   color: var(--green-dark);
   box-shadow: var(--shadow-sm);
+}
+
+.ui-theme-dark .ui-meal-detail-photo {
+  background: rgba(237, 244, 245, 0.08);
+  color: var(--green-dark);
 }
 
 .ui-meal-detail-photo img {
@@ -143,6 +154,11 @@
   background: linear-gradient(135deg, rgba(15, 107, 67, 0.1), rgba(247, 200, 153, 0.14));
 }
 
+.ui-theme-dark .ui-meal-detail-score {
+  border-color: rgba(134, 215, 231, 0.2);
+  background: linear-gradient(135deg, rgba(134, 215, 231, 0.09), rgba(183, 198, 255, 0.1));
+}
+
 .ui-meal-detail-score-total {
   display: grid;
   grid-template-columns: 44px minmax(0, 1fr);
@@ -193,6 +209,12 @@
   border: 1px solid rgba(15, 107, 67, 0.12);
   border-radius: 14px;
   background: rgba(255, 251, 239, 0.54);
+}
+
+.ui-theme-dark .ui-meal-detail-score-item,
+.ui-theme-dark .ui-restaurant-row {
+  border-color: rgba(237, 244, 245, 0.12);
+  background: rgba(237, 244, 245, 0.06);
 }
 
 .ui-meal-detail-score-item p:first-child {
@@ -286,6 +308,11 @@
   overflow: hidden;
   border-radius: 14px;
   background: rgba(15, 107, 67, 0.1);
+  color: var(--green-dark);
+}
+
+.ui-theme-dark .ui-restaurant-thumb {
+  background: rgba(237, 244, 245, 0.08);
   color: var(--green-dark);
 }
 

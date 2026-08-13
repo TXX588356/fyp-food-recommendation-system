@@ -34,9 +34,9 @@ import type {
 import './MealDetailPage.css'
 import { ChefHat, Gauge, Soup } from 'lucide-react'
 import { FiCheck } from 'react-icons/fi'
+import MainNav from '@/theme/MainNav'
 
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 const validMealCategories: MealCategory[] = ['breakfast', 'lunch', 'dinner', 'snack']
 
@@ -204,6 +204,11 @@ export default function MealDetailPage() {
 		return findPersistedRecommendationLocation(storageKey, mealCategory)
 	}, [mealCategory, storageKey])
 
+	const customMealPrice =
+		candidate?.food.source === 'custom' && typeof candidate.food.price === 'number'
+			? candidate.food.price
+			: null
+
 	useEffect(() => {
 		if(!successMessage) {
 			return
@@ -223,7 +228,7 @@ export default function MealDetailPage() {
 
 		try {
 			const response = await axios.post<MealDetailResponse>(
-				`${API_BASE_URL}/recommendations/meal-detail`,
+				"/recommendations/meal-detail",
 				{
 					mealCategory,
 					candidate,
@@ -315,11 +320,7 @@ export default function MealDetailPage() {
 		return (
 			<Box className='ui-settings-page ui-meal-detail-page'>
 				<Box component="main" className='ui-settings-frame'>
-				<nav className='ui-settings-nav ui-surface' aria-label='Main navigation'>
-					<Link to="/recommendation">Recommendation</Link>
-					<Link to="/meal-logs">Logs</Link>
-					<Link to="/preferences">Preferences</Link>
-					</nav>
+					<MainNav active="recommendation" />
 
 					<Box className='ui-meal-detail-empty ui-card'>
 						<ChefHat size={24} />
@@ -342,11 +343,7 @@ export default function MealDetailPage() {
 	return (
 		<Box className='ui-settings-page ui-meal-detail-page'>
 			<Box component="main" className='ui-settings-frame'>
-					<nav className='ui-settings-nav ui-surface' aria-label='Main navigation'>
-					<Link to="/recommendation">Recommendation</Link>
-					<Link to="/meal-logs">Logs</Link>
-					<Link to="/preferences">Preferences</Link>
-				</nav>
+				<MainNav active="recommendation" />
 
 				{successMessage && (
 					<Box className='ui-success-toast' role='status' aria-live='polite'>
@@ -406,15 +403,17 @@ export default function MealDetailPage() {
 
 									<Group gap="xs" align="center">
 										<Text className="ui-meal-detail-price">
-											{formatPriceRange(
-												detail.meal.estimatedPriceRange.min,
-												detail.meal.estimatedPriceRange.max,
-											)}
+											{customMealPrice !== null
+												? formatRM(customMealPrice)
+												: formatPriceRange(
+													detail.meal.estimatedPriceRange.min,
+													detail.meal.estimatedPriceRange.max,
+												)}
 										</Text>
 										<Badge
 											variant="gradient"
 											gradient={{ from: 'rgba(37, 161, 21, 1)', to: 'rgba(247, 200, 153, 1)', deg: 90 }}
-										>Estimated</Badge>
+										>{customMealPrice !== null ? 'Actual' : 'Estimated'}</Badge>
 									</Group>
 
 									<Group>

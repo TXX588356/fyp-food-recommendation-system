@@ -17,7 +17,6 @@ import {
   Title,
 } from '@mantine/core'
 import axios from 'axios'
-import { Link } from 'react-router-dom'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import type { 
@@ -49,8 +48,8 @@ import './MealLogPage.css'
 import { FiCheck } from 'react-icons/fi'
 import MealLogReportPanel from './MealLogReportPanel'
 import { ChevronLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react'
+import MainNav from '@/theme/MainNav'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 const mealTypeOptions = [
   { value: 'breakfast', label: 'Breakfast' },
@@ -95,7 +94,7 @@ export default function MealLogPage() {
 
     try {
       const response = await axios.get<MealLogReportResponse>(
-        `${API_BASE_URL}/meal-logs/report`,
+        "/meal-logs/report",
         {
           params: reportPeriod === 'week'
             ? { period: reportPeriod, month, weekStart: reportWeekStart, weekEnd: reportWeekEnd }
@@ -131,7 +130,7 @@ export default function MealLogPage() {
 
     try {
       const response = await axios.get<MealLogMonthResponse>(
-        `${API_BASE_URL}/meal-logs`,
+        "/meal-logs",
         {
           params: { month },
           headers: {
@@ -220,7 +219,7 @@ export default function MealLogPage() {
     setEditError(null)
 
     try {
-      await axios.patch(`${API_BASE_URL}/meal-logs/${editingLog.id}`, payload, {
+      await axios.patch(`/meal-logs/${editingLog.id}`, payload, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -266,7 +265,7 @@ export default function MealLogPage() {
     setDeleteError(null)
 
     try {
-      await axios.delete(`${API_BASE_URL}/meal-logs/${deletingLog.id}`, {
+      await axios.delete(`/meal-logs/${deletingLog.id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -348,11 +347,7 @@ export default function MealLogPage() {
       )}
 
       <Box component="main" className='ui-settings-frame'>
-        <nav className='ui-settings-nav ui-surface' aria-label="Main navigation">
-          <Link to="/recommendation">Recommendation</Link>
-          <Link to="/meal-logs" aria-current="page">Logs</Link>
-          <Link to="/preferences">Preferences</Link>
-        </nav>
+        <MainNav active="logs" />
 
         <Box component="section" className='ui-meal-log-shell ui-surface'>
           <Group className="ui-meal-log-monthbar" justify="space-between">

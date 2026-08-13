@@ -160,7 +160,7 @@ func (r *customMealRepository) UpdateOwned(ctx context.Context, userID uuid.UUID
 		}
 
 		if err := tx.Where("custom_meal_item_id = ?", meal.ID).
-			Delete(&model.CustomMealCategoryTag{}).Error; err != nil {
+			Delete(&model.CustomMealCategory{}).Error; err != nil {
 			return err
 		}
 

@@ -18,7 +18,6 @@ export default function RegisterPage() {
   // const [name, setName] = useState('')
   // const [email, setEmail] = useState('')
   // const [password, setPassword] = useState('')
-  const API_BASE_URL = import.meta.env?.VITE_API_BASE_URL
 
   const form = useForm({
     mode: 'uncontrolled',
@@ -40,7 +39,7 @@ export default function RegisterPage() {
     setIsSubmitting(true)
     //e.preventDefault()
     try {
-      const response = await axios.post(`${API_BASE_URL}/auth/register`, values)
+      const response = await axios.post("/auth/register", values)
 
       navigate('/login', {replace: true, state: { message: 'Account created. Please log in.' }})
       console.log('Registration successful: ', response.data);

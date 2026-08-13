@@ -4,9 +4,9 @@ import type { PreferenceData, SettingKey } from "@/preferences/types"
 import { Alert, Box, Button, Text, Title, UnstyledButton } from "@mantine/core"
 import axios from "axios"
 import { useEffect, useMemo, useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
+import MainNav from "@/theme/MainNav"
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 export default function PreferencePage() {
   const navigate = useNavigate()
@@ -36,7 +36,7 @@ export default function PreferencePage() {
       setError(null)
 
       try {
-        const response = await axios.get<PreferenceData>(`${API_BASE_URL}/preferences`, {
+        const response = await axios.get<PreferenceData>("/preferences", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -109,11 +109,7 @@ export default function PreferencePage() {
   return (
     <Box className="ui-settings-page">
       <Box component="main" className="ui-settings-frame">
-        <nav className="ui-settings-nav ui-surface" aria-label="Main navigation">
-          <Link to="/recommendation">Recommendation</Link>
-          <Link to="/meal-logs">Logs</Link>
-          <Link to="/preferences" aria-current="page">Preferences</Link>
-        </nav>
+        <MainNav active="preferences" />
 
         <Box className="ui-settings-layout">
           <Box component="section" className="ui-settings-panel ui-surface ui-panel">

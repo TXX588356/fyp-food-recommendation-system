@@ -12,7 +12,7 @@ import {
 } from '@mantine/core'
 import axios from 'axios'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { MapPin, Moon, Sun } from 'lucide-react'
+import { MapPin } from 'lucide-react'
 
 import { useAuth } from '@/auth/useAuth'
 import './RecommendationPage.css'
@@ -21,14 +21,29 @@ import type { LoggableMeal, MealLogMonthResponse } from '@/pages/mealLog/mealLog
 import { toMonthKey } from '@/pages/mealLog/mealLogHelpers'
 import LogMealModal from '@/pages/mealLog/LogMealModal'
 import { FiCheck } from 'react-icons/fi'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { resolveWikipediaMealImage } from './wikiMealImages'
 import { formatLocation, parseLocation } from '@/preferences/helpers'
 import { parseMalaysiaCitiesCsv, type CityRow } from '@/preferences/options'
 import type { LocationValue, PreferenceData } from '@/preferences/types'
-import { loadCurrentRecommendationLocation, saveCurrentRecommendationLocation } from './recommendationStorage'
+import {
+  buildRecommendationStorageKey,
+  emptyCandidates,
+  emptyFilteredOut,
+  emptyGenerated,
+  getLocalDateKey,
+  loadCurrentRecommendationLocation,
+  loadPersistedRecommendations,
+  saveCurrentRecommendationLocation,
+  savePersistedRecommendations,
+} from './recommendationStorage'
+import MainNav from '@/theme/MainNav'
+import { useThemeMode } from '@/theme/ThemeContext'
+import {
+  getCustomMealCreatedCategory,
+  getCustomMealSuccessMessage,
+} from '../customMeal/customMealNavigation'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 type MealCategory = 'breakfast' | 'lunch' | 'dinner' | 'snack'
 
@@ -56,6 +71,7 @@ type FoodSearchResult = {
   fat_g: number
   protein_g: number
   carbs_g: number
+  price?: number
   serving_description?: string
   image_url?: string
 }
@@ -98,34 +114,12 @@ type VisibleRecommendationItem = {
   filteredReason: string | null
 }
 
-type PersistedRecommendationState = {
-  generatedDate: string
-  candidatesByCategory: CategoryState<MatchedMealCandidate[]>
-  filteredOutByCategory: CategoryState<FilteredMealCandidate[]>
-  generatedByCategory: CategoryState<boolean>
-  locationByCategory: CategoryState<string>
-}
-
 const mealCategoryOptions: Array<{ value: MealCategory; label: string;}> = [
   { value: 'breakfast', label: 'Breakfast'},
   { value: 'lunch', label: 'Lunch'},
   { value: 'dinner', label: 'Dinner'},
   { value: 'snack', label: 'Snack'},
 ]
-
-const emptyCandidates: CategoryState<MatchedMealCandidate[]> = {
-  breakfast: [],
-  lunch: [],
-  dinner: [],
-  snack: [],
-}
-
-const emptyFilteredOut: CategoryState<FilteredMealCandidate[]> = {
-  breakfast: [],
-  lunch: [],
-  dinner: [],
-  snack: [],
-}
 
 const emptyLoading: CategoryState<boolean> = {
   breakfast: false,
@@ -141,20 +135,6 @@ const formatRecommendationScore = (score: number | undefined) => {
   return Math.round(score).toString()
 }
 
-const emptyGenerated: CategoryState<boolean> = {
-  breakfast: false,
-  lunch: false,
-  dinner: false,
-  snack: false,
-}
-
-const emptyLocationByCategory: CategoryState<string> = {
-  breakfast: '',
-  lunch: '',
-  dinner: '',
-  snack: '',
-}
-
 const emptyErrors: CategoryState<string | null> = {
   breakfast: null,
   lunch: null,
@@ -163,98 +143,6 @@ const emptyErrors: CategoryState<string | null> = {
 }
 
 const formatRM = (value: number) => `RM ${value.toFixed(2)}`
-
-const buildRecommendationStorageKey = (userKey: string | undefined) => {
-  return `recommendation:${userKey ?? 'anonymous'}`
-}
-
-const createEmptyPersistedRecommendations = 
-(): PersistedRecommendationState => ({
-  generatedDate: getLocalDateKey(),
-  candidatesByCategory: {
-    breakfast: [],
-    lunch: [],
-    dinner: [],
-    snack: [],
-  },
-  filteredOutByCategory: {
-    breakfast: [],
-    lunch: [],
-    dinner: [],
-    snack: [],
-  },
-  generatedByCategory: {
-    breakfast: false,
-    lunch: false,
-    dinner: false,
-    snack: false,
-  },
-  locationByCategory: {
-    breakfast: '',
-    lunch: '',
-    dinner: '',
-    snack: '',
-  },
-})
-
-const loadPersistedRecommendations = (storageKey: string): PersistedRecommendationState => {
-  const emptyState = createEmptyPersistedRecommendations()
-
-  try {
-    const rawValue = localStorage.getItem(storageKey)
-
-    if (!rawValue) {
-      return emptyState
-    }
-
-    const parsedValue = JSON.parse(rawValue) as Partial<PersistedRecommendationState>
-
-    if (parsedValue.generatedDate !== getLocalDateKey()) {
-      localStorage.removeItem(storageKey)
-      return emptyState
-    }
-
-    return {
-      generatedDate: parsedValue.generatedDate,
-      candidatesByCategory: {
-        ...emptyCandidates,
-        ...parsedValue.candidatesByCategory,
-      },
-      filteredOutByCategory: {
-        ...emptyFilteredOut,
-        ...parsedValue.filteredOutByCategory,
-      },
-      generatedByCategory: {
-        ...emptyGenerated,
-        ...parsedValue.generatedByCategory,
-      },
-      locationByCategory: {
-        ...emptyLocationByCategory,
-        ...parsedValue.locationByCategory,
-      },
-    }
-  } catch {
-    localStorage.removeItem(storageKey)
-    return emptyState
-  }
-}
-
-const savePersistedRecommendations = (
-  storageKey: string,
-  nextState: PersistedRecommendationState,
-) => {
-  localStorage.setItem(storageKey, JSON.stringify(nextState))
-}
-
-const getLocalDateKey = () => {
-  const today = new Date()
-  
-  const year = today.getFullYear()
-  const month = String(today.getMonth() + 1).padStart(2, '0')
-  const day = String(today.getDate()).padStart(2, '0')
-
-  return `${year}-${month}-${day}`
-}
 
 const selectDefaultRecommendationLocation = (preference: PreferenceData) => {
   const today = new Date().getDay()
@@ -446,6 +334,7 @@ function RecommendationIcon({ name, size = 20 }: { name: IconName; size?: number
 
 export default function RecommendationPage() {
   const { user } = useAuth()
+  const location = useLocation()
   const userKey = user?.id ?? user?.email
 
   const recommendationStorageKey = useMemo(
@@ -458,7 +347,13 @@ export default function RecommendationPage() {
     [recommendationStorageKey],
   )
 
-  const [activeCategory, setActiveCategory] = useState<MealCategory | null>(null)
+  const [activeCategory, setActiveCategory] = useState<MealCategory | null>(() => {
+    const createdCategory = getCustomMealCreatedCategory(location.state)
+
+    return mealCategoryOptions.some((option) => option.value === createdCategory)
+      ? createdCategory as MealCategory
+      : null
+  })
   const [candidatesByCategory, setCandidatesByCategory] = useState<CategoryState<MatchedMealCandidate[]>>(
     persistedRecommendations.candidatesByCategory,
   )
@@ -476,8 +371,10 @@ export default function RecommendationPage() {
   const [errorsByCategory, setErrorsByCategory] = useState<CategoryState<string | null>>(emptyErrors)
 
   const [mealToLog, setMealToLog] = useState<LoggableMeal | null>(null)
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
-  const [isDarkMode, setIsDarkMode] = useState(false)
+  const [successMessage, setSuccessMessage] = useState<string | null>(() =>
+    getCustomMealSuccessMessage(location.state),
+  )
+  const { isDarkMode } = useThemeMode()
   const [savedLocations, setSavedLocations] = useState<RecommendationLocationOption[]>([])
   const [selectedLocation, setSelectedLocation] = useState<LocationValue>({
     state: '',
@@ -485,6 +382,17 @@ export default function RecommendationPage() {
   })
   const [locationError, setLocationError] = useState<string | null>(null)
   const navigate = useNavigate()
+
+  useEffect(() => {
+    if (!getCustomMealSuccessMessage(location.state)) {
+      return
+    }
+
+    navigate('/recommendation', {
+      replace: true,
+      state: null,
+    })
+  }, [location.state, navigate])
 
   useEffect(() => {
     if (!successMessage) {
@@ -513,7 +421,7 @@ export default function RecommendationPage() {
     const loadPreferences = async () => {
       try {
         const response = await axios.get<PreferenceData>(
-          `${API_BASE_URL}/preferences`,
+          "/preferences",
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -522,7 +430,7 @@ export default function RecommendationPage() {
         )
 
         const defaultLocation = selectDefaultRecommendationLocation(response.data)
-        const currentLocation = loadCurrentRecommendationLocation()
+        const currentLocation = loadCurrentRecommendationLocation(userKey)
         const initialLocation = currentLocation || defaultLocation
         const nextSavedLocations = [
           {
@@ -538,7 +446,7 @@ export default function RecommendationPage() {
         setSavedLocations(nextSavedLocations)
         setSelectedLocation(parseLocation(initialLocation))
         if (!currentLocation) {
-          saveCurrentRecommendationLocation(defaultLocation)
+          saveCurrentRecommendationLocation(userKey, defaultLocation)
         }
       } catch (error) {
         console.error('Failed to load recommendation location preference', error)
@@ -547,7 +455,7 @@ export default function RecommendationPage() {
     }
 
     void loadPreferences()
-  }, [token])
+  }, [token, userKey])
 
   const persistRecommendationCategory = (
   mealCategory: MealCategory,
@@ -612,12 +520,12 @@ export default function RecommendationPage() {
     }
 
     setLoadingByCategory((current) => ({ ...current, [mealCategory]: true }))
-    saveCurrentRecommendationLocation(location)
+    saveCurrentRecommendationLocation(userKey, location)
     setErrorsByCategory((current) => ({ ...current, [mealCategory]: null }))
 
     try {
       const mealLogResponse = await axios.get<MealLogMonthResponse>(
-        `${API_BASE_URL}/meal-logs`,
+        "/meal-logs",
         {
           params: { month: toMonthKey(new Date()) },
           headers: {
@@ -628,11 +536,10 @@ export default function RecommendationPage() {
       const currentMonthSpent = mealLogResponse.data.summary.totalSpent
 
       const response = await axios.post<GenerateRecommendationsResponse>(
-        `${API_BASE_URL}/recommendations`,
+        "/recommendations",
         {
           mealCategory,
           currentMonthSpent,
-          perMealBudget: 0,
           location,
         },
         {
@@ -779,6 +686,10 @@ export default function RecommendationPage() {
   const renderCandidateCard = (mealCategory: MealCategory, item: VisibleRecommendationItem, index: number) => {
     const { candidate, filteredReason } = item
     const recommendationScore = formatRecommendationScore(candidate.score)
+    const customMealPrice =
+      candidate.food.source === 'custom' && typeof candidate.food.price === 'number'
+        ? candidate.food.price
+        : null
 
     const openDetailPage = () => {
       if (filteredReason) { return }
@@ -827,12 +738,14 @@ export default function RecommendationPage() {
         <Text>{Math.round(candidate.food.calories)} kcal</Text>
         <Group gap="xs" align="center">
           <Text className="ui-meal-price">
-            {formatRM(candidate.generated_meal.estimated_price_range.min)} - {formatRM(candidate.generated_meal.estimated_price_range.max)}
+            {customMealPrice !== null
+              ? formatRM(customMealPrice)
+              : `${formatRM(candidate.generated_meal.estimated_price_range.min)} - ${formatRM(candidate.generated_meal.estimated_price_range.max)}`}
           </Text>
           <Badge
             variant="gradient"
             gradient={{ from: 'rgba(37, 161, 21, 1)', to: 'rgba(247, 200, 153, 1)', deg: 90 }}
-          >Estimated</Badge>
+          >{customMealPrice !== null ? 'Actual' : 'Estimated'}</Badge>
         </Group>
         {filteredReason && (
           <Badge color="red" className="ui-meal-filtered-badge">
@@ -868,24 +781,7 @@ export default function RecommendationPage() {
   return (
     <Box className={`ui-settings-page ui-recommendation-page ${isDarkMode ? 'ui-recommendation-dark' : ''}`}>
       <Box component="main" className="ui-settings-frame">
-        <nav className="ui-settings-nav ui-surface" aria-label="Main navigation">
-          <Link to="/recommendation" aria-current="page">Recommendation</Link>
-          <Link to="/meal-logs">Logs</Link>
-          <Link to="/preferences">Preferences</Link>
-          <button
-            className="ui-theme-toggle"
-            type="button"
-            aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-            aria-pressed={isDarkMode}
-            onClick={() => setIsDarkMode((current) => !current)}
-          >
-            {isDarkMode ? (
-              <Sun size={19} strokeWidth={2.35} aria-hidden="true" />
-            ) : (
-              <Moon size={19} strokeWidth={2.35} aria-hidden="true" />
-            )}
-          </button>
-        </nav>
+        <MainNav active="recommendation" />
 
         <Box className="ui-recommendation-layout">
         <Text 
@@ -906,7 +802,7 @@ export default function RecommendationPage() {
           selectedLocation={selectedLocation}
           savedLocations={savedLocations}
           onChange={(location) => {
-            saveCurrentRecommendationLocation(formatLocation(location))
+            saveCurrentRecommendationLocation(userKey, formatLocation(location))
             setSelectedLocation(location)
             setGeneratedByCategory(emptyGenerated)
             setCandidatesByCategory(emptyCandidates)

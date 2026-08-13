@@ -26,6 +26,7 @@ export type FoodSearchResult = {
 	fat_g: number
 	protein_g: number
 	carbs_g: number
+	price?: number
 	serving_description?: string
 	image_url?: string
 }
@@ -41,7 +42,7 @@ export type MatchedMealCandidate = {
 	generated_meal: GeneratedMeal
 	food: FoodSearchResult
 	matched_query: string
-	score: number
+	score?: number
 	score_breakdown?: CandidateScoreBreakdown
 }
 
