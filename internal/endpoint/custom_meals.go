@@ -174,7 +174,29 @@ func (h *customMealHandler) createCustomMeal(c *echo.Context) error {
 		})
 	}
 
+	h.signCustomMealImageURL(c.Request().Context(), result)
+
 	return c.JSON(http.StatusCreated, result)
+}
+
+func (h *customMealHandler) signCustomMealImageURL(ctx context.Context, meal *interfaces.CustomMealResponse) {
+	if meal == nil || meal.ImageURL == "" || h.imageStorage == nil {
+		return
+	}
+
+	signedURL, err := h.imageStorage.PresignMealImage(ctx, meal.ImageURL)
+	if err != nil {
+		log.Printf("custom meal image presign failed: %v", err)
+		return
+	}
+
+	meal.ImageURL = signedURL
+}
+
+func (h *customMealHandler) signCustomMealImageURLs(ctx context.Context, meals []*interfaces.CustomMealResponse) {
+	for _, meal := range meals {
+		h.signCustomMealImageURL(ctx, meal)
+	}
 }
 
 // listVisibleCustomMeals returns the authenticated user's own custom meals and
@@ -195,6 +217,8 @@ func (h *customMealHandler) listVisibleCustomMeals(c *echo.Context) error {
 			"error": err.Error(),
 		})
 	}
+
+	h.signCustomMealImageURLs(c.Request().Context(), result)
 
 	return c.JSON(http.StatusOK, result)
 }
@@ -222,6 +246,8 @@ func (h *customMealHandler) findVisibleCustomMealByID(c *echo.Context) error {
 			"error": err.Error(),
 		})
 	}
+
+	h.signCustomMealImageURL(c.Request().Context(), result)
 
 	return c.JSON(http.StatusOK, result)
 }
@@ -295,9 +321,7 @@ func (h *customMealHandler) deleteCustomMeal(c *echo.Context) error {
 		}
 	}
 
-	return c.JSON(http.StatusOK, map[string]string{
-		"message": "custom meal deleted",
-	})
+	return c.NoContent(http.StatusNoContent)
 }
 
 func (h *customMealHandler) autocompleteCustomMeal(c *echo.Context) error {

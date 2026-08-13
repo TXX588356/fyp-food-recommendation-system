@@ -25,7 +25,7 @@ func Run(parent context.Context) error {
 		return err
 	}
 
-	imageStorage, err := storage.NewMinIOImageStorage(parent, cfg.MinIO.Endpoint, cfg.MinIO.AccessKey, cfg.MinIO.SecretKey, cfg.MinIO.Bucket, cfg.MinIO.UseSSL, cfg.MinIO.PublicURL)
+	imageStorage, err := storage.NewImageStorage(parent, cfg.ObjectStorage.Endpoint, cfg.ObjectStorage.AccessKey, cfg.ObjectStorage.SecretKey, cfg.ObjectStorage.Bucket, cfg.ObjectStorage.UseSSL, cfg.ObjectStorage.PublicURL)
 	if err != nil {
 		return err
 	}
@@ -47,7 +47,7 @@ func Run(parent context.Context) error {
 	ctx, cancel := signal.NotifyContext(parent, os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
-	a := app.New(db, cfg.Security.JWTSecret, cfg.Gemini.APIKey, imageStorage, cfg.MinIO.PublicURL, cfg.MinIO.Bucket, cfg.SerpAPI.APIKey)
+	a := app.New(db, cfg.Security.JWTSecret, cfg.Gemini.APIKey, imageStorage, cfg.ObjectStorage.PublicURL, cfg.ObjectStorage.Bucket, cfg.SerpAPI.APIKey)
 	ctx = app.WithApp(ctx, a) // attach App instance to the context, allowing other codes to retrieve
 	endpoint.RegisterEndpoints(ctx, e)
 

@@ -22,6 +22,7 @@ type mealSearchHandler struct {
 	catalogService     interfaces.CatalogService
 	preferenceService  interfaces.PreferenceService
 	restaurantSearcher interfaces.RestaurantSearcher
+	imageStorage       interfaces.ImageStorage
 }
 
 type mealSearchResult struct {
@@ -71,6 +72,7 @@ func RegisterMealSearchRoutes(ctx context.Context, e *echo.Echo) {
 		catalogService:     catalogService,
 		preferenceService:  preferenceService,
 		restaurantSearcher: restaurantSearcher,
+		imageStorage:       a.ImageStorage,
 	}
 
 	meals := e.Group("/meals", middleware.Auth(a.JWTSecret))
@@ -118,6 +120,7 @@ func (h *mealSearchHandler) searchMeals(c *echo.Context) error {
 
 	results := make([]mealSearchResult, 0, len(customMeals)+len(prebuiltPage.Items))
 	for _, meal := range customMeals {
+		h.signCustomMealImageURL(c.Request().Context(), meal)
 		results = append(results, customMealSearchResult(meal))
 	}
 
@@ -142,6 +145,20 @@ func (h *mealSearchHandler) fuzzyCustomMealSearch(ctx context.Context, userID uu
 	}
 
 	return matches, nil
+}
+
+func (h *mealSearchHandler) signCustomMealImageURL(ctx context.Context, meal *interfaces.CustomMealResponse) {
+	if meal == nil || meal.ImageURL == "" || h.imageStorage == nil {
+		return
+	}
+
+	signedURL, err := h.imageStorage.PresignMealImage(ctx, meal.ImageURL)
+	if err != nil {
+		log.Printf("custom meal image presign failed: %v", err)
+		return
+	}
+
+	meal.ImageURL = signedURL
 }
 
 func customMealSearchResult(meal *interfaces.CustomMealResponse) mealSearchResult {
@@ -243,6 +260,7 @@ func (h *mealSearchHandler) getMealDetail(c *echo.Context) error {
 				"error": "failed to load meal detail",
 			})
 		}
+		h.signCustomMealImageURL(c.Request().Context(), customMeal)
 		meal = manualCustomMealDetail(customMeal)
 	default:
 		return c.JSON(http.StatusBadRequest, map[string]string{

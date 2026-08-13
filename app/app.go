@@ -27,23 +27,23 @@ type contextKey string
 const appContextKey contextKey = "food-recommendation-system:app"
 
 type App struct {
-	PostgresDB            *gorm.DB
-	ImageStorage          interfaces.ImageStorage
-	authService           interfaces.AuthService
-	mealLogService        interfaces.MealLogService
-	JWTSecret             string
-	GeminiAPIKey          string
-	preferenceService     interfaces.PreferenceService
-	customMealService     interfaces.CustomMealService
-	restaurantSearcher    interfaces.RestaurantSearcher
-	recommendationService interfaces.RecommendationService
-	aiClient              AIClient
-	catalogService        *catalogService.Service
-	catalogFoodSearcher   interfaces.FoodSearcher
-	mealLogReportService  interfaces.MealLogReportService
-	minIOPublicURL        string
-	minIOBucket           string
-	SerpAPIKey            string
+	PostgresDB             *gorm.DB
+	ImageStorage           interfaces.ImageStorage
+	authService            interfaces.AuthService
+	mealLogService         interfaces.MealLogService
+	JWTSecret              string
+	GeminiAPIKey           string
+	preferenceService      interfaces.PreferenceService
+	customMealService      interfaces.CustomMealService
+	restaurantSearcher     interfaces.RestaurantSearcher
+	recommendationService  interfaces.RecommendationService
+	aiClient               AIClient
+	catalogService         *catalogService.Service
+	catalogFoodSearcher    interfaces.FoodSearcher
+	mealLogReportService   interfaces.MealLogReportService
+	objectStoragePublicURL string
+	objectStorageBucket    string
+	SerpAPIKey             string
 }
 
 type AIClient interface {
@@ -65,15 +65,15 @@ var newMealGenerator = func(ctx context.Context, apiKey string) (AIClient, error
 	return llm.NewClient(client), nil
 }
 
-func New(db *gorm.DB, jwtSecret, geminiAPIKey string, imageStorage interfaces.ImageStorage, minIOPublicURL, minIOBucket, serpAPIKey string) *App {
+func New(db *gorm.DB, jwtSecret, geminiAPIKey string, imageStorage interfaces.ImageStorage, objectStoragePublicURL, objectStorageBucket, serpAPIKey string) *App {
 	return &App{
-		PostgresDB:     db,
-		JWTSecret:      jwtSecret,
-		GeminiAPIKey:   geminiAPIKey,
-		ImageStorage:   imageStorage,
-		minIOPublicURL: minIOPublicURL,
-		minIOBucket:    minIOBucket,
-		SerpAPIKey:     serpAPIKey,
+		PostgresDB:             db,
+		JWTSecret:              jwtSecret,
+		GeminiAPIKey:           geminiAPIKey,
+		ImageStorage:           imageStorage,
+		objectStoragePublicURL: objectStoragePublicURL,
+		objectStorageBucket:    objectStorageBucket,
+		SerpAPIKey:             serpAPIKey,
 	}
 }
 
@@ -83,7 +83,7 @@ func (a *App) GetCatalogService(_ context.Context) (*catalogService.Service, err
 	}
 
 	repository := postgres.NewCatalogPostgresRepository(a.PostgresDB)
-	resolver := storage.NewObjectURLResolver(a.minIOPublicURL, a.minIOBucket)
+	resolver := storage.NewObjectURLResolver(a.objectStoragePublicURL, a.objectStorageBucket)
 	a.catalogService = catalogService.NewService(repository, resolver)
 
 	return a.catalogService, nil
