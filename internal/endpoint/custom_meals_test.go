@@ -49,6 +49,10 @@ func (s *recordingImageStorage) DeleteObject(context.Context, string) error {
 	return nil
 }
 
+func (s *recordingImageStorage) PresignMealImage(_ context.Context, imageURL string) (string, error) {
+	return imageURL, nil
+}
+
 func (s *recordingImageStorage) DeleteMealImage(_ context.Context, imageURL string) error {
 	s.deletedImageURL = imageURL
 	return s.deleteImageErr
@@ -655,8 +659,7 @@ var _ = Describe("Custom meal endpoints", func() {
 
 			response := performCustomMealRequest(e, http.MethodDelete, "/custom-meals/"+mealID.String(), nil, token)
 
-			Expect(response.Code).To(Equal(http.StatusOK))
-			Expect(response.Body.String()).To(ContainSubstring("custom meal deleted"))
+			Expect(response.Code).To(Equal(http.StatusNoContent))
 			Expect(imageStorage.deletedImageURL).To(Equal(imageURL))
 		})
 
@@ -677,14 +680,14 @@ var _ = Describe("Custom meal endpoints", func() {
 
 			response := performCustomMealRequest(e, http.MethodDelete, "/custom-meals/"+mealID.String(), nil, token)
 
-			Expect(response.Code).To(Equal(http.StatusOK))
+			Expect(response.Code).To(Equal(http.StatusNoContent))
 			Expect(imageStorage.deletedImageURL).To(BeEmpty())
 		})
 
 		It("should keep deletion successful when image cleanup fails", func() {
 			mealID := uuid.New()
 			imageURL := "http://localhost:9000/images/custom-meals/test.jpg"
-			imageStorage.deleteImageErr = errors.New("MinIO unavailable")
+			imageStorage.deleteImageErr = errors.New("object storage unavailable")
 
 			customMealService.EXPECT().
 				FindVisibleByID(mock.Anything, userID, mealID).
@@ -701,7 +704,7 @@ var _ = Describe("Custom meal endpoints", func() {
 
 			response := performCustomMealRequest(e, http.MethodDelete, "/custom-meals/"+mealID.String(), nil, token)
 
-			Expect(response.Code).To(Equal(http.StatusOK))
+			Expect(response.Code).To(Equal(http.StatusNoContent))
 			Expect(imageStorage.deletedImageURL).To(Equal(imageURL))
 		})
 
