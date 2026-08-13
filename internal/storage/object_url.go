@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// ObjectURLResolver converts a MinIO object key to its public URL without
+// ObjectURLResolver converts an object storage key to its public URL without
 // contacting object storage. Object keys remain deployment-independent in the database.
 type ObjectURLResolver struct {
 	publicBaseURL string
