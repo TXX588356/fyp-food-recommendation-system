@@ -130,6 +130,9 @@ var _ = Describe("Meal log service", func() {
 			logs: map[uuid.UUID]*model.MealLog{},
 		}
 		svc = NewService(repo, nil, nil, nil)
+		svc.(*service).now = func() time.Time {
+			return time.Date(2026, 8, 15, 12, 0, 0, 0, time.UTC)
+		}
 	})
 
 	storedLog := func() *model.MealLog {
@@ -278,6 +281,20 @@ var _ = Describe("Meal log service", func() {
 			Expect(response).To(BeNil())
 			Expect(repo.createdLog).To(BeNil())
 		})
+
+		It("should reject future eaten time before loading meal details", func() {
+			response, err := svc.Create(ctx, userID, interfaces.MealLogInput{
+				Source:   interfaces.MealLogSourceCustom,
+				MealID:   uuid.New().String(),
+				Price:    8,
+				EatenAt:  time.Date(2026, 8, 15, 12, 1, 0, 0, time.UTC),
+				MealType: "lunch",
+			})
+
+			Expect(err).To(MatchError("eaten time cannot be in the future"))
+			Expect(response).To(BeNil())
+			Expect(repo.createdLog).To(BeNil())
+		})
 	})
 
 	Describe("GetMonth", func() {
@@ -415,6 +432,19 @@ var _ = Describe("Meal log service", func() {
 			})
 
 			Expect(err).To(MatchError("eaten time is required"))
+			Expect(response).To(BeNil())
+			Expect(repo.findID).To(Equal(uuid.Nil))
+			Expect(repo.updatedLog).To(BeNil())
+		})
+
+		It("should reject future eaten time before loading the meal log", func() {
+			response, err := svc.Update(ctx, userID, logID, interfaces.MealLogUpdateInput{
+				Price:    9.75,
+				EatenAt:  time.Date(2026, 8, 15, 12, 1, 0, 0, time.UTC),
+				MealType: "lunch",
+			})
+
+			Expect(err).To(MatchError("eaten time cannot be in the future"))
 			Expect(response).To(BeNil())
 			Expect(repo.findID).To(Equal(uuid.Nil))
 			Expect(repo.updatedLog).To(BeNil())

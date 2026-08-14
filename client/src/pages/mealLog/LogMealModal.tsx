@@ -15,6 +15,7 @@ import './MealLogPage.css'
 import {
   formatKcal,
   fromDateTimeLocalValue,
+  getCurrentDateTimeLocalValue,
   inferMealTypeFromDate,
   toDateTimeLocalValue,
 } from './mealLogHelpers'
@@ -65,6 +66,11 @@ function LogMealForm({
       return
     }
 
+    if (new Date(eatenAt) > new Date()) {
+      setError('Meal time cannot be in the future')
+      return
+    }
+
     const payload: MealLogInput = {
       source: meal.source,
       mealId: meal.mealId,
@@ -93,13 +99,6 @@ function LogMealForm({
     }
   }
 
-  const getEndOfTodayDateTimeLocalValue = () => {
-    const endOfToday = new Date()
-    endOfToday.setHours(23, 59, 0, 0)
-
-    return toDateTimeLocalValue(endOfToday)
-  }
-
   return (
     <Stack gap="md" className="ui-log-meal-form">
       <Stack gap={4} className="ui-log-meal-summary">
@@ -112,6 +111,7 @@ function LogMealForm({
       <NumberInput
         label="Price (RM)"
         min={0}
+        clampBehavior="none"
         decimalScale={2}
         value={price}
         onChange={(value) => setPrice(value === '' ? '' : Number(value))}
@@ -124,7 +124,7 @@ function LogMealForm({
         value={eatenAt}
         onChange={(event) => setEatenAt(event.currentTarget.value)}
         classNames={{ input: 'ui-input' }}
-        max={getEndOfTodayDateTimeLocalValue()}
+        max={getCurrentDateTimeLocalValue()}
       />
 
       <Select

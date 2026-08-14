@@ -35,6 +35,32 @@ export const getWeekRangeForDate = (date: Date) => {
     }
 }
 
+export const getDefaultReportWeekRangeForMonth = (monthKey: string, today = new Date()) => {
+    const monthStart = parseMonthKey(monthKey)
+    const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0)
+    const selectedMonth = toMonthKey(monthStart)
+    const currentMonth = toMonthKey(today)
+
+    if (selectedMonth === currentMonth) {
+        const currentWeek = getWeekRangeForDate(today)
+        const weekStart = parseDateKey(currentWeek.start)
+        const weekEnd = parseDateKey(currentWeek.end)
+
+        return {
+            start: toDateKey(weekStart < monthStart ? monthStart : weekStart),
+            end: toDateKey(weekEnd > monthEnd ? monthEnd : weekEnd),
+        }
+    }
+
+    const start = new Date(monthEnd)
+    start.setDate(monthEnd.getDate() - 6)
+
+    return {
+        start: toDateKey(start < monthStart ? monthStart : start),
+        end: toDateKey(monthEnd),
+    }
+}
+
 export const shiftDateKeyByDays = (dateKey: string, days: number) => {
     const date = parseDateKey(dateKey)
     date.setDate(date.getDate() + days)
@@ -44,6 +70,16 @@ export const shiftDateKeyByDays = (dateKey: string, days: number) => {
 export const parseMonthKey = (monthKey: string) => {
     const [year, month] = monthKey.split('-').map(Number)
     return new Date(year, month - 1, 1)
+}
+
+export const getMonthDateRange = (monthKey: string) => {
+    const start = parseMonthKey(monthKey)
+    const end = new Date(start.getFullYear(), start.getMonth() + 1, 0)
+
+    return {
+        start: toDateKey(start),
+        end: toDateKey(end),
+    }
 }
 
 export const formatMonthTitle = (monthKey: string) => {
@@ -76,6 +112,8 @@ export const toDateTimeLocalValue = (date: Date) => {
 
     return `${year}-${month}-${day}T${hour}:${minute}`
 }
+
+export const getCurrentDateTimeLocalValue = () => toDateTimeLocalValue(new Date())
 
 export const fromDateTimeLocalValue = (value: string) => {
     const date = new Date(value)

@@ -961,6 +961,7 @@ export function CustomMealFormPage() {
                   hideControls
                   classNames={{ input: 'ui-input ui-short-input' }}
                   min={0}
+                  clampBehavior="none"
                   decimalScale={0}
                   value={draft.calories}
                   onChange={(value) => updateDraft('calories', value === '' ? '' : Number(value))}
@@ -972,6 +973,7 @@ export function CustomMealFormPage() {
                 <NumberInput
                   classNames={{ input: 'ui-input' }}
                   min={0}
+                  clampBehavior="none"
                   decimalScale={2}
                   placeholder="Carbs"
                   rightSection={<Text fw={900}>g</Text>}
@@ -981,6 +983,7 @@ export function CustomMealFormPage() {
                 <NumberInput
                   classNames={{ input: 'ui-input' }}
                   min={0}
+                  clampBehavior="none"
                   decimalScale={2}
                   placeholder="Fat"
                   rightSection={<Text fw={900}>g</Text>}
@@ -990,6 +993,7 @@ export function CustomMealFormPage() {
                 <NumberInput
                   classNames={{ input: 'ui-input' }}
                   min={0}
+                  clampBehavior="none"
                   decimalScale={2}
                   placeholder="Protein"
                   rightSection={<Text fw={900}>g</Text>}

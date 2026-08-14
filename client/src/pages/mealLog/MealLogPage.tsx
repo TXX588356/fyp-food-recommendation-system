@@ -29,13 +29,15 @@ import type {
 import {
   fromDateTimeLocalValue,
   formatKcal,
+  getCurrentDateTimeLocalValue,
   formatMealTime,
   formatMealType,
   formatMonthTitle,
   formatRM,
+  getDefaultReportWeekRangeForMonth,
+  getMonthDateRange,
   getNextMonthKey,
   getPreviousMonthKey,
-  getWeekRangeForDate,
   groupLogsByDay,
   parseDateKey,
   shiftDateKeyByDays,
@@ -59,11 +61,14 @@ const mealTypeOptions = [
 ]
 
 type ReportPeriodMode = 'month' | 'week'
-const defaultReportWeekRange = getWeekRangeForDate(new Date())
 
 export default function MealLogPage() {
   // State
   const [month, setMonth] = useState(() => toMonthKey(new Date()))
+  const defaultReportWeekRange = useMemo(
+    () => getDefaultReportWeekRangeForMonth(month),
+    [month],
+  )
   const [data, setData] = useState<MealLogMonthResponse | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -121,6 +126,12 @@ export default function MealLogPage() {
     setIsReportOpen(false)
     setReportError(null)
   }, [month, reportPeriod, reportWeekStart, reportWeekEnd])
+
+  useEffect(() => {
+    const nextWeekRange = getDefaultReportWeekRangeForMonth(month)
+    setReportWeekStart(nextWeekRange.start)
+    setReportWeekEnd(nextWeekRange.end)
+  }, [month])
 
   const loadLogs = useCallback(async (signal?: AbortSignal) => {
     const token = localStorage.getItem('token')
@@ -205,6 +216,11 @@ export default function MealLogPage() {
 
     if (!editEatenAt) {
       setEditError('Please choose when you ate this meal')
+      return
+    }
+
+    if (new Date(editEatenAt) > new Date()) {
+      setEditError('Meal time cannot be in the future')
       return
     }
 
@@ -293,13 +309,22 @@ export default function MealLogPage() {
   const dayEntries = (Object.entries(groupedLogs) as Array<[string, MealLogItem[]]>).sort(
     ([left], [right]) => Number(right) - Number(left),
   )
+  const reportMonthRange = useMemo(() => getMonthDateRange(month), [month])
   const canGenerateReport = (data?.items.length ?? 0) > 0
   const canGenerateSelectedReport =
     reportPeriod === 'week'
       ? reportWeekStart.length > 0 && reportWeekEnd.length > 0
       : canGenerateReport
 
+  const clampReportDateToSelectedMonth = (value: string) => {
+    if (!value) return value
+    if (parseDateKey(value) < parseDateKey(reportMonthRange.start)) return reportMonthRange.start
+    if (parseDateKey(value) > parseDateKey(reportMonthRange.end)) return reportMonthRange.end
+    return value
+  }
+
   const updateReportWeekStart = (value: string) => {
+    value = clampReportDateToSelectedMonth(value)
     setReportWeekStart(value)
 
     if (!value || !reportWeekEnd || parseDateKey(reportWeekEnd) < parseDateKey(value)) {
@@ -314,6 +339,7 @@ export default function MealLogPage() {
   }
 
   const updateReportWeekEnd = (value: string) => {
+    value = clampReportDateToSelectedMonth(value)
     setReportWeekEnd(value)
 
     if (!value || !reportWeekStart || parseDateKey(value) < parseDateKey(reportWeekStart)) {
@@ -328,8 +354,18 @@ export default function MealLogPage() {
   }
 
   const shiftReportWeekRange = (days: number) => {
-    setReportWeekStart((current) => shiftDateKeyByDays(current, days))
-    setReportWeekEnd((current) => shiftDateKeyByDays(current, days))
+    const nextStart = shiftDateKeyByDays(reportWeekStart, days)
+    const nextEnd = shiftDateKeyByDays(reportWeekEnd, days)
+
+    if (
+      parseDateKey(nextStart) < parseDateKey(reportMonthRange.start) ||
+      parseDateKey(nextEnd) > parseDateKey(reportMonthRange.end)
+    ) {
+      return
+    }
+
+    setReportWeekStart(nextStart)
+    setReportWeekEnd(nextEnd)
   }
 
   return (
@@ -446,6 +482,8 @@ export default function MealLogPage() {
                         type="date"
                         aria-label="Weekly report start date"
                         value={reportWeekStart}
+                        min={reportMonthRange.start}
+                        max={reportMonthRange.end}
                         onChange={(event) => updateReportWeekStart(event.currentTarget.value)}
                         classNames={{
                           input: 'ui-input',
@@ -459,6 +497,8 @@ export default function MealLogPage() {
                         type="date"
                         aria-label="Weekly report end date"
                         value={reportWeekEnd}
+                        min={reportMonthRange.start}
+                        max={reportMonthRange.end}
                         onChange={(event) => updateReportWeekEnd(event.currentTarget.value)}
                         classNames={{
                           input: 'ui-input',
@@ -599,6 +639,7 @@ export default function MealLogPage() {
             <NumberInput
               label="Price (RM)"
               min={0}
+              clampBehavior='none'
               decimalScale={2}
               value={editPrice}
               onChange={(value) => setEditPrice(value === '' ? '' : Number(value))}
@@ -611,6 +652,7 @@ export default function MealLogPage() {
               value={editEatenAt}
               onChange={(event) => setEditEatenAt(event.currentTarget.value)}
               classNames={{ input: 'ui-input'}}
+              max={getCurrentDateTimeLocalValue()}
             />
 
             <Select

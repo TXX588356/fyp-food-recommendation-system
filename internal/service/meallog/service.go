@@ -30,7 +30,7 @@ func NewService(mealLogRepo interfaces.MealLogRepository, customMealService inte
 }
 
 func (s *service) Create(ctx context.Context, userID uuid.UUID, input interfaces.MealLogInput) (*interfaces.MealLogResponse, error) {
-	if err := validateMealLogInput(input); err != nil {
+	if err := validateMealLogInput(input, s.now()); err != nil {
 		return nil, err
 	}
 
@@ -63,7 +63,7 @@ func (s *service) Create(ctx context.Context, userID uuid.UUID, input interfaces
 }
 
 func (s *service) Update(ctx context.Context, userID, logID uuid.UUID, input interfaces.MealLogUpdateInput) (*interfaces.MealLogResponse, error) {
-	if err := validateMealLogUpdateInput(input); err != nil {
+	if err := validateMealLogUpdateInput(input, s.now()); err != nil {
 		return nil, err
 	}
 
@@ -270,13 +270,17 @@ func buildMealLogResponses(logs []model.MealLog) []interfaces.MealLogResponse {
 	return responses
 }
 
-func validateMealLogUpdateInput(input interfaces.MealLogUpdateInput) error {
+func validateMealLogUpdateInput(input interfaces.MealLogUpdateInput, now time.Time) error {
 	if input.Price < 0 {
 		return errors.New("price cannot be negative")
 	}
 
 	if input.EatenAt.IsZero() {
 		return errors.New("eaten time is required")
+	}
+
+	if input.EatenAt.After(now) {
+		return errors.New("eaten time cannot be in the future")
 	}
 
 	if !isSupportedMealType(input.MealType) {
@@ -286,7 +290,7 @@ func validateMealLogUpdateInput(input interfaces.MealLogUpdateInput) error {
 	return nil
 }
 
-func validateMealLogInput(input interfaces.MealLogInput) error {
+func validateMealLogInput(input interfaces.MealLogInput, now time.Time) error {
 	if input.Source != interfaces.MealLogSourceCustom && input.Source != interfaces.MealLogSourcePrebuilt {
 		return errors.New("unsupported meal log source")
 	}
@@ -301,6 +305,10 @@ func validateMealLogInput(input interfaces.MealLogInput) error {
 
 	if input.EatenAt.IsZero() {
 		return errors.New("eaten time is required")
+	}
+
+	if input.EatenAt.After(now) {
+		return errors.New("eaten time cannot be in the future")
 	}
 
 	if !isSupportedMealType(input.MealType) {
