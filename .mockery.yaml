@@ -8,8 +8,13 @@ template: testify
 packages:
   fyp/food-rs/internal/interfaces:
     interfaces:
+      UserRepository:
+      PreferenceRepository:
+      RefreshTokenRepository:
       CustomMealRepository:
       CustomMealService:
+      CatalogService:
+      AuthService:
       FoodSearcher:
       MealGenerator:
       PreferenceService:

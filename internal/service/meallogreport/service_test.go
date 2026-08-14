@@ -1,10 +1,13 @@
 package meallogreport
 
 import (
+	"context"
+	"errors"
 	"testing"
 	"time"
 
 	"fyp/food-rs/internal/interfaces"
+	"fyp/food-rs/internal/mocks"
 	"fyp/food-rs/types/model"
 
 	"github.com/google/uuid"
@@ -16,6 +19,42 @@ import (
 func TestMealLogReportService(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Meal Log Report Service Suite")
+}
+
+type testMealLogReportRepository struct {
+	logs      []model.MealLog
+	listErr   error
+	listStart time.Time
+	listEnd   time.Time
+}
+
+func (r *testMealLogReportRepository) Create(context.Context, *model.MealLog) (*model.MealLog, error) {
+	return nil, nil
+}
+
+func (r *testMealLogReportRepository) ListByUserAndMonth(context.Context, uuid.UUID, time.Time, time.Time) ([]model.MealLog, error) {
+	return nil, nil
+}
+
+func (r *testMealLogReportRepository) ListByUserAndRange(_ context.Context, _ uuid.UUID, start time.Time, end time.Time) ([]model.MealLog, error) {
+	r.listStart = start
+	r.listEnd = end
+	if r.listErr != nil {
+		return nil, r.listErr
+	}
+	return r.logs, nil
+}
+
+func (r *testMealLogReportRepository) FindByIDAndUser(context.Context, uuid.UUID, uuid.UUID) (*model.MealLog, error) {
+	return nil, nil
+}
+
+func (r *testMealLogReportRepository) Update(context.Context, *model.MealLog) (*model.MealLog, error) {
+	return nil, nil
+}
+
+func (r *testMealLogReportRepository) Delete(context.Context, uuid.UUID, uuid.UUID) error {
+	return nil
 }
 
 var _ = Describe("Meal log report service", func() {
@@ -175,6 +214,110 @@ var _ = Describe("Meal log report service", func() {
 			Expect(start.Format(time.RFC3339)).To(Equal("2026-07-27T00:00:00+08:00"))
 			Expect(end.Format(time.RFC3339)).To(Equal("2026-08-03T00:00:00+08:00"))
 			Expect(label).To(Equal("Jul 27 - Aug 2, 2026"))
+		})
+	})
+
+	Describe("Generate", func() {
+		It("returns an empty monthly report when no logs exist", func() {
+			ctx := context.Background()
+			userID := uuid.New()
+			repo := &testMealLogReportRepository{}
+			prefs := mocks.NewPreferenceService(GinkgoT())
+			svc := NewService(repo, prefs)
+
+			result, err := svc.Generate(ctx, userID, "month", "2026-07", "", "", "")
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Period.Kind).To(Equal("month"))
+			Expect(result.Period.Label).To(Equal("July 2026"))
+			Expect(result.Summary.TotalMeals).To(Equal(0))
+			Expect(result.CategoryBreakdown).To(BeEmpty())
+			Expect(result.Insights).To(BeEmpty())
+			Expect(repo.listStart.Format(time.RFC3339)).To(Equal("2026-07-01T00:00:00+08:00"))
+			Expect(repo.listEnd.Format(time.RFC3339)).To(Equal("2026-08-01T00:00:00+08:00"))
+		})
+
+		It("builds a weekly report and continues when preferences are unavailable", func() {
+			ctx := context.Background()
+			userID := uuid.New()
+			repo := &testMealLogReportRepository{
+				logs: []model.MealLog{
+					{
+						ID:           uuid.New(),
+						UserID:       userID,
+						MealName:     "Chicken Rice",
+						MealCategory: model.StringArray{"rice_dishes", "poultry"},
+						Price:        8.50,
+						Calories:     650,
+						ProteinG:     32,
+						CarbsG:       78,
+						FatG:         21,
+						EatenAt:      time.Date(2026, 7, 27, 12, 0, 0, 0, loc),
+						MealType:     "lunch",
+					},
+					{
+						ID:           uuid.New(),
+						UserID:       userID,
+						MealName:     "Chicken Rice",
+						MealCategory: model.StringArray{"rice_dishes"},
+						Price:        9.50,
+						Calories:     700,
+						ProteinG:     28,
+						CarbsG:       82,
+						FatG:         24,
+						EatenAt:      time.Date(2026, 7, 28, 12, 30, 0, 0, loc),
+						MealType:     "lunch",
+					},
+				},
+			}
+			prefs := mocks.NewPreferenceService(GinkgoT())
+			svc := NewService(repo, prefs)
+
+			prefs.EXPECT().
+				GetByUserID(ctx, userID).
+				Return(nil, errors.New("preferences unavailable")).
+				Once()
+
+			result, err := svc.Generate(ctx, userID, "week", "", "", "2026-07-27", "2026-08-02")
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Period.Kind).To(Equal("week"))
+			Expect(result.Summary.TotalMeals).To(Equal(2))
+			Expect(result.Summary.TotalSpent).To(Equal(18.0))
+			Expect(result.MacroSummary.TotalProteinG).To(Equal(60.0))
+			Expect(result.TopMeals).To(HaveLen(1))
+			Expect(result.TopMeals[0].MealName).To(Equal("Chicken Rice"))
+			Expect(result.LowDataWarning).NotTo(BeNil())
+			Expect(result.Summary.MonthlyMealBudget).To(BeNil())
+		})
+
+		It("returns repository errors", func() {
+			ctx := context.Background()
+			userID := uuid.New()
+			repoErr := errors.New("list failed")
+			repo := &testMealLogReportRepository{listErr: repoErr}
+			prefs := mocks.NewPreferenceService(GinkgoT())
+			svc := NewService(repo, prefs)
+
+			result, err := svc.Generate(ctx, userID, "month", "2026-07", "", "", "")
+
+			Expect(err).To(MatchError(repoErr))
+			Expect(result).To(BeNil())
+		})
+
+		It("rejects unsupported report period", func() {
+			ctx := context.Background()
+			userID := uuid.New()
+			repo := &testMealLogReportRepository{}
+			prefs := mocks.NewPreferenceService(GinkgoT())
+			svc := NewService(repo, prefs)
+
+			result, err := svc.Generate(ctx, userID, "year", "2026-07", "", "", "")
+
+			Expect(err).To(MatchError("period must be month or week"))
+			Expect(result).To(BeNil())
 		})
 	})
 

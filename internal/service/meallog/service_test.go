@@ -28,6 +28,11 @@ type testMealLogRepository struct {
 	createdLog *model.MealLog
 	createErr  error
 
+	listLogs []model.MealLog
+	listErr  error
+	listFrom time.Time
+	listTo   time.Time
+
 	findID     uuid.UUID
 	findUserID uuid.UUID
 	findErr    error
@@ -55,12 +60,17 @@ func (r *testMealLogRepository) Create(_ context.Context, mealLog *model.MealLog
 	return mealLog, nil
 }
 
-func (r *testMealLogRepository) ListByUserAndMonth(context.Context, uuid.UUID, time.Time, time.Time) ([]model.MealLog, error) {
+func (r *testMealLogRepository) ListByUserAndRange(context.Context, uuid.UUID, time.Time, time.Time) ([]model.MealLog, error) {
 	return nil, nil
 }
 
-func (r *testMealLogRepository) ListByUserAndRange(context.Context, uuid.UUID, time.Time, time.Time) ([]model.MealLog, error) {
-	return nil, nil
+func (r *testMealLogRepository) ListByUserAndMonth(_ context.Context, _ uuid.UUID, start time.Time, end time.Time) ([]model.MealLog, error) {
+	r.listFrom = start
+	r.listTo = end
+	if r.listErr != nil {
+		return nil, r.listErr
+	}
+	return r.listLogs, nil
 }
 
 func (r *testMealLogRepository) FindByIDAndUser(_ context.Context, id uuid.UUID, userID uuid.UUID) (*model.MealLog, error) {
@@ -142,6 +152,10 @@ var _ = Describe("Meal log service", func() {
 	}
 
 	Describe("Create", func() {
+		floatPtr := func(value float64) *float64 {
+			return &value
+		}
+
 		It("should store and return the selected meal type for a custom meal log", func() {
 			customMealID := uuid.New()
 			eatenAt := time.Date(2026, 7, 12, 11, 15, 0, 0, time.UTC)
@@ -189,6 +203,163 @@ var _ = Describe("Meal log service", func() {
 			Expect(repo.createdLog.FatG).To(Equal(21.0))
 			Expect(repo.createdLog.EatenAt).To(Equal(eatenAt))
 			Expect(repo.createdLog.Price).To(Equal(8.50))
+		})
+
+		It("should store and return a prebuilt meal log", func() {
+			prebuiltMealID := uuid.New()
+			eatenAt := time.Date(2026, 7, 12, 19, 15, 0, 0, time.UTC)
+			catalogService := mocks.NewCatalogService(GinkgoT())
+
+			catalogService.EXPECT().
+				GetMeal(mock.Anything, prebuiltMealID).
+				Return(interfaces.CatalogMeal{
+					ID:         prebuiltMealID,
+					Name:       "Nasi Lemak",
+					Categories: []string{"rice_dishes", "fried_foods"},
+					SelectedNutrition: interfaces.CatalogNutrition{
+						Calories: floatPtr(720),
+						ProteinG: floatPtr(24),
+						CarbsG:   floatPtr(86),
+						FatG:     floatPtr(32),
+					},
+				}, nil)
+
+			svc = NewService(repo, nil, catalogService, nil)
+
+			response, err := svc.Create(ctx, userID, interfaces.MealLogInput{
+				Source:   interfaces.MealLogSourcePrebuilt,
+				MealID:   prebuiltMealID.String(),
+				Price:    12.50,
+				EatenAt:  eatenAt,
+				MealType: "dinner",
+			})
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(response).NotTo(BeNil())
+			Expect(response.PrebuiltMealID).NotTo(BeNil())
+			Expect(*response.PrebuiltMealID).To(Equal(prebuiltMealID.String()))
+			Expect(response.MealName).To(Equal("Nasi Lemak"))
+			Expect(response.Calories).To(Equal(720.0))
+			Expect(response.ProteinG).To(Equal(24.0))
+			Expect(response.CarbsG).To(Equal(86.0))
+			Expect(response.FatG).To(Equal(32.0))
+			Expect(response.MealCategory).To(Equal([]string{"rice_dishes", "fried_foods"}))
+
+			Expect(repo.createdLog).NotTo(BeNil())
+			Expect(repo.createdLog.PrebuiltMealID).NotTo(BeNil())
+			Expect(*repo.createdLog.PrebuiltMealID).To(Equal(prebuiltMealID))
+			Expect(repo.createdLog.CustomMealItemID).To(BeNil())
+		})
+
+		It("should reject invalid meal ID before loading meal details", func() {
+			response, err := svc.Create(ctx, userID, interfaces.MealLogInput{
+				Source:   interfaces.MealLogSourceCustom,
+				MealID:   "not-a-uuid",
+				Price:    8,
+				EatenAt:  time.Date(2026, 7, 12, 11, 15, 0, 0, time.UTC),
+				MealType: "lunch",
+			})
+
+			Expect(err).To(MatchError("invalid meal id"))
+			Expect(response).To(BeNil())
+			Expect(repo.createdLog).To(BeNil())
+		})
+
+		It("should reject unsupported log source", func() {
+			response, err := svc.Create(ctx, userID, interfaces.MealLogInput{
+				Source:   interfaces.MealLogSource("manual"),
+				MealID:   uuid.New().String(),
+				Price:    8,
+				EatenAt:  time.Date(2026, 7, 12, 11, 15, 0, 0, time.UTC),
+				MealType: "lunch",
+			})
+
+			Expect(err).To(MatchError("unsupported meal log source"))
+			Expect(response).To(BeNil())
+			Expect(repo.createdLog).To(BeNil())
+		})
+	})
+
+	Describe("GetMonth", func() {
+		It("should include budget remaining for current month", func() {
+			preferenceService := mocks.NewPreferenceService(GinkgoT())
+			svc = NewService(repo, nil, nil, preferenceService)
+			svc.(*service).now = func() time.Time {
+				return time.Date(2026, 7, 15, 12, 0, 0, 0, time.UTC)
+			}
+
+			repo.listLogs = []model.MealLog{
+				{
+					ID:       uuid.New(),
+					UserID:   userID,
+					MealName: "Chicken Rice",
+					Price:    8.50,
+					Calories: 650,
+					EatenAt:  time.Date(2026, 7, 12, 11, 15, 0, 0, time.UTC),
+					MealType: "lunch",
+				},
+				{
+					ID:       uuid.New(),
+					UserID:   userID,
+					MealName: "Nasi Lemak",
+					Price:    12.50,
+					Calories: 720,
+					EatenAt:  time.Date(2026, 7, 13, 8, 15, 0, 0, time.UTC),
+					MealType: "breakfast",
+				},
+			}
+
+			preferenceService.EXPECT().
+				GetByUserID(mock.Anything, userID).
+				Return(&interfaces.PreferenceResponse{MonthlyMealBudget: 100}, nil).
+				Once()
+
+			response, err := svc.GetMonth(ctx, userID, "2026-07")
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(response).NotTo(BeNil())
+			Expect(response.Summary.Month).To(Equal("2026-07"))
+			Expect(response.Summary.TotalMealsEaten).To(Equal(2))
+			Expect(response.Summary.TotalSpent).To(Equal(21.0))
+			Expect(response.Summary.TotalCalories).To(Equal(1370.0))
+			Expect(response.Summary.ShowBudgetRemaining).To(BeTrue())
+			Expect(response.Summary.BudgetRemaining).NotTo(BeNil())
+			Expect(*response.Summary.BudgetRemaining).To(Equal(79.0))
+			Expect(response.Items).To(HaveLen(2))
+		})
+
+		It("should hide budget remaining for past month", func() {
+			preferenceService := mocks.NewPreferenceService(GinkgoT())
+			svc = NewService(repo, nil, nil, preferenceService)
+			svc.(*service).now = func() time.Time {
+				return time.Date(2026, 8, 15, 12, 0, 0, 0, time.UTC)
+			}
+
+			repo.listLogs = []model.MealLog{
+				{
+					ID:       uuid.New(),
+					UserID:   userID,
+					MealName: "Chicken Rice",
+					Price:    8.50,
+					Calories: 650,
+					EatenAt:  time.Date(2026, 7, 12, 11, 15, 0, 0, time.UTC),
+					MealType: "lunch",
+				},
+			}
+
+			response, err := svc.GetMonth(ctx, userID, "2026-07")
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(response).NotTo(BeNil())
+			Expect(response.Summary.ShowBudgetRemaining).To(BeFalse())
+			Expect(response.Summary.BudgetRemaining).To(BeNil())
+		})
+
+		It("should reject invalid month format", func() {
+			response, err := svc.GetMonth(ctx, userID, "2026/07")
+
+			Expect(err).To(MatchError("month must use YYYY-MM format"))
+			Expect(response).To(BeNil())
 		})
 	})
 

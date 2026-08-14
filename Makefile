@@ -11,6 +11,17 @@ CATALOG_DATA_DUMP ?= data/catalog-data.sql
 CATALOG_DUMP_TABLES := meal_categories prebuilt_meals
 MIGRATION_FILES := $(sort $(wildcard db/migrations/*.up.sql))
 GO_CACHE_DIR ?= $(CURDIR)/out/go-build-cache
+empty :=
+space := $(empty) $(empty)
+TEST_EXCLUDE_PACKAGES := \
+	fyp/food-rs/client/.* \
+	fyp/food-rs/internal/mocks \
+	fyp/food-rs/types/model \
+	fyp/food-rs/internal/interfaces \
+	fyp/food-rs/app/cmd \
+	fyp/food-rs/app/cmd/server \
+
+TEST_EXCLUDE_PATTERN := ^($(subst $(space),|,$(strip $(TEST_EXCLUDE_PACKAGES))))$$
 
 .PHONY: dev-env-start dev dev-client dev-start generate dev-migrate migrate-up catalog-dump catalog-seed test
 
@@ -117,7 +128,7 @@ out:
 
 test: export ENVIRONMENT := TEST
 test: out
-	@packages="$$(GOCACHE="$(GO_CACHE_DIR)" go list ./... | grep -v '^fyp/food-rs/client/' | grep -v '^fyp/food-rs/internal/mocks$$')" ; \
+	@packages="$$(GOCACHE="$(GO_CACHE_DIR)" go list ./... | grep -v -E '$(TEST_EXCLUDE_PATTERN)')" ; \
 	coverage_file="out/coverage.out"; \
 	test_log="out/test.log"; \
 	echo "==> Running Go tests"; \
