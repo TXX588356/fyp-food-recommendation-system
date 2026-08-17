@@ -51,12 +51,6 @@ func Run(parent context.Context) error {
 	ctx = app.WithApp(ctx, a) // attach App instance to the context, allowing other codes to retrieve
 	endpoint.RegisterEndpoints(ctx, e)
 
-	catalogService, err := a.GetCatalogService(ctx)
-	if err != nil {
-		return err
-	}
-	endpoint.RegisterCatalogRoutes(e, catalogService, cfg.Security.JWTSecret)
-
 	// Makes Go backend serve the built React frontend
 	// by exposing files inside the backend container's static folder & serve them from
 	// website root '/'
