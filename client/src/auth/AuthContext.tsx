@@ -12,6 +12,12 @@ type RefreshResponse = {
 
 let refreshSessionPromise: Promise<RefreshResponse> | null = null
 
+const isAuthEndpoint = (url?: string) => (
+    url?.includes('/auth/login') ||
+    url?.includes('/auth/register') ||
+    url?.includes('/auth/refresh')
+)
+
 // Restore the saved user safely. If localStorage contains invalid JSON,
 // clear it so the app falls back to a logged-out state.
 const safeParseUser = (): User | null => {
@@ -106,16 +112,23 @@ const AuthProvider = ({ children }: LayoutProps) => {
 		// -> retry original req -> if refresh fails, clearAuth()
 		// handles token expiry during active usage
     useEffect(() => {
-			const requestInterceptor = axios.interceptors.request.use((config) => {
-				if (
-					config.url?.includes('/auth/login') ||
-					config.url?.includes('/auth/register') ||
-					config.url?.includes('/auth/refresh')
-				) {
+			const requestInterceptor = axios.interceptors.request.use(async (config) => {
+				if (isAuthEndpoint(config.url)) {
 					return config
 				}
 
-				const currentToken = localStorage.getItem('token')
+				let currentToken = localStorage.getItem('token')
+				if (!currentToken && localStorage.getItem('refreshToken')) {
+					try {
+						const nextSession = await refreshSession()
+						applyAuthSession(nextSession)
+						currentToken = nextSession.accessToken
+					} catch (error) {
+						clearAuth()
+						return Promise.reject(error)
+					}
+				}
+
 				if (currentToken) {
 					config.headers = config.headers ?? {}
 					config.headers.Authorization = `Bearer ${currentToken}`
@@ -134,7 +147,7 @@ const AuthProvider = ({ children }: LayoutProps) => {
 								error.response?.status !== 401 ||
 								originalRequest?._retry ||
 								!refreshToken ||
-								originalRequest?.url?.includes('/auth/refresh')
+								isAuthEndpoint(originalRequest?.url)
 						) {
 							return Promise.reject(error)
 							}
