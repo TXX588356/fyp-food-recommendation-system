@@ -5,15 +5,20 @@ endif
 MOCKERY_VERSION := v3.5.5
 MOCKERY := bin/mockery
 MOCKERY_STAMP := bin/mockery-$(MOCKERY_VERSION)
+OSTYPE ?= $(shell uname -s | tr A-Z a-z)
+OSARCH ?= $(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
+GOTESTSUM := $(shell command -v gotestsum || echo "bin/gotestsum")
+TPARSE := $(shell command -v tparse || echo "bin/tparse")
 MINIO_CONTAINER ?= minio
 POSTGRES_CONTAINER ?= fyp-postgres
 CATALOG_DATA_DUMP ?= data/catalog-data.sql
-CATALOG_DUMP_TABLES := meal_categories prebuilt_meals
+CATALOG_DUMP_TABLES := fyp_smart_meal_meal_categories fyp_smart_meal_prebuilt_meals
 MIGRATION_FILES := $(sort $(wildcard db/migrations/*.up.sql))
 GO_CACHE_DIR ?= $(CURDIR)/out/go-build-cache
 empty :=
 space := $(empty) $(empty)
 TEST_EXCLUDE_PACKAGES := \
+	fyp/food-rs \
 	fyp/food-rs/client/.* \
 	fyp/food-rs/internal/mocks \
 	fyp/food-rs/types/model \
@@ -23,7 +28,28 @@ TEST_EXCLUDE_PACKAGES := \
 
 TEST_EXCLUDE_PATTERN := ^($(subst $(space),|,$(strip $(TEST_EXCLUDE_PACKAGES))))$$
 
-.PHONY: dev-env-start dev dev-client dev-start generate dev-migrate migrate-up catalog-dump catalog-seed test
+.PHONY: dev-env-start dev dev-client dev-start generate dev-migrate migrate-up catalog-dump catalog-seed test test-cases
+
+bin:
+	mkdir -p bin
+
+$(GOTESTSUM): VERSION := 1.11.0
+$(GOTESTSUM): bin
+	@if [ -f $@ ]; then \
+		echo "gotestsum already installed, skipping download"; \
+	else \
+		echo "Installing gotestsum..."; \
+		curl -Ls https://github.com/gotestyourself/gotestsum/releases/download/v$(VERSION)/gotestsum_$(VERSION)_$(OSTYPE)_$(OSARCH).tar.gz | tar -zOxf - gotestsum > $@ && chmod +x $@; \
+	fi
+
+$(TPARSE): VERSION := 0.13.2
+$(TPARSE): bin
+	@if [ -f $@ ]; then \
+		echo "tparse already installed, skipping download"; \
+	else \
+		echo "Installing tparse..."; \
+		curl -Ls https://github.com/mfridman/tparse/releases/download/v$(VERSION)/tparse_$(OSTYPE)_$(OSARCH) -o $@ && chmod +x $@; \
+	fi
 
 dev-env-start:
 	@if podman container exists $(POSTGRES_CONTAINER); then \
@@ -110,7 +136,7 @@ catalog-seed:
 		-v ON_ERROR_STOP=1 \
 		-U "${DATABASE_USER}" \
 		-d "${DATABASE_NAME}" \
-		-c "DELETE FROM prebuilt_meals; DELETE FROM meal_categories;"
+		-c "DELETE FROM fyp_smart_meal_prebuilt_meals; DELETE FROM fyp_smart_meal_meal_categories;"
 	podman exec -i -e PGPASSWORD="${DATABASE_PASSWORD}" $(POSTGRES_CONTAINER) psql \
 		-v ON_ERROR_STOP=1 \
 		-U "${DATABASE_USER}" \
@@ -127,38 +153,20 @@ out:
 	mkdir -p out $(GO_CACHE_DIR)
 
 test: export ENVIRONMENT := TEST
-test: out
+test: out $(GOTESTSUM) $(TPARSE)
 	@packages="$$(GOCACHE="$(GO_CACHE_DIR)" go list ./... | grep -v -E '$(TEST_EXCLUDE_PATTERN)')" ; \
 	coverage_file="out/coverage.out"; \
-	test_log="out/test.log"; \
+	test_json="out/gotestsum.json.out"; \
+	test_junit="out/gotestsum.junit.xml"; \
 	echo "==> Running Go tests"; \
-	if GOCACHE="$(GO_CACHE_DIR)" go test $$packages -vet=all -failfast -timeout=30s -coverprofile "$$coverage_file" 2>&1 | tee "$$test_log"; then \
+	if $(GOTESTSUM) --format standard-verbose --jsonfile "$$test_json" --junitfile "$$test_junit" -- $$packages -vet=all -failfast -timeout=30s -test.coverprofile "$$coverage_file"; then \
 		status=0; \
 	else \
 		status=$$?; \
 	fi; \
 	echo; \
-	echo "==> Package summary"; \
-	awk ' \
-		/^\?/ { printf "SKIP  %-58s %s\n", $$2, "no test files"; next } \
-		/^ok/ { \
-			coverage = ""; \
-			for (i = 4; i <= NF; i++) { \
-				if ($$i == "coverage:") { coverage = $$(i + 1); break } \
-			} \
-			printf "PASS  %-58s %-8s %s\n", $$2, $$3, coverage; \
-			next \
-		} \
-		/^[[:space:]]*fyp\/food-rs\// { \
-			coverage = ""; \
-			for (i = 2; i <= NF; i++) { \
-				if ($$i == "coverage:") { coverage = $$(i + 1); break } \
-			} \
-			printf "SKIP  %-58s %-8s %s\n", $$1, "no tests", coverage; \
-			next \
-		} \
-		/^FAIL/ { printf "FAIL  %-58s %s\n", $$2, $$3; next } \
-	' "$$test_log"; \
+	echo "==> tparse test result"; \
+	$(TPARSE) -all -file "$$test_json"; \
 	if [ -f "$$coverage_file" ]; then \
 		echo; \
 		echo "==> Overall coverage"; \
