@@ -33,7 +33,7 @@ var _ = Describe("Catalog endpoint", func() {
 	It("parses repeated categories", func() {
 		e := echo.New()
 		service := &catalogServiceStub{}
-		RegisterCatalogRoutes(e, service, "")
+		registerCatalogRoutes(e, service, "")
 		req := httptest.NewRequest(http.MethodGet, "/catalog/meals?category=rice_dishes&category=poultry", nil)
 		rec := httptest.NewRecorder()
 
