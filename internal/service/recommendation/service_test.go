@@ -286,6 +286,109 @@ var _ = Describe("Recommendation candidate generation", func() {
 		).(*service)
 	})
 
+	Describe("GenerateRecommendationResult context building", func() {
+		It("should build meal prompt from saved preferences, request context, and history", func() {
+			now := time.Date(2026, time.June, 25, 12, 0, 0, 0, time.Local)
+			svc.now = func() time.Time { return now }
+
+			preferences := &interfaces.PreferenceResponse{
+				MainGoal:            "eat_healthier",
+				MonthlyMealBudget:   600,
+				HealthConcerns:      []string{"diabetes"},
+				DietaryRestrictions: []string{"halal"},
+				PreferredMealTags:   []string{"rice", "healthy"},
+				WorkSchoolLocation:  "Cyberjaya",
+			}
+			svc.preferenceService = &testPreferenceService{response: preferences}
+			svc.mealLogRepository = &testMealLogRepository{
+				logs: []model.MealLog{
+					{
+						MealName:     "Nasi Lemak",
+						MealCategory: []string{"rice_dishes"},
+						EatenAt:      now.AddDate(0, 0, -1),
+					},
+				},
+			}
+
+			expectedPrompt := interfaces.MealPromptInput{
+				Goal:                "eat_healthier",
+				DietaryRestrictions: []string{"halal"},
+				HealthConcerns:      []string{"diabetes"},
+				PreferredMealTags:   []string{"rice", "healthy"},
+				MealCategory:        "lunch",
+				MonthlyMealBudget:   600,
+				CurrentMonthSpent:   150,
+				RemainingBudget:     450,
+				PerMealBudget:       12,
+				PriceMarketLocation: "Cyberjaya",
+				History: interfaces.MealHistoryContext{
+					RecentMealNames:        []string{"Nasi Lemak"},
+					RecentCategoryCounts:   map[string]int{"rice_dishes": 1},
+					RepeatedMealNames:      []string{},
+					RecentlyEatenByName:    map[string]int{"nasi lemak": 1},
+					LearnedCategoryCounts:  map[string]int{"rice_dishes": 1},
+					FatiguedCategoryCounts: map[string]int{"rice_dishes": 1},
+				},
+			}
+
+			mealGenerator.EXPECT().GenerateMeals(mock.Anything, expectedPrompt).
+				Return(interfaces.GeminiMealsResponse{}, nil).
+				Once()
+
+			result, err := svc.GenerateRecommendationResult(ctx, userID, interfaces.RecommendationRequestInput{
+				MealCategory:      " lunch ",
+				CurrentMonthSpent: 150,
+				PerMealBudget:     12,
+			})
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result.Candidates).To(BeEmpty())
+		})
+
+		It("should default per meal budget and clamp remaining budget", func() {
+			now := time.Date(2026, time.June, 25, 12, 0, 0, 0, time.Local)
+			svc.now = func() time.Time { return now }
+
+			input := svc.buildMealPromptFromPreferences(
+				interfaces.PreferenceResponse{
+					MainGoal:          "quick_recommendation",
+					MonthlyMealBudget: 600,
+				},
+				interfaces.RecommendationRequestInput{
+					MealCategory:      "snack",
+					CurrentMonthSpent: 150,
+				},
+			)
+
+			Expect(input.RemainingBudget).To(Equal(float64(450)))
+			Expect(input.PerMealBudget).To(Equal(float64(25)))
+
+			input = svc.buildMealPromptFromPreferences(
+				interfaces.PreferenceResponse{
+					MainGoal:          "quick_recommendation",
+					MonthlyMealBudget: 300,
+				},
+				interfaces.RecommendationRequestInput{
+					MealCategory:      "snack",
+					CurrentMonthSpent: 500,
+				},
+			)
+
+			Expect(input.RemainingBudget).To(Equal(float64(0)))
+			Expect(input.PerMealBudget).To(Equal(float64(0)))
+		})
+
+		It("should return a controlled error when preferences cannot be loaded", func() {
+			svc.preferenceService = &testPreferenceService{err: errors.New("preferences missing")}
+
+			_, err := svc.GenerateRecommendationResult(ctx, userID, interfaces.RecommendationRequestInput{
+				MealCategory: "lunch",
+			})
+
+			Expect(err).To(MatchError("load preferences: preferences missing"))
+		})
+	})
+
 	It("should accept one exact candidate without adjudication", func() {
 		mealGenerator.EXPECT().GenerateMeals(mock.Anything, input).
 			Return(interfaces.GeminiMealsResponse{
@@ -299,7 +402,7 @@ var _ = Describe("Recommendation candidate generation", func() {
 			serviceFoodCandidate("food-1", "Nasi Lemak", interfaces.FoodMatchExactName, "Nasi Lemak", 1),
 		}
 
-		result, err := svc.GenerateRecommendationResult(ctx, userID, input)
+		result, err := svc.generateRecommendationResultFromPrompt(ctx, userID, input)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(result.Candidates).To(HaveLen(1))
@@ -328,7 +431,7 @@ var _ = Describe("Recommendation candidate generation", func() {
 			serviceFoodCandidate("food-2", "Wantan Mee", interfaces.FoodMatchExactAlias, "Wan Tan Mee", 0.98),
 		}
 
-		result, err := svc.GenerateRecommendationResult(ctx, userID, input)
+		result, err := svc.generateRecommendationResultFromPrompt(ctx, userID, input)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(result.Candidates).To(HaveLen(1))
@@ -384,7 +487,7 @@ var _ = Describe("Recommendation candidate generation", func() {
 			},
 		}
 
-		result, err := svc.GenerateRecommendationResult(ctx, userID, input)
+		result, err := svc.generateRecommendationResultFromPrompt(ctx, userID, input)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(result.Candidates).To(HaveLen(1))
@@ -446,7 +549,7 @@ var _ = Describe("Recommendation candidate generation", func() {
 			},
 		}
 
-		result, err := svc.GenerateRecommendationResult(ctx, userID, input)
+		result, err := svc.generateRecommendationResultFromPrompt(ctx, userID, input)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(result.Candidates).To(HaveLen(2))
@@ -468,7 +571,7 @@ var _ = Describe("Recommendation candidate generation", func() {
 			interfaces.CustomMealAutocompleteInput{Name: "Unknown Meal"},
 		).Return(interfaces.CustomMealAutocompleteResponse{}, errors.New("unable to generate meal details")).Once()
 
-		result, err := svc.GenerateRecommendationResult(ctx, userID, input)
+		result, err := svc.generateRecommendationResultFromPrompt(ctx, userID, input)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(result.Candidates).To(BeEmpty())
@@ -496,7 +599,7 @@ var _ = Describe("Recommendation candidate generation", func() {
 
 		catalogService.(*testCatalogService).createErr = errors.New("database unavailable")
 
-		result, err := svc.GenerateRecommendationResult(ctx, userID, input)
+		result, err := svc.generateRecommendationResultFromPrompt(ctx, userID, input)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(result.Candidates).To(BeEmpty())
@@ -525,7 +628,7 @@ var _ = Describe("Recommendation candidate generation", func() {
 			{MealIndex: 1, Decision: matchDecisionMatch, CandidateID: "rice-1"},
 		}
 
-		result, err := svc.GenerateRecommendationResult(ctx, userID, input)
+		result, err := svc.generateRecommendationResultFromPrompt(ctx, userID, input)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(matchAdjudicator.calls).To(HaveLen(1))
@@ -575,7 +678,7 @@ var _ = Describe("Recommendation candidate generation", func() {
 			},
 		}
 
-		result, err := svc.GenerateRecommendationResult(ctx, userID, input)
+		result, err := svc.generateRecommendationResultFromPrompt(ctx, userID, input)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(result.Candidates).To(HaveLen(1))
@@ -619,7 +722,7 @@ var _ = Describe("Recommendation candidate generation", func() {
 			},
 		}
 
-		result, err := svc.GenerateRecommendationResult(ctx, userID, input)
+		result, err := svc.generateRecommendationResultFromPrompt(ctx, userID, input)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(matchAdjudicator.calls).To(HaveLen(1))
@@ -632,7 +735,7 @@ var _ = Describe("Recommendation candidate generation", func() {
 			Return(interfaces.GeminiMealsResponse{}, errors.New("Gemini unavailable")).
 			Once()
 
-		_, err := svc.GenerateRecommendationResult(ctx, userID, input)
+		_, err := svc.generateRecommendationResultFromPrompt(ctx, userID, input)
 
 		Expect(err).To(MatchError("generated meal candidates: Gemini unavailable"))
 	})
@@ -648,7 +751,7 @@ var _ = Describe("Recommendation candidate generation", func() {
 
 		candidateSearcher.err = errors.New("candidate search unavailable")
 
-		_, err := svc.GenerateRecommendationResult(ctx, userID, input)
+		_, err := svc.generateRecommendationResultFromPrompt(ctx, userID, input)
 
 		Expect(err).To(MatchError(ContainSubstring("candidate search unavailable")))
 	})
@@ -672,7 +775,7 @@ var _ = Describe("Recommendation candidate generation", func() {
 			serviceFoodCandidateWithTags("pork-food", "Pork Noodles", []string{"pork", "noodle_dishes"}, interfaces.FoodMatchExactName, "Pork Noodles", 1),
 		}
 
-		result, err := svc.GenerateRecommendationResult(ctx, userID, input)
+		result, err := svc.generateRecommendationResultFromPrompt(ctx, userID, input)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(result.FilteringApplied).To(BeTrue())

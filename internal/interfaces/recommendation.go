@@ -32,6 +32,16 @@ type FilteredMealCandidate struct {
 	Reason    string               `json:"reason"`
 }
 
+// RecommendationRequestInput contains only request-level values supplied by the
+// client. The recommendation service enriches it with saved preferences and
+// meal history before calling the LLM.
+type RecommendationRequestInput struct {
+	MealCategory      string
+	CurrentMonthSpent float64
+	PerMealBudget     float64
+	Location          string
+}
+
 // MealMatchTask is one ambiguous generated meal plus the candidates that the backend allows Gemini to choose from.
 // MealIndex is the original generated meal index
 // and must be preserved through the whole matching flow.
@@ -100,7 +110,7 @@ type MealDetailLocation struct {
 }
 
 type RecommendationService interface {
-	GenerateRecommendationResult(ctx context.Context, userID uuid.UUID, input MealPromptInput) (RecommendationResult, error)
+	GenerateRecommendationResult(ctx context.Context, userID uuid.UUID, input RecommendationRequestInput) (RecommendationResult, error)
 	BuildMealDetail(ctx context.Context, userID uuid.UUID, input MealDetailInput) (MealDetailResult, error)
 }
 

@@ -11,13 +11,11 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/labstack/echo/v5"
 )
 
 type recommendationHandler struct {
-	preferenceService     interfaces.PreferenceService
 	recommendationService interfaces.RecommendationService
 }
 
@@ -42,12 +40,6 @@ func RegisterRecommendationRoutes(ctx context.Context, e *echo.Echo) {
 		return
 	}
 
-	preferenceService, err := a.GetPreferenceService(ctx)
-	if err != nil {
-		log.Fatal("failed to get preference service", "error", err)
-		return
-	}
-
 	recommendationService, err := a.GetRecommendationService(ctx)
 	if err != nil {
 		log.Fatal("failed to get recommendation service", "error", err)
@@ -55,7 +47,6 @@ func RegisterRecommendationRoutes(ctx context.Context, e *echo.Echo) {
 	}
 
 	h := &recommendationHandler{
-		preferenceService:     preferenceService,
 		recommendationService: recommendationService,
 	}
 
@@ -102,31 +93,12 @@ func (h *recommendationHandler) generateRecommendations(c *echo.Context) error {
 		"per_meal_budget", request.PerMealBudget,
 	)
 
-	// Load saved preferences for the user
-	preferences, err := h.preferenceService.GetByUserID(c.Request().Context(), userID)
-	if err != nil {
-		slog.Error("recommendation request failed: load preferences",
-			"user_id", userID,
-			"error", err,
-		)
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": "failed to load preferences",
-		})
+	input := interfaces.RecommendationRequestInput{
+		MealCategory:      strings.TrimSpace(request.MealCategory),
+		CurrentMonthSpent: request.CurrentMonthSpent,
+		PerMealBudget:     request.PerMealBudget,
+		Location:          strings.TrimSpace(request.Location),
 	}
-
-	// Build meal prompt input
-	input := buildMealPromptFromPreferences(*preferences, request)
-	slog.Info("recommendation prompt input built",
-		"user_id", userID,
-		"goal", input.Goal,
-		"meal_category", input.MealCategory,
-		"dietary_restrictions_count", len(input.DietaryRestrictions),
-		"health_concerns_count", len(input.HealthConcerns),
-		"preferred_tags_count", len(input.PreferredMealTags),
-		"monthly_budget", input.MonthlyMealBudget,
-		"remaining_budget", input.RemainingBudget,
-		"per_meal_budget", input.PerMealBudget,
-	)
 
 	result, err := h.recommendationService.GenerateRecommendationResult(c.Request().Context(), userID, input)
 	if err != nil {
@@ -169,99 +141,6 @@ func validateGenerateRecommendationRequest(input generateRecommendationRequest) 
 	}
 
 	return nil
-}
-
-func buildMealPromptFromPreferences(preferences interfaces.PreferenceResponse, request generateRecommendationRequest) interfaces.MealPromptInput {
-	remainingBudget := preferences.MonthlyMealBudget - request.CurrentMonthSpent
-	if remainingBudget < 0 {
-		remainingBudget = 0
-	}
-
-	perMealBudget := request.PerMealBudget
-	if perMealBudget <= 0 {
-		perMealBudget = calculateDynamicPerMealBudget(preferences.MonthlyMealBudget, request.CurrentMonthSpent, time.Now())
-	}
-
-	dayOfTheWeek := time.Now().Weekday()
-
-	location := strings.TrimSpace(request.Location)
-	if location != "" {
-		// User selected a temporary recommendation location.
-	} else if dayOfTheWeek == 0 || dayOfTheWeek == 6 {
-		location = preferences.HomeLocation
-	} else {
-		location = preferences.WorkSchoolLocation
-	}
-
-	log.Printf(
-		"data used to build prompt: \nGoal: %s\nDiet Restriction: %v\nConcern: %v\nPreferredMeal: %v\nMeal Category: %s\nBudget: %.2f \nCurrent Spent: %.2f\nRemaning Budget: %.2f\nPer Meal Budget: %.2f\nMarket Location: %s\n",
-		preferences.MainGoal,
-		preferences.DietaryRestrictions,
-		preferences.HealthConcerns,
-		preferences.PreferredMealTags,
-		strings.TrimSpace(request.MealCategory),
-		preferences.MonthlyMealBudget,
-		request.CurrentMonthSpent,
-		remainingBudget,
-		perMealBudget,
-		location,
-	)
-
-	return interfaces.MealPromptInput{
-		Goal:                preferences.MainGoal,
-		DietaryRestrictions: preferences.DietaryRestrictions,
-		HealthConcerns:      preferences.HealthConcerns,
-		PreferredMealTags:   preferences.PreferredMealTags,
-		MealCategory:        strings.TrimSpace(request.MealCategory),
-		MonthlyMealBudget:   preferences.MonthlyMealBudget,
-		CurrentMonthSpent:   request.CurrentMonthSpent,
-		RemainingBudget:     remainingBudget,
-		PerMealBudget:       perMealBudget,
-		PriceMarketLocation: location,
-	}
-}
-
-// calculateDynamicPerMealBudget estimates a per-meal budget from the remaining
-// monthly budget and days left in the current month.
-func calculateDynamicPerMealBudget(
-	monthlyBudget float64,
-	currentMonthSpent float64,
-	now time.Time,
-) float64 {
-	remainingBudget := monthlyBudget - currentMonthSpent
-	if remainingBudget <= 0 {
-		return 0
-	}
-
-	firstOfNextMonth := time.Date(
-		now.Year(),
-		now.Month()+1,
-		1,
-		0,
-		0,
-		0,
-		0,
-		now.Location(),
-	)
-
-	todayStart := time.Date(
-		now.Year(),
-		now.Month(),
-		now.Day(),
-		0,
-		0,
-		0,
-		0,
-		now.Location(),
-	)
-
-	daysRemaining := int(firstOfNextMonth.Sub(todayStart).Hours() / 24)
-	if daysRemaining < 1 {
-		daysRemaining = 1
-	}
-
-	const plannedMealsPerDay = 3
-	return remainingBudget / float64(daysRemaining*plannedMealsPerDay)
 }
 
 func init() {

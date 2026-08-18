@@ -112,7 +112,7 @@ func (_c *RecommendationService_BuildMealDetail_Call) RunAndReturn(run func(ctx 
 }
 
 // GenerateRecommendationResult provides a mock function for the type RecommendationService
-func (_mock *RecommendationService) GenerateRecommendationResult(ctx context.Context, userID uuid.UUID, input interfaces.MealPromptInput) (interfaces.RecommendationResult, error) {
+func (_mock *RecommendationService) GenerateRecommendationResult(ctx context.Context, userID uuid.UUID, input interfaces.RecommendationRequestInput) (interfaces.RecommendationResult, error) {
 	ret := _mock.Called(ctx, userID, input)
 
 	if len(ret) == 0 {
@@ -121,15 +121,15 @@ func (_mock *RecommendationService) GenerateRecommendationResult(ctx context.Con
 
 	var r0 interfaces.RecommendationResult
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, interfaces.MealPromptInput) (interfaces.RecommendationResult, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, interfaces.RecommendationRequestInput) (interfaces.RecommendationResult, error)); ok {
 		return returnFunc(ctx, userID, input)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, interfaces.MealPromptInput) interfaces.RecommendationResult); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, interfaces.RecommendationRequestInput) interfaces.RecommendationResult); ok {
 		r0 = returnFunc(ctx, userID, input)
 	} else {
 		r0 = ret.Get(0).(interfaces.RecommendationResult)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, interfaces.MealPromptInput) error); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, interfaces.RecommendationRequestInput) error); ok {
 		r1 = returnFunc(ctx, userID, input)
 	} else {
 		r1 = ret.Error(1)
@@ -145,12 +145,12 @@ type RecommendationService_GenerateRecommendationResult_Call struct {
 // GenerateRecommendationResult is a helper method to define mock.On call
 //   - ctx context.Context
 //   - userID uuid.UUID
-//   - input interfaces.MealPromptInput
+//   - input interfaces.RecommendationRequestInput
 func (_e *RecommendationService_Expecter) GenerateRecommendationResult(ctx interface{}, userID interface{}, input interface{}) *RecommendationService_GenerateRecommendationResult_Call {
 	return &RecommendationService_GenerateRecommendationResult_Call{Call: _e.mock.On("GenerateRecommendationResult", ctx, userID, input)}
 }
 
-func (_c *RecommendationService_GenerateRecommendationResult_Call) Run(run func(ctx context.Context, userID uuid.UUID, input interfaces.MealPromptInput)) *RecommendationService_GenerateRecommendationResult_Call {
+func (_c *RecommendationService_GenerateRecommendationResult_Call) Run(run func(ctx context.Context, userID uuid.UUID, input interfaces.RecommendationRequestInput)) *RecommendationService_GenerateRecommendationResult_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -160,9 +160,9 @@ func (_c *RecommendationService_GenerateRecommendationResult_Call) Run(run func(
 		if args[1] != nil {
 			arg1 = args[1].(uuid.UUID)
 		}
-		var arg2 interfaces.MealPromptInput
+		var arg2 interfaces.RecommendationRequestInput
 		if args[2] != nil {
-			arg2 = args[2].(interfaces.MealPromptInput)
+			arg2 = args[2].(interfaces.RecommendationRequestInput)
 		}
 		run(
 			arg0,
@@ -178,7 +178,7 @@ func (_c *RecommendationService_GenerateRecommendationResult_Call) Return(recomm
 	return _c
 }
 
-func (_c *RecommendationService_GenerateRecommendationResult_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID, input interfaces.MealPromptInput) (interfaces.RecommendationResult, error)) *RecommendationService_GenerateRecommendationResult_Call {
+func (_c *RecommendationService_GenerateRecommendationResult_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID, input interfaces.RecommendationRequestInput) (interfaces.RecommendationResult, error)) *RecommendationService_GenerateRecommendationResult_Call {
 	_c.Call.Return(run)
 	return _c
 }

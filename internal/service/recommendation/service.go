@@ -80,9 +80,98 @@ func NewService(
 	}
 }
 
-// GenerateRecommendationResult requests meal suggestions from Gemini, enriches
-// them with catalog data, filters unsuitable meals, and ranks the valid results.
-func (s *service) GenerateRecommendationResult(ctx context.Context, userID uuid.UUID, input interfaces.MealPromptInput) (interfaces.RecommendationResult, error) {
+// GenerateRecommendationResult builds the complete recommendation context,
+// requests meal suggestions from Gemini, enriches them with catalog data,
+// filters unsuitable meals, and ranks the valid results.
+func (s *service) GenerateRecommendationResult(ctx context.Context, userID uuid.UUID, request interfaces.RecommendationRequestInput) (interfaces.RecommendationResult, error) {
+	preferences, err := s.preferenceService.GetByUserID(ctx, userID)
+	if err != nil {
+		return interfaces.RecommendationResult{}, fmt.Errorf("load preferences: %w", err)
+	}
+
+	input := s.buildMealPromptFromPreferences(*preferences, request)
+
+	slog.Info("recommendation prompt input built",
+		"user_id", userID,
+		"goal", input.Goal,
+		"meal_category", input.MealCategory,
+		"dietary_restrictions_count", len(input.DietaryRestrictions),
+		"health_concerns_count", len(input.HealthConcerns),
+		"preferred_tags_count", len(input.PreferredMealTags),
+		"monthly_budget", input.MonthlyMealBudget,
+		"remaining_budget", input.RemainingBudget,
+		"per_meal_budget", input.PerMealBudget,
+	)
+
+	historyStartTime := time.Now()
+	historyStart := s.now().AddDate(0, 0, -90)
+	historyLogs, err := s.mealLogRepository.ListByUserAndRange(ctx, userID, historyStart, s.now().AddDate(0, 0, 1))
+	if err != nil {
+		return interfaces.RecommendationResult{}, fmt.Errorf("load recommendation history: %w", err)
+	}
+	slog.Info("recommendation timing", "stage", "load_history", "duration_ms", time.Since(historyStartTime).Milliseconds())
+	input.History = buildMealHistoryContext(historyLogs, s.now())
+
+	return s.generateRecommendationResultFromPrompt(ctx, userID, input)
+}
+
+func (s *service) buildMealPromptFromPreferences(preferences interfaces.PreferenceResponse, request interfaces.RecommendationRequestInput) interfaces.MealPromptInput {
+	remainingBudget := preferences.MonthlyMealBudget - request.CurrentMonthSpent
+	if remainingBudget < 0 {
+		remainingBudget = 0
+	}
+
+	perMealBudget := request.PerMealBudget
+	if perMealBudget <= 0 {
+		perMealBudget = calculateDynamicPerMealBudget(preferences.MonthlyMealBudget, request.CurrentMonthSpent, s.now())
+	}
+
+	dayOfTheWeek := s.now().Weekday()
+
+	location := strings.TrimSpace(request.Location)
+	if location != "" {
+		// User selected a temporary recommendation location.
+	} else if dayOfTheWeek == time.Sunday || dayOfTheWeek == time.Saturday {
+		location = preferences.HomeLocation
+	} else {
+		location = preferences.WorkSchoolLocation
+	}
+
+	return interfaces.MealPromptInput{
+		Goal:                preferences.MainGoal,
+		DietaryRestrictions: preferences.DietaryRestrictions,
+		HealthConcerns:      preferences.HealthConcerns,
+		PreferredMealTags:   preferences.PreferredMealTags,
+		MealCategory:        strings.TrimSpace(request.MealCategory),
+		MonthlyMealBudget:   preferences.MonthlyMealBudget,
+		CurrentMonthSpent:   request.CurrentMonthSpent,
+		RemainingBudget:     remainingBudget,
+		PerMealBudget:       perMealBudget,
+		PriceMarketLocation: location,
+	}
+}
+
+// calculateDynamicPerMealBudget estimates a per-meal budget from the remaining
+// monthly budget and days left in the current month.
+func calculateDynamicPerMealBudget(monthlyBudget float64, currentMonthSpent float64, now time.Time) float64 {
+	remainingBudget := monthlyBudget - currentMonthSpent
+	if remainingBudget <= 0 {
+		return 0
+	}
+
+	firstOfNextMonth := time.Date(now.Year(), now.Month()+1, 1, 0, 0, 0, 0, now.Location())
+	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+
+	daysRemaining := int(firstOfNextMonth.Sub(todayStart).Hours() / 24)
+	if daysRemaining < 1 {
+		daysRemaining = 1
+	}
+
+	const plannedMealsPerDay = 3
+	return remainingBudget / float64(daysRemaining*plannedMealsPerDay)
+}
+
+func (s *service) generateRecommendationResultFromPrompt(ctx context.Context, userID uuid.UUID, input interfaces.MealPromptInput) (interfaces.RecommendationResult, error) {
 	slog.Info("recommendation generation started",
 		"user_id", userID,
 		"meal_category", input.MealCategory,
@@ -95,17 +184,6 @@ func (s *service) GenerateRecommendationResult(ctx context.Context, userID uuid.
 	)
 
 	started := time.Now()
-
-	historyStartTime := time.Now()
-
-	// Load history
-	historyStart := s.now().AddDate(0, 0, -90)
-	historyLogs, err := s.mealLogRepository.ListByUserAndRange(ctx, userID, historyStart, s.now().AddDate(0, 0, 1))
-	if err != nil {
-		return interfaces.RecommendationResult{}, fmt.Errorf("load recommendation history: %w", err)
-	}
-	slog.Info("recommendation timing", "stage", "load_history", "duration_ms", time.Since(historyStartTime).Milliseconds())
-	input.History = buildMealHistoryContext(historyLogs, s.now())
 
 	geminiStart := time.Now()
 
