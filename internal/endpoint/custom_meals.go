@@ -357,7 +357,7 @@ func detectMealImageContentType(file multipart.File) (string, error) {
 	case "image/jpeg", "image/png":
 		return contentType, nil
 	default:
-		return "", fmt.Errorf("only JPEG and PNG images are allowed")
+		return "", fmt.Errorf("only JPEG, JPG and PNG images are allowed")
 	}
 }
 

@@ -146,6 +146,10 @@ Use exactly this JSON shape and these field names:
 }
 
 Rules:
+- First decide whether the meal name is actually food. Only continue if it clearly names an edible dish, beverage, ingredient, packaged food, or common menu item.
+- Return exactly {"error":"unable to generate meal details"} when the name is not food, is ambiguous, is a brand/app/tool/company/person/place/fictional character/object, or looks like random text.
+- Do not reinterpret, translate, or invent a dish from a non-food name. Names such as Gemini, ChatGPT, OpenAI, Google, Claude, Copilot, iPhone, Tesla, Batman, London, Dragon, and Laptop are invalid unless the user explicitly adds food context such as "cake", "rice", "drink", or "sandwich".
+- If a name could refer to both food and a non-food entity, only estimate nutrition when the food meaning is clear from the full name.
 - If you cannot estimate credible meal details for the provided meal name, return exactly {"error":"unable to generate meal details"}.
 - Do not return mealName, carbs, fat, or protein keys.
 - fatG, proteinG, and carbsG are grams.

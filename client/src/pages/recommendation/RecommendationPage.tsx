@@ -645,7 +645,9 @@ export default function RecommendationPage() {
       ...candidatesByCategory[activeCategory],
       ...filteredOutByCategory[activeCategory].map((item) => item.candidate),
     ]
-    const missingImageCandidates = candidates.filter((candidate) => !candidate.food.image_url)
+    const missingImageCandidates = candidates.filter((candidate) => (
+      candidate.food.source !== 'custom' && !candidate.food.image_url
+    ))
 
     const loadImages = async () => {
       for (const candidate of missingImageCandidates) {

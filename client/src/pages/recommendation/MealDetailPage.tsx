@@ -273,7 +273,7 @@ export default function MealDetailPage() {
 	}, [candidate, mealCategory, recommendationLocation])
 
 	useEffect(() => {
-		if (!detail || detail.meal.imageUrl) {
+		if (!detail || detail.meal.imageUrl || candidate?.food.source === 'custom') {
 			return
 		}
 
@@ -301,7 +301,7 @@ export default function MealDetailPage() {
 		void loadImage()
 
 		return () => controller.abort()
-	}, [detail])
+	}, [candidate?.food.source, detail])
 
 	const openLogModal = () => {
 		if (!detail) {
