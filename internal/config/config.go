@@ -87,7 +87,7 @@ func setDefaults(cfg *viper.Viper) {
 }
 
 func bindEnv(cfg *viper.Viper) {
-	_ = cfg.BindEnv("server.port", "SERVER_PORT")
+	_ = cfg.BindEnv("server.port", "SERVER_PORT", "PORT")
 	_ = cfg.BindEnv("client.dir", "CLIENT_DIR")
 	_ = cfg.BindEnv("database.url", "DATABASE_URL")
 	_ = cfg.BindEnv("database.host", "DATABASE_HOST")
