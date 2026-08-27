@@ -29,3 +29,12 @@ docs/*
 client/dist/
 requirements/
 CONTEXT.md
+
+# Teach skill workspace outputs
+MISSION.md
+RESOURCES.md
+NOTES.md
+/assets/
+learning-records/
+lessons/
+reference/
