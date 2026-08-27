@@ -520,6 +520,86 @@
   margin-top: 8px;
 }
 
+@media (max-width: 680px) {
+  .ui-meal-log-shell {
+    margin-top: 18px;
+    padding: 14px;
+    border-radius: 18px;
+  }
+
+  .ui-meal-log-monthbar,
+  .ui-meal-log-report-controls,
+  .ui-meal-log-report-week-range {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ui-meal-log-report-period-toggle,
+  .ui-meal-log-report-week-input,
+  .ui-meal-log-report-week-range,
+  .ui-meal-log-report-week-shift {
+    width: 100%;
+  }
+
+  .ui-meal-log-report-chart {
+    min-height: 220px;
+    overflow-x: auto;
+  }
+
+  .ui-meal-log-day {
+    display: grid;
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .ui-meal-log-day-header {
+    min-height: auto;
+    padding: 0 0 8px;
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .ui-meal-log-day-header > p,
+  .ui-meal-log-day-header > .ui-meal-log-actions-heading {
+    display: none;
+  }
+
+  .ui-meal-log-row {
+    min-height: auto;
+    padding: 12px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 12px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.48);
+  }
+
+  .ui-meal-log-row > p:first-child {
+    grid-column: 1 / -1;
+    font-size: 13px;
+    font-weight: 900;
+  }
+
+  .ui-meal-log-row > div:nth-child(2) {
+    min-width: 0;
+  }
+
+  .ui-meal-log-row > p:nth-child(3),
+  .ui-meal-log-row > p:nth-child(4) {
+    text-align: left;
+    font-size: 14px;
+  }
+
+  .ui-meal-log-row-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+
+  .ui-meal-log-modal-body {
+    padding: 8px 18px 20px;
+  }
+}
+
 .ui-meal-log-report-chart .recharts-cartesian-grid line {
   stroke: rgba(32, 52, 43, 0.12);
 }

@@ -138,8 +138,8 @@
 .ui-password-inner-input { font-family: inherit; }
 .ui-input-label { display: inline-block; margin-bottom: 9px; color: var(--ink-2); font-size: 13px; letter-spacing: 0.08em; }
 
-.ui-fixed-page { height: 100vh; display: flex; overflow: hidden; }
-.ui-split-shell { position: relative; width: 100%; height: 100vh; min-height: 0; display: grid; grid-template-columns: minmax(340px, 43%) minmax(0, 57%); }
+.ui-fixed-page { min-height: 100vh; min-height: 100dvh; display: flex; overflow: hidden; }
+.ui-split-shell { position: relative; width: 100%; min-height: 100vh; min-height: 100dvh; display: grid; grid-template-columns: minmax(340px, 43%) minmax(0, 57%); }
 .ui-visual-pane { position: relative; min-height: 100vh; overflow: hidden; background: #1f3229; }
 .ui-visual-pane img { width: 100%; height: 100%; display: block; object-fit: cover; filter: saturate(0.9) contrast(1.08); transform: scale(1.02); }
 .ui-visual-pane::after {
@@ -376,12 +376,11 @@
 
 @media (max-width: 680px) {
   .ui-success-toast { top: 16px; left: 16px; right: 16px; max-width: none; }
-  .ui-settings-nav { padding-inline: 54px; gap: clamp(12px, 4vw, 24px); }
-  .ui-settings-nav a { font-size: 15px; }
-  .ui-theme-toggle { right: 10px; width: 38px; height: 38px; }
-  .ui-split-shell { grid-template-rows: minmax(130px, 24vh) minmax(0, 1fr); }
-  .ui-centered-content { padding: 12px; }
-  .ui-form-card { max-height: calc(76vh - 24px); padding: 18px; border-radius: 20px; }
+  .ui-fixed-page { min-height: 100dvh; display: block; overflow: visible; }
+  .ui-split-shell { min-height: 100dvh; display: grid; grid-template-rows: minmax(116px, 20dvh) auto; }
+  .ui-visual-pane { min-height: 0; }
+  .ui-centered-content { min-height: auto; padding: 12px; align-items: start; overflow: visible; }
+  .ui-form-card { max-height: none; padding: 18px; border-radius: 20px; }
   .ui-form-card::before { top: -14px; right: 28px; width: 70px; height: 30px; }
   .ui-form-topline { margin-bottom: 12px; gap: 6px; font-size: 10px; }
   .ui-form-topline a { font-size: 13px; }
@@ -391,26 +390,59 @@
   .ui-form-card .ui-input { min-height: 44px; border-radius: 14px; }
   .ui-form-card .ui-input-label { margin-bottom: 5px; font-size: 11px; }
   .ui-form-card .ui-primary-button { height: 44px; font-size: 15px; }
-  .ui-visual-caption { bottom: 18px; }
+  .ui-visual-caption { left: 18px; right: 18px; bottom: 16px; }
   .ui-visual-caption span { margin-bottom: 8px; font-size: 10px; }
   .ui-visual-caption h2 { font-size: clamp(24px, 8vw, 32px); }
 
   .ui-page { padding: 22px 14px; }
-  .ui-feature-panel { padding: 28px 20px; }
+  .ui-page-shell { min-height: auto; }
+  .ui-feature-panel { min-height: auto; padding: 24px 16px; border-radius: 18px; }
   .ui-topline { align-items: flex-start; flex-direction: column; gap: 8px; }
   .ui-page-header h1 { font-size: clamp(38px, 12vw, 52px); }
+  .ui-page-copy { font-size: 15px; }
   .ui-step-list { gap: 8px; }
+  .ui-step-pill { flex: 1 1 140px; min-width: 0; }
   .ui-chip-grid { gap: 12px; }
   .ui-option { width: 100%; }
+  .ui-actions .mantine-Group-root,
+  .ui-centered-row,
+  .ui-custom-meal-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .ui-primary-button.ui-action-button,
+  .ui-ghost-button,
+  .ui-danger-button,
+  .ui-dark-button {
+    width: 100%;
+  }
   .ui-field-group .mantine-Group-root { flex-direction: column; }
   .ui-field-group .mantine-Group-root > * { width: 100%; }
   .ui-settings-page { padding: 12px; }
-  .ui-settings-nav { justify-content: space-around; gap: 8px; }
-  .ui-settings-nav a { font-size: 15px; }
+  .ui-settings-frame { min-height: auto; }
+  .ui-settings-nav {
+    min-height: 54px;
+    padding: 8px 54px 8px 12px;
+    justify-content: flex-start;
+    gap: 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .ui-settings-nav::-webkit-scrollbar { display: none; }
+  .ui-settings-nav a { flex: 0 0 auto; font-size: 15px; white-space: nowrap; }
+  .ui-theme-toggle { right: 10px; width: 38px; height: 38px; }
   .ui-settings-panel { padding: 22px 16px; border-radius: 22px; }
   .ui-settings-row { grid-template-columns: 1fr auto; }
   .ui-settings-value { grid-column: 1 / -1; max-width: none; text-align: left; }
   .ui-meal-card { grid-template-columns: 76px minmax(0, 1fr); gap: 12px; padding: 12px; }
   .ui-meal-photo { width: 76px; height: 70px; border-radius: 12px; }
-  .ui-meal-log-button { grid-column: 2; width: 84px; justify-self: start; height: 40px; }
+  .ui-meal-log-button { grid-column: 1 / -1; width: 100%; justify-self: stretch; height: 40px; }
+}
+
+@media (max-width: 380px) {
+  .ui-split-shell { grid-template-rows: 104px auto; }
+  .ui-visual-caption h2 { display: none; }
+  .ui-body-copy { display: none; }
+  .ui-form { gap: 8px; }
+  .ui-form-card { padding: 16px; }
 }

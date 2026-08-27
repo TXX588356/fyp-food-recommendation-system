@@ -158,7 +158,8 @@
 }
 
 @media (max-width: 680px) {
-  .ui-recommendation-page .ui-settings-nav { padding-inline: 54px; }
+  .ui-recommendation-layout { margin-top: 18px; }
+  .ui-recommendation-page .ui-settings-nav { padding-inline: 8px 54px; }
   .ui-theme-toggle { right: 10px; width: 38px; height: 38px; }
   .ui-recommendation-location {
     width: 100%;

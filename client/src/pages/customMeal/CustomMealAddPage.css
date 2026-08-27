@@ -79,9 +79,17 @@
 }
 
 @media (max-width: 680px) {
-  .ui-meal-add-panel { border-radius: 18px; }
+  .ui-meal-add-header { margin: 22px 0 16px; padding-inline: 0; }
+  .ui-meal-add-header h1 { font-size: clamp(30px, 11vw, 44px); }
+  .ui-meal-add-panel { min-height: auto; gap: 14px; padding: 14px; border-radius: 18px; }
+  .ui-meal-search-field { min-height: 48px; padding-inline: 14px; }
+  .ui-custom-meal-entry { min-height: 60px; gap: 12px; }
+  .ui-custom-meal-entry span { width: 46px; height: 46px; border-radius: 12px; }
   .ui-custom-meal-entry strong { font-size: 20px; }
-  .ui-custom-meal-form { padding: 18px; border-radius: 18px; }
+  .ui-custom-meal-form { min-height: auto; padding: 16px; gap: 20px; border-radius: 18px; }
+  .ui-custom-meal-fields { gap: 18px; }
+  .ui-serving-size, .ui-dietary-tag-group, .ui-location-fields { gap: 12px; }
+  .ui-short-input { max-width: none; }
   .ui-custom-meal-actions { gap: 12px; }
   .ui-custom-meal-actions .ui-dark-button { flex: 1; }
 }
