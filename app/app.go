@@ -53,7 +53,7 @@ type AIClient interface {
 	interfaces.MealDetailExplainer
 }
 
-var newMealGenerator = func(ctx context.Context, apiKey string) (AIClient, error) {
+var newAIClient = func(ctx context.Context, apiKey string) (AIClient, error) {
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{
 		APIKey:  apiKey,
 		Backend: genai.BackendGeminiAPI,
@@ -172,7 +172,7 @@ func (a *App) GetAIClient(ctx context.Context) (AIClient, error) {
 		return a.aiClient, nil
 	}
 
-	aiClient, err := newMealGenerator(ctx, a.GeminiAPIKey)
+	aiClient, err := newAIClient(ctx, a.GeminiAPIKey)
 	if err != nil {
 		return nil, err
 	}

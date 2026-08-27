@@ -12,7 +12,7 @@ TPARSE := $(shell command -v tparse || echo "bin/tparse")
 MINIO_CONTAINER ?= minio
 POSTGRES_CONTAINER ?= fyp-postgres
 CATALOG_DATA_DUMP ?= data/catalog-data.sql
-CATALOG_DUMP_TABLES := fyp_smart_meal_meal_categories fyp_smart_meal_prebuilt_meals
+CATALOG_DUMP_TABLES := meal_categories prebuilt_meals
 MIGRATION_FILES := $(sort $(wildcard db/migrations/*.up.sql))
 GO_CACHE_DIR ?= $(CURDIR)/out/go-build-cache
 empty :=
@@ -136,7 +136,7 @@ catalog-seed:
 		-v ON_ERROR_STOP=1 \
 		-U "${DATABASE_USER}" \
 		-d "${DATABASE_NAME}" \
-		-c "DELETE FROM fyp_smart_meal_prebuilt_meals; DELETE FROM fyp_smart_meal_meal_categories;"
+		-c "DELETE FROM prebuilt_meals; DELETE FROM meal_categories;"
 	podman exec -i -e PGPASSWORD="${DATABASE_PASSWORD}" $(POSTGRES_CONTAINER) psql \
 		-v ON_ERROR_STOP=1 \
 		-U "${DATABASE_USER}" \
