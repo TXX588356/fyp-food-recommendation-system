@@ -24,7 +24,7 @@ import { FiCheck } from 'react-icons/fi'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { resolveWikipediaMealImage } from './wikiMealImages'
 import { formatLocation, parseLocation } from '@/preferences/helpers'
-import { parseMalaysiaCitiesCsv, type CityRow } from '@/preferences/options'
+import { parseMalaysiaCitiesCsv, uniqueSelectOptions, uniqueSelectOptionsByValue, type CityRow } from '@/preferences/options'
 import type { LocationValue, PreferenceData } from '@/preferences/types'
 import {
   buildRecommendationStorageKey,
@@ -154,6 +154,28 @@ const selectDefaultRecommendationLocation = (preference: PreferenceData) => {
   return preference.workSchoolLocation
 }
 
+const buildSavedLocationOptions = (preference: PreferenceData): RecommendationLocationOption[] => {
+  const locationsByValue = new Map<string, string[]>()
+  const savedLocations = [
+    { value: preference.workSchoolLocation.trim(), label: 'Work / school' },
+    { value: preference.homeLocation.trim(), label: 'Home' },
+  ]
+
+  savedLocations.forEach((location) => {
+    if (!location.value) return
+
+    locationsByValue.set(location.value, [
+      ...(locationsByValue.get(location.value) ?? []),
+      location.label,
+    ])
+  })
+
+  return Array.from(locationsByValue.entries()).map(([value, labels]) => ({
+    value,
+    label: `${labels.join(' and ')}: ${value}`,
+  }))
+}
+
 function DynamicLocationSelect({
   selectedLocation,
   savedLocations,
@@ -172,11 +194,7 @@ function DynamicLocationSelect({
       .then((csv) => {
         const rows = parseMalaysiaCitiesCsv(csv)
         setCities(rows)
-        setStates(
-          Array.from(new Set(rows.map((row) => row.subcountry)))
-          .sort()
-          .map((state) => ({ value: state, label: state }))
-        )
+        setStates(uniqueSelectOptions(rows.map((row) => row.subcountry)))
       })
       .catch((error) => {
         console.error('Error loading Malaysia cities CSV: ', error)
@@ -188,15 +206,19 @@ function DynamicLocationSelect({
   const districts = useMemo(() => {
     if (!selectedLocation.state) return []
 
-    return cities
-      .filter((city) => city.subcountry === selectedLocation.state)
-      .map((city) => city.name)
-      .sort()
-      .map((district) => ({ value: district, label: district }))
+    return uniqueSelectOptions(
+      cities
+        .filter((city) => city.subcountry === selectedLocation.state)
+        .map((city) => city.name),
+    )
   }, [cities, selectedLocation.state])
 
   const selectedLocationValue = formatLocation(selectedLocation)
-  const selectedSavedLocationValue = savedLocations.some((location) => location.value === selectedLocationValue)
+  const savedLocationOptions = useMemo(
+    () => uniqueSelectOptionsByValue(savedLocations),
+    [savedLocations],
+  )
+  const selectedSavedLocationValue = savedLocationOptions.some((location) => location.value === selectedLocationValue)
     ? selectedLocationValue
     : null
 
@@ -211,7 +233,7 @@ function DynamicLocationSelect({
         <Select 
           label='Saved'
           placeholder='Use saved location'
-          data={savedLocations}
+          data={savedLocationOptions}
           value={selectedSavedLocationValue}
           size="xs"
           onChange={(value) => {
@@ -432,16 +454,7 @@ export default function RecommendationPage() {
         const defaultLocation = selectDefaultRecommendationLocation(response.data)
         const currentLocation = loadCurrentRecommendationLocation(userKey)
         const initialLocation = currentLocation || defaultLocation
-        const nextSavedLocations = [
-          {
-            value: response.data.workSchoolLocation,
-            label: `Work / school: ${response.data.workSchoolLocation}`,
-          },
-          {
-            value: response.data.homeLocation,
-            label: `Home: ${response.data.homeLocation}`,
-          }
-        ].filter((option) => option.value.trim().length > 0)
+        const nextSavedLocations = buildSavedLocationOptions(response.data)
 
         setSavedLocations(nextSavedLocations)
         setSelectedLocation(parseLocation(initialLocation))

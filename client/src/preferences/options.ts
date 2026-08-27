@@ -31,6 +31,11 @@ export type CityRow = {
   geonameid: string
 }
 
+export type SelectOption = {
+  value: string
+  label: string
+}
+
 export function parseMalaysiaCitiesCsv(csv: string): CityRow[] {
   const [, ...rows] = csv.trim().split('\n')
 
@@ -44,6 +49,33 @@ export function parseMalaysiaCitiesCsv(csv: string): CityRow[] {
       geonameid: geonameid.trim(),
     }
   })
+}
+
+export function uniqueSelectOptions(values: string[]): SelectOption[] {
+  return Array.from(
+    new Set(values.map((value) => value.trim()).filter(Boolean)),
+  )
+    .sort()
+    .map((value) => ({
+      value,
+      label: value,
+    }))
+}
+
+export function uniqueSelectOptionsByValue(options: SelectOption[]): SelectOption[] {
+  const optionsByValue = new Map<string, string>()
+
+  options.forEach((option) => {
+    const value = option.value.trim()
+    if (!value || optionsByValue.has(value)) return
+
+    optionsByValue.set(value, option.label)
+  })
+
+  return Array.from(optionsByValue.entries()).map(([value, label]) => ({
+    value,
+    label,
+  }))
 }
 
 export const mealCategoryOptions = [

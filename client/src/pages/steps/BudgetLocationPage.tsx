@@ -1,4 +1,4 @@
-import { parseMalaysiaCitiesCsv, type CityRow } from "@/preferences/options"
+import { parseMalaysiaCitiesCsv, uniqueSelectOptions, type CityRow, type SelectOption } from "@/preferences/options"
 import type { LocationValue } from "@/preferences/types"
 import { QuestionBlock } from "@/types/QuestionBlock"
 import { Box, Group, NumberInput, Select, Text } from "@mantine/core"
@@ -16,7 +16,7 @@ function LocationSelectGroup({
   onChange: (value: LocationValue) => void
 }) {
   const [cities, setCities] = useState<CityRow[]>([])
-  const [states, setStates] = useState<{ value: string; label: string }[]>([])
+  const [states, setStates] = useState<SelectOption[]>([])
 
   useEffect(() => {
     fetch("/malaysia_cities.csv")
@@ -25,16 +25,7 @@ function LocationSelectGroup({
         const rows = parseMalaysiaCitiesCsv(csv)
         setCities(rows)
 
-        const nextStates = Array.from(
-          new Set(rows.map((row) => row.subcountry)),
-        )
-          .sort()
-          .map((state) => ({
-            value: state,
-            label: state,
-          }))
-
-        setStates(nextStates)
+        setStates(uniqueSelectOptions(rows.map((row) => row.subcountry)))
       })
       .catch((error) => {
         console.error("Error loading Malaysia cities CSV: ", error)
@@ -46,14 +37,11 @@ function LocationSelectGroup({
   const districts = useMemo(() => {
     if (!value.state) return []
 
-    return cities
-      .filter((city) => city.subcountry === value.state)
-      .map((city) => city.name)
-      .sort()
-      .map((city) => ({
-        value: city,
-        label: city,
-      }))
+    return uniqueSelectOptions(
+      cities
+        .filter((city) => city.subcountry === value.state)
+        .map((city) => city.name),
+    )
   }, [value.state, cities])
 
   return (
