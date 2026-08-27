@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"fyp/food-rs/app"
 	"fyp/food-rs/internal/config"
 	"fyp/food-rs/internal/database"
@@ -53,6 +54,8 @@ func Run(parent context.Context) error {
 	ctx = app.WithApp(ctx, a) // attach App instance to the context, allowing other codes to retrieve
 	endpoint.RegisterEndpoints(ctx, e)
 
+	clientDir := resolveClientDir(cfg.Client.Dir)
+
 	// Makes Go backend serve the built React frontend
 	// by exposing files inside the backend container's static folder & serve them from
 	// website root '/'
@@ -65,14 +68,21 @@ func Run(parent context.Context) error {
 			}
 
 			if path != "/" {
-				filePath := filepath.Join(cfg.Client.Dir, path)
+				filePath := filepath.Join(clientDir, path)
 				if _, statErr := os.Stat(filePath); statErr == nil {
-					_ = c.File(filePath)
+					if fileErr := c.File(filePath); fileErr != nil {
+						_ = c.JSON(http.StatusInternalServerError, map[string]string{"error": fileErr.Error()})
+					}
 					return
 				}
 			}
 
-			_ = c.File(filepath.Join(cfg.Client.Dir, "index.html"))
+			indexPath := filepath.Join(clientDir, "index.html")
+			if fileErr := c.File(indexPath); fileErr != nil {
+				_ = c.JSON(http.StatusInternalServerError, map[string]string{
+					"error": fmt.Sprintf("frontend entrypoint not found at %s: %s", indexPath, fileErr),
+				})
+			}
 			return
 		}
 
@@ -86,4 +96,53 @@ func Run(parent context.Context) error {
 	}
 
 	return sc.Start(ctx, e)
+}
+
+func resolveClientDir(configuredDir string) string {
+	configuredDir = strings.TrimSpace(configuredDir)
+	if configuredDir == "" {
+		configuredDir = "static"
+	}
+
+	for _, candidate := range clientDirCandidates(configuredDir) {
+		if _, err := os.Stat(filepath.Join(candidate, "index.html")); err == nil {
+			return candidate
+		}
+	}
+
+	return configuredDir
+}
+
+func clientDirCandidates(configuredDir string) []string {
+	candidates := []string{configuredDir}
+
+	if cwd, err := os.Getwd(); err == nil {
+		candidates = append(candidates, filepath.Join(cwd, configuredDir))
+
+		for dir := cwd; ; dir = filepath.Dir(dir) {
+			candidates = append(candidates, filepath.Join(dir, configuredDir))
+			parent := filepath.Dir(dir)
+			if parent == dir {
+				break
+			}
+		}
+	}
+
+	if executable, err := os.Executable(); err == nil {
+		executableDir := filepath.Dir(executable)
+		candidates = append(candidates, filepath.Join(executableDir, configuredDir))
+	}
+
+	seen := make(map[string]struct{}, len(candidates))
+	unique := make([]string, 0, len(candidates))
+	for _, candidate := range candidates {
+		cleaned := filepath.Clean(candidate)
+		if _, ok := seen[cleaned]; ok {
+			continue
+		}
+		seen[cleaned] = struct{}{}
+		unique = append(unique, cleaned)
+	}
+
+	return unique
 }
