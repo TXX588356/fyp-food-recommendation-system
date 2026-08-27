@@ -61,7 +61,7 @@ func RegisterCustomMealRoutes(ctx context.Context, e *echo.Echo) {
 		customMealAutocompleter: customMealAutocompleter,
 	}
 
-	customMeal := e.Group("/custom-meals", middleware.Auth(a.JWTSecret))
+	customMeal := e.Group("/api/custom-meals", middleware.Auth(a.JWTSecret))
 	customMeal.POST("", h.createCustomMeal, echomiddleware.BodyLimit(maxCustomMealRequestSize))
 	customMeal.GET("", h.listVisibleCustomMeals)
 	customMeal.GET("/:id", h.findVisibleCustomMealByID)

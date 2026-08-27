@@ -27,7 +27,7 @@ func RegisterAuthRoutes(ctx context.Context, e *echo.Echo) {
 
 	h := &authHandler{authService: authService}
 
-	auth := e.Group("/auth")
+	auth := e.Group("/api/auth")
 	auth.POST("/register", h.register)
 	auth.POST("/login", h.login)
 	auth.POST("/refresh", h.refresh)

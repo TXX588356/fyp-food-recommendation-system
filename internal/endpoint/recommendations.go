@@ -50,7 +50,7 @@ func RegisterRecommendationRoutes(ctx context.Context, e *echo.Echo) {
 		recommendationService: recommendationService,
 	}
 
-	recommendations := e.Group("/recommendations", middleware.Auth(a.JWTSecret))
+	recommendations := e.Group("/api/recommendations", middleware.Auth(a.JWTSecret))
 	recommendations.POST("", h.generateRecommendations)
 	recommendations.POST("/meal-detail", h.getMealDetail)
 }

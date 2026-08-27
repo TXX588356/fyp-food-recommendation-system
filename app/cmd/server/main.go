@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -57,6 +58,10 @@ func Run(parent context.Context) error {
 	e.HTTPErrorHandler = func(c *echo.Context, err error) {
 		if c.Request().Method == http.MethodGet {
 			path := c.Request().URL.Path
+			if strings.HasPrefix(path, "/api/") || path == "/api" {
+				_ = c.JSON(http.StatusNotFound, map[string]string{"error": "not found"})
+				return
+			}
 
 			if path != "/" {
 				filePath := filepath.Join(cfg.Client.Dir, path)

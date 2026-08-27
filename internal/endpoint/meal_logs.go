@@ -32,7 +32,7 @@ func RegisterMealLogRoutes(ctx context.Context, e *echo.Echo) {
 
 	h := &mealLogHandler{mealLogService: mealLogService}
 
-	mealLogs := e.Group("/meal-logs", middleware.Auth(a.JWTSecret))
+	mealLogs := e.Group("/api/meal-logs", middleware.Auth(a.JWTSecret))
 	mealLogs.POST("", h.createMealLog)
 	mealLogs.GET("", h.getMealLogsByMonth)
 	mealLogs.PATCH("/:id", h.updateMealLog)

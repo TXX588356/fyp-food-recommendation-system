@@ -75,7 +75,7 @@ func RegisterMealSearchRoutes(ctx context.Context, e *echo.Echo) {
 		imageStorage:       a.ImageStorage,
 	}
 
-	meals := e.Group("/meals", middleware.Auth(a.JWTSecret))
+	meals := e.Group("/api/meals", middleware.Auth(a.JWTSecret))
 	meals.GET("/search", h.searchMeals)
 	meals.GET("/:source/:mealID", h.getMealDetail)
 }

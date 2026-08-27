@@ -32,7 +32,7 @@ func RegisterMealLogReportRoutes(ctx context.Context, e *echo.Echo) {
 	h := &mealLogReportHandler{reportService: reportService}
 
 	// Keep report under meal-logs because it analyses meal-log records.
-	mealReports := e.Group("/meal-logs/report", middleware.Auth(a.JWTSecret))
+	mealReports := e.Group("/api/meal-logs/report", middleware.Auth(a.JWTSecret))
 	mealReports.GET("", h.getMonthReport)
 }
 

@@ -38,7 +38,7 @@ func RegisterCatalogRoutes(ctx context.Context, e *echo.Echo) {
 }
 
 func registerCatalogRoutes(e *echo.Echo, catalogService interfaces.CatalogService, jwtSecret string) {
-	group := e.Group("/catalog")
+	group := e.Group("/api/catalog")
 	if jwtSecret != "" {
 		group.Use(endpointmiddleware.Auth(jwtSecret))
 	}

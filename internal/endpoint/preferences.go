@@ -28,7 +28,7 @@ func RegisterPreferenceRoutes(ctx context.Context, e *echo.Echo) {
 
 	h := &preferenceHandler{preferenceService: preferenceService}
 
-	preference := e.Group("/preferences", middleware.Auth(a.JWTSecret))
+	preference := e.Group("/api/preferences", middleware.Auth(a.JWTSecret))
 	preference.GET("", h.getPreferences)
 	preference.POST("", h.createPreferences) // Onboarding
 	preference.PUT("", h.updatePreferences)

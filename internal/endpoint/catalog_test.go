@@ -34,7 +34,7 @@ var _ = Describe("Catalog endpoint", func() {
 		e := echo.New()
 		service := &catalogServiceStub{}
 		registerCatalogRoutes(e, service, "")
-		req := httptest.NewRequest(http.MethodGet, "/catalog/meals?category=rice_dishes&category=poultry", nil)
+		req := httptest.NewRequest(http.MethodGet, "/api/catalog/meals?category=rice_dishes&category=poultry", nil)
 		rec := httptest.NewRecorder()
 
 		e.ServeHTTP(rec, req)
