@@ -799,9 +799,9 @@ export default function RecommendationPage() {
         <MainNav active="recommendation" />
 
         <Box className="ui-recommendation-layout">
-        <Text 
-          size="lg" 
-          fw={700} 
+        <Text
+          size="lg"
+          fw={700}
           style={{
           textAlign: 'center',
           marginBottom: '10px',

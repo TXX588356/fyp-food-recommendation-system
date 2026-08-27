@@ -1,8 +1,9 @@
 import { useAuth } from "@/auth/useAuth"
 import { formatConsent, formatDietaryRestrictions, formatGoal, formatHealthConcerns, formatList, getEmptyPreference } from "@/preferences/helpers"
 import type { PreferenceData, SettingKey } from "@/preferences/types"
-import { Alert, Box, Button, Text, Title, UnstyledButton } from "@mantine/core"
+import { Alert, Avatar, Box, Menu, Text, Title, UnstyledButton } from "@mantine/core"
 import axios from "axios"
+import { ChevronDown, LogOut } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import MainNav from "@/theme/MainNav"
@@ -10,10 +11,12 @@ import MainNav from "@/theme/MainNav"
 
 export default function PreferencePage() {
   const navigate = useNavigate()
-  const { logout } = useAuth()
+  const { logout, user } = useAuth()
   const [preference, setPreference] = useState<PreferenceData>(getEmptyPreference)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const displayName = user?.name?.trim() || 'User'
+  const profileInitial = displayName.charAt(0).toUpperCase()
 
   const token = localStorage.getItem('token')
 
@@ -113,10 +116,33 @@ export default function PreferencePage() {
 
         <Box className="ui-settings-layout">
           <Box component="section" className="ui-settings-panel ui-surface ui-panel">
-            <Box className="ui-page-header ui-settings-header">
-              <Text className="ui-eyebrow">Profile controls</Text>
-              <Title order={1}>Preference settings</Title>
-              <Text className="ui-page-copy">Review and adjust the preference profile that shapes your recommendations.</Text>
+            <Box className="ui-page-header ui-settings-header ui-settings-header-row">
+              <Box>
+                <Text className="ui-eyebrow">Profile controls</Text>
+                <Title order={1}>Preference settings</Title>
+                <Text className="ui-page-copy">Review and adjust the preference profile that shapes your recommendations.</Text>
+              </Box>
+              <Menu position="bottom-end" width={230} shadow="md">
+                <Menu.Target>
+                  <button className="ui-settings-profile" type="button" aria-label="Open account menu">
+                    <Avatar className="ui-settings-profile-avatar" radius="xl">
+                      {profileInitial}
+                    </Avatar>
+                    <Box className="ui-settings-profile-copy">
+                      <Text className="ui-settings-profile-label">Signed in as</Text>
+                      <Text className="ui-settings-profile-name">{displayName}</Text>
+                    </Box>
+                    <ChevronDown className="ui-settings-profile-chevron" size={18} strokeWidth={2.4} aria-hidden="true" />
+                  </button>
+                </Menu.Target>
+
+                <Menu.Dropdown className="ui-settings-profile-menu">
+                  <Menu.Label>Account</Menu.Label>
+                  <Menu.Item leftSection={<LogOut size={16} strokeWidth={2.4} />} color="red" onClick={handleLogout}>
+                    Log out
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
             </Box>
 
           {error && (
@@ -150,11 +176,6 @@ export default function PreferencePage() {
               </Box>            
             </>
           )}
-          <Box className="ui-centered-row" mt={60}>
-            <Button className="ui-danger-button" onClick={handleLogout}>
-              Log out
-            </Button>
-          </Box>
         </Box>
       </Box>
       </Box>
