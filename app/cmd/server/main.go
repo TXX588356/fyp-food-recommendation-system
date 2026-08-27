@@ -60,45 +60,9 @@ func Run(parent context.Context) error {
 	endpoint.RegisterEndpoints(ctx, e)
 
 	clientDir := resolveClientDir(cfg.Client.Dir)
-
-	// Makes Go backend serve the built React frontend
-	// by exposing files inside the backend container's static folder & serve them from
-	// website root '/'
-	e.HTTPErrorHandler = func(c *echo.Context, err error) {
-		if c.Request().Method == http.MethodGet {
-			path := c.Request().URL.Path
-			if strings.HasPrefix(path, "/api/") || path == "/api" {
-				_ = c.JSON(http.StatusNotFound, map[string]string{"error": "not found"})
-				return
-			}
-
-			if path != "/" {
-				filePath := filepath.Join(clientDir, path)
-				if _, statErr := os.Stat(filePath); statErr == nil {
-					if fileErr := c.File(filePath); fileErr != nil {
-						_ = c.JSON(http.StatusInternalServerError, map[string]string{"error": fileErr.Error()})
-					}
-					return
-				}
-
-				if embeddedErr := serveEmbeddedClientFile(c, path); embeddedErr == nil {
-					return
-				}
-			}
-
-			indexPath := filepath.Join(clientDir, "index.html")
-			if fileErr := c.File(indexPath); fileErr != nil {
-				if embeddedErr := serveEmbeddedClientFile(c, "/index.html"); embeddedErr != nil {
-					_ = c.JSON(http.StatusInternalServerError, map[string]string{
-						"error": fmt.Sprintf("frontend entrypoint not found at %s or embedded static/index.html: %s", indexPath, fileErr),
-					})
-				}
-			}
-			return
-		}
-
-		_ = c.JSON(http.StatusNotFound, map[string]string{"error": "not found"})
-	}
+	e.GET("/*", func(c *echo.Context) error {
+		return serveClientRoute(c, clientDir)
+	})
 
 	// Start Echo
 	sc := echo.StartConfig{
@@ -107,6 +71,37 @@ func Run(parent context.Context) error {
 	}
 
 	return sc.Start(ctx, e)
+}
+
+func serveClientRoute(c *echo.Context, clientDir string) error {
+	requestPath := c.Request().URL.Path
+	if strings.HasPrefix(requestPath, "/api/") || requestPath == "/api" {
+		return c.JSON(http.StatusNotFound, map[string]string{"error": "not found"})
+	}
+
+	if requestPath != "/" {
+		filePath := filepath.Join(clientDir, requestPath)
+		if _, err := os.Stat(filePath); err == nil {
+			return c.File(filePath)
+		}
+
+		if err := serveEmbeddedClientFile(c, requestPath); err == nil {
+			return nil
+		}
+	}
+
+	indexPath := filepath.Join(clientDir, "index.html")
+	if err := c.File(indexPath); err == nil {
+		return nil
+	}
+
+	if err := serveEmbeddedClientFile(c, "/index.html"); err == nil {
+		return nil
+	}
+
+	return c.JSON(http.StatusInternalServerError, map[string]string{
+		"error": fmt.Sprintf("frontend entrypoint not found at %s or embedded static/index.html", indexPath),
+	})
 }
 
 func serveEmbeddedClientFile(c *echo.Context, requestPath string) error {
