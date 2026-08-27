@@ -3,18 +3,23 @@ package server
 import (
 	"context"
 	"fmt"
+	"io/fs"
+	"mime"
+	"net/http"
+	"os"
+	"os/signal"
+	"path"
+	"path/filepath"
+	"strings"
+	"syscall"
+	"time"
+
 	"fyp/food-rs/app"
 	"fyp/food-rs/internal/config"
 	"fyp/food-rs/internal/database"
 	"fyp/food-rs/internal/endpoint"
 	"fyp/food-rs/internal/storage"
-	"net/http"
-	"os"
-	"os/signal"
-	"path/filepath"
-	"strings"
-	"syscall"
-	"time"
+	"fyp/food-rs/static"
 
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
@@ -75,13 +80,19 @@ func Run(parent context.Context) error {
 					}
 					return
 				}
+
+				if embeddedErr := serveEmbeddedClientFile(c, path); embeddedErr == nil {
+					return
+				}
 			}
 
 			indexPath := filepath.Join(clientDir, "index.html")
 			if fileErr := c.File(indexPath); fileErr != nil {
-				_ = c.JSON(http.StatusInternalServerError, map[string]string{
-					"error": fmt.Sprintf("frontend entrypoint not found at %s: %s", indexPath, fileErr),
-				})
+				if embeddedErr := serveEmbeddedClientFile(c, "/index.html"); embeddedErr != nil {
+					_ = c.JSON(http.StatusInternalServerError, map[string]string{
+						"error": fmt.Sprintf("frontend entrypoint not found at %s or embedded static/index.html: %s", indexPath, fileErr),
+					})
+				}
 			}
 			return
 		}
@@ -96,6 +107,25 @@ func Run(parent context.Context) error {
 	}
 
 	return sc.Start(ctx, e)
+}
+
+func serveEmbeddedClientFile(c *echo.Context, requestPath string) error {
+	fileName := strings.TrimPrefix(path.Clean("/"+requestPath), "/")
+	if fileName == "." || fileName == "" {
+		fileName = "index.html"
+	}
+
+	data, err := fs.ReadFile(static.FS, fileName)
+	if err != nil {
+		return err
+	}
+
+	contentType := mime.TypeByExtension(path.Ext(fileName))
+	if contentType == "" {
+		contentType = http.DetectContentType(data)
+	}
+
+	return c.Blob(http.StatusOK, contentType, data)
 }
 
 func resolveClientDir(configuredDir string) string {

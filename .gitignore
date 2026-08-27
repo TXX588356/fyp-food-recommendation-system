@@ -26,7 +26,6 @@ data/*
 !data/catalog-data.sql
 docs/*
 
-static/
 client/dist/
 requirements/
 CONTEXT.md
