@@ -108,6 +108,9 @@ func bindEnv(cfg *viper.Viper) {
 
 func normalize(cfg *Config) {
 	cfg.Server.Port = strings.TrimSpace(cfg.Server.Port)
+	if port := strings.TrimSpace(os.Getenv("PORT")); port != "" {
+		cfg.Server.Port = port
+	}
 	cfg.Client.Dir = strings.TrimSpace(cfg.Client.Dir)
 	cfg.Database.URL = strings.TrimSpace(cfg.Database.URL)
 	cfg.Database.Host = strings.TrimSpace(cfg.Database.Host)
