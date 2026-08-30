@@ -7,6 +7,7 @@ import type { SpotlightRect } from '../recommendationTypes'
 const CARD_WIDTH = 360
 const CARD_ESTIMATED_HEIGHT = 230
 const VIEWPORT_GAP = 16
+const MOBILE_VIEWPORT_WIDTH = 680
 
 const clamp = (value: number, min: number, max: number) => (
   Math.min(Math.max(value, min), Math.max(min, max))
@@ -39,7 +40,8 @@ export default function RecommendationSpotlight({
         height: targetRect.height + 20,
       }
     : null
-  const cardStyle = paddedRect
+  const useMobileLayout = window.innerWidth <= MOBILE_VIEWPORT_WIDTH
+  const cardStyle = paddedRect && !useMobileLayout
     ? {
         top: clamp(
           paddedRect.top + paddedRect.height + 18,
