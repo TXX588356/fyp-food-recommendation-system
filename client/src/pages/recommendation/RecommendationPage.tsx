@@ -255,6 +255,9 @@ export default function RecommendationPage() {
       return
     }
 
+    let hasScrolledTargetIntoView = false
+    let scrollMeasureTimer: number | undefined
+
     const updateSpotlightRect = () => {
       const selectorByStep: Record<RecommendationTourStep, string> = {
         logMeal: '[data-recommendation-tour="log-meal"]',
@@ -270,6 +273,22 @@ export default function RecommendationPage() {
       }
 
       const rect = target.getBoundingClientRect()
+      const viewportPadding = window.innerWidth <= 680 ? 120 : 96
+      const isTargetAboveViewport = rect.top < viewportPadding
+      const isTargetBelowViewport = rect.bottom > window.innerHeight - viewportPadding
+
+      if (!hasScrolledTargetIntoView && (isTargetAboveViewport || isTargetBelowViewport)) {
+        hasScrolledTargetIntoView = true
+
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        target.scrollIntoView({
+          behavior: prefersReducedMotion ? 'auto' : 'smooth',
+          block: 'center',
+          inline: 'nearest',
+        })
+
+        scrollMeasureTimer = window.setTimeout(updateSpotlightRect, prefersReducedMotion ? 0 : 280)
+      }
 
       setSpotlightRect({
         top: rect.top,
@@ -285,6 +304,9 @@ export default function RecommendationPage() {
     window.addEventListener('scroll', updateSpotlightRect, true)
 
     return () => {
+      if (scrollMeasureTimer) {
+        window.clearTimeout(scrollMeasureTimer)
+      }
       window.removeEventListener('resize', updateSpotlightRect)
       window.removeEventListener('scroll', updateSpotlightRect, true)
     }
