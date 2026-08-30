@@ -20,6 +20,7 @@ import {
   toDateTimeLocalValue,
 } from './mealLogHelpers'
 import type { LoggableMeal, MealLogInput, MealLogType } from './mealLogTypes'
+import { modalContentClassName, modalTransitionProps } from '@/theme/modalTransitions'
 
 
 const mealTypeOptions = [
@@ -156,10 +157,11 @@ export default function LogMealModal({
       overlayProps={{
         backgroundOpacity: 0.3,
       }}
+      transitionProps={modalTransitionProps}
       centered
       title="Log meal"
       classNames={{
-        content: 'ui-meal-log-modal',
+        content: modalContentClassName('ui-meal-log-modal'),
         header: 'ui-meal-log-modal-header',
         body: 'ui-meal-log-modal-body',
         title: 'ui-meal-log-modal-title',

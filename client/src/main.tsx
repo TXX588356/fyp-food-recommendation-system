@@ -5,6 +5,7 @@ import axios from 'axios'
 import '@mantine/core/styles.css'
 import '@/index.css'
 import '@/App.css'
+import '@/theme/inputTransitions'
 import App from '@/App.tsx'
 import { AuthProvider } from '@/auth/AuthContext';
 

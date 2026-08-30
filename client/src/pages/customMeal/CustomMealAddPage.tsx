@@ -1,32 +1,16 @@
 import {
   Alert,
-  Badge,
   Box,
   Button,
-  Checkbox,
-  FileInput,
-  Group,
-  NumberInput,
-  Select,
-  SimpleGrid,
   Text,
-  TextInput,
   Title,
-  Modal,
-  Stack,
-  MantineProvider,
-  createTheme,
 } from '@mantine/core'
 import axios from 'axios'
-import { useEffect, useState, type KeyboardEvent } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { FiCheck } from 'react-icons/fi'
 
-import {
-  dietaryRestrictionOptions,
-  mealCategoryOptions,
-  restrictedMealCategories,
-} from '@/preferences/options'
+import { restrictedMealCategories } from '@/preferences/options'
 import './CustomMealAddPage.css'
 import '@/App.css'
 import {
@@ -45,78 +29,24 @@ import {
 } from '../recommendation/recommendationStorage'
 import type { MatchedMealCandidate } from '../recommendation/recommendationTypes'
 import { useAuth } from '@/auth/useAuth'
-
-
-type MealTime = 'breakfast' | 'lunch' | 'dinner' | 'snack'
-
-type CustomMealResponse = {
-  id: string
-  name: string
-  price: number
-  calories: number
-  fatG: number
-  proteinG: number
-  carbsG: number
-  state: string
-  district: string
-  restaurantName: string
-  imageURL: string
-  dietaryRestrictionTags: string[]
-  mealCategoryTags: string[]
-  isOwner: boolean
-  isShared: boolean
-}
-
-type MealSearchResult = {
-  id: string
-  name: string
-  source: 'prebuilt' | 'custom'
-  tags: string[]
-  calories: number
-  fat_g: number
-  protein_g: number
-  carbs_g: number
-  price?: number
-  serving_description?: string
-  image_url?: string
-}
-
-type ExistingMeal = {
-  id: string
-  name: string
-  calories: number
-  priceLabel: string
-  tags: string[]
-  source: 'prebuilt' | 'custom'
-  imageUrl?: string
-}
-
-type CustomMealDraft = {
-  name: string
-  price: number | ''
-  calories: number | ''
-  carbsG: number | ''
-  fatG: number | ''
-  proteinG: number | ''
-  state: string
-  district: string
-  restaurantName: string
-  dietaryRestrictionTags: string[]
-  mealCategoryTags: string[]
-}
-
-type CustomMealAutocompleteResponse = {
-  calories: number
-  fatG: number
-  proteinG: number
-  carbsG: number
-  dietaryRestrictionTags: string[]
-  mealCategoryTags: string[]
-}
-
-const theme = createTheme({
-  cursorType: 'pointer',
-});
+import { replayInputShake } from '@/theme/inputTransitions'
+import type {
+  CustomMealAutocompleteResponse,
+  CustomMealDraft,
+  CustomMealField,
+  CustomMealFieldErrors,
+  CustomMealResponse,
+  ExistingMeal,
+  MealSearchResult,
+  MealTime,
+} from './customMealTypes'
+import CustomMealBasicFields from './components/CustomMealBasicFields'
+import CustomMealConsentModal from './components/CustomMealConsentModal'
+import CustomMealFormActions from './components/CustomMealFormActions'
+import CustomMealLocationFields from './components/CustomMealLocationFields'
+import CustomMealTagFields from './components/CustomMealTagFields'
+import ExistingMealCard from './components/ExistingMealCard'
+import MealAddIcon from './components/MealAddIcon'
 
 const mealTimeLabels: Record<MealTime, string> = {
   breakfast: 'Breakfast',
@@ -143,8 +73,6 @@ const stateOptions = [
   'Selangor',
   'Terengganu',
 ].map((state) => ({ value: state, label: state }))
-
-const customMealDietaryOptions = dietaryRestrictionOptions.filter((option) => option.value !== 'none')
 
 const getRestrictedMealCategoryTags = (dietaryRestrictionTags: string[]) =>
   new Set(
@@ -198,48 +126,6 @@ const isMealTime = (value: string | undefined): value is MealTime =>
   value === 'breakfast' || value === 'lunch' || value === 'dinner' || value === 'snack'
 
 const formatRM = (value: number) => `RM ${value.toFixed(2)}`
-
-function MealAddIcon({ name }: { name: 'search' | 'plus' | 'bowl' }) {
-  const commonProps = {
-    width: 22,
-    height: 22,
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: 2,
-    strokeLinecap: 'round' as const,
-    strokeLinejoin: 'round' as const,
-    'aria-hidden': true,
-  }
-
-  if (name === 'search') {
-    return (
-      <svg {...commonProps}>
-        <circle cx="11" cy="11" r="7" />
-        <path d="m20 20-3.5-3.5" />
-      </svg>
-    )
-  }
-
-  if (name === 'plus') {
-    return (
-      <svg {...commonProps}>
-        <path d="M12 5v14" />
-        <path d="M5 12h14" />
-      </svg>
-    )
-  }
-
-  return (
-    <svg {...commonProps}>
-      <path d="M4 11h16" />
-      <path d="M6 11c0 4 2.7 7 6 7s6-3 6-7" />
-      <path d="M8 20h8" />
-      <path d="M9 7c0-1 1-1 1-2s-1-1-1-2" />
-      <path d="M14 7c0-1 1-1 1-2s-1-1-1-2" />
-    </svg>
-  )
-}
 
 function toExistingMeal(meal: MealSearchResult): ExistingMeal {
   return {
@@ -490,7 +376,15 @@ export function CustomMealSearchPage() {
             <span>
               <MealAddIcon name="plus" />
             </span>
-            <strong>Add my custom meal item</strong>
+            <Box className="ui-custom-meal-entry-copy">
+              <strong>Create a custom meal</strong>
+              <Text component="small">
+                Cannot find it in search? Add your own meal details and save it to this {mealTimeLabels[mealTime].toLowerCase()}.
+              </Text>
+            </Box>
+            <Box className="ui-custom-meal-entry-arrow" aria-hidden="true">
+              →
+            </Box>
           </button>
 
           {error && <Alert color="red">{error}</Alert>}
@@ -512,49 +406,13 @@ export function CustomMealSearchPage() {
           ) : (
             <Box className="ui-meal-add-list">
               {visibleMeals.map((meal) => (
-                <Box
-                  className="ui-meal-card ui-card ui-meal-card-clickable"
+                <ExistingMealCard
                   key={`${meal.source}-${meal.id}`}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => openMealDetail(meal)}
-                  onKeyDown={(event) => handleMealCardKeyDown(event, meal)}
-                >
-                  <Box className="ui-meal-photo" aria-hidden={!meal.imageUrl}>
-                    {meal.imageUrl ? (
-                      <img
-                        src={meal.imageUrl}
-                        alt={meal.name}
-                        loading="lazy"
-                        referrerPolicy="no-referrer"
-                      />
-                    ) : (
-                      <MealAddIcon name="bowl" />
-                    )}
-                  </Box>
-
-                  <Box className="ui-meal-summary">
-                    <Group gap="xs" align="center">
-                      <Title order={2}>{meal.name}</Title>
-                      {meal.source === 'custom' && (
-                        <Badge className="ui-meal-source-badge">Community</Badge>
-                      )}
-                    </Group>
-                    <Text>{Math.round(meal.calories)} kcal</Text>
-                    <Text className="ui-meal-price">{meal.priceLabel}</Text>
-                  </Box>
-
-                  <Button 
-                    className="ui-meal-log-button" 
-                    variant="subtle"
-                    onClick={(event) => {
-                      event.stopPropagation()
-                      openLogModal(meal)
-                    }}
-                    >
-                    Log
-                  </Button>
-                </Box>
+                  meal={meal}
+                  onOpenDetail={openMealDetail}
+                  onLog={openLogModal}
+                  onKeyDown={handleMealCardKeyDown}
+                />
               ))}
             </Box>
           )}
@@ -582,16 +440,81 @@ export function CustomMealFormPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [mealImage, setMealImage] = useState<File | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<CustomMealFieldErrors>({})
   const [isConsentModalOpen, setIsConsentModalOpen] = useState(false)
   const [isCheckingConsent, setIsCheckingConsent] = useState(false)
   const [consentChoiceBeingSaved, setConsentChoiceBeingSaved] = useState<boolean | null>(null)
   const [isAutocompleting, setIsAutocompleting] = useState(false)
+  const [errorShakeSequence, setErrorShakeSequence] = useState(0)
+  const formRef = useRef<HTMLDivElement | null>(null)
+  const fieldErrorsRef = useRef(fieldErrors)
 
   const token = localStorage.getItem('token')
   const userKey = user?.id ?? user?.email
   const restrictedMealCategoryTags = getRestrictedMealCategoryTags(draft.dietaryRestrictionTags)
 
+  const inputClassNames = (field: CustomMealField) => ({
+    label: 'ui-input-label',
+    input: `ui-input t-input ${fieldErrors[field] ? 'is-error' : ''}`,
+    wrapper: `ui-input-wrapper t-input-wrap ${fieldErrors[field] ? 'is-error' : ''}`,
+  })
+
+  const clearFieldError = (field: CustomMealField) => {
+    setFieldErrors((current) => {
+      if (!current[field]) {
+        return current
+      }
+
+      const next = { ...current }
+      delete next[field]
+      return next
+    })
+  }
+
+  const showFieldErrors = (errors: CustomMealFieldErrors) => {
+    setFieldErrors(errors)
+    setErrorShakeSequence((current) => current + 1)
+  }
+
+  useEffect(() => {
+    fieldErrorsRef.current = fieldErrors
+  }, [fieldErrors])
+
+  useEffect(() => {
+    if (errorShakeSequence === 0) {
+      return
+    }
+
+    const firstInvalidField = Object.keys(fieldErrorsRef.current)[0]
+
+    if (!firstInvalidField) {
+      return
+    }
+
+    const animationFrame = window.requestAnimationFrame(() => {
+      replayInputShake('.ui-custom-meal-form .t-input.is-error')
+
+      const firstInvalidElement = formRef.current?.querySelector<HTMLElement>(
+        `[data-custom-meal-field="${firstInvalidField}"]`,
+      )
+
+      firstInvalidElement?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+
+      const focusTarget = firstInvalidElement?.matches('input, button, [tabindex]')
+        ? firstInvalidElement
+        : firstInvalidElement?.querySelector<HTMLElement>('input, button, [tabindex]')
+
+      focusTarget?.focus({ preventScroll: true })
+    })
+
+    return () => window.cancelAnimationFrame(animationFrame)
+  }, [errorShakeSequence])
+
   const updateDraft = <Key extends keyof CustomMealDraft>(key: Key, value: CustomMealDraft[Key]) => {
+    if (key !== 'dietaryRestrictionTags') {
+      clearFieldError(key)
+    }
+    setError(null)
     setDraft((current) => ({
       ...current,
       [key]: value,
@@ -610,12 +533,13 @@ export function CustomMealFormPage() {
     const validationError = validateAutocompleteMealName(draft.name)
 
     if (validationError) {
-      setError(validationError)
+      showFieldErrors({ name: validationError })
       return
     }
 
     setIsAutocompleting(true)
     setError(null)
+    setFieldErrors({})
 
     try {
       const response = await axios.post<CustomMealAutocompleteResponse>(
@@ -643,12 +567,14 @@ export function CustomMealFormPage() {
     } catch (error) {
       console.error("Failed to generate meal details: ", error)
       setError('Could not generate meal details.')
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     } finally {
       setIsAutocompleting(false)
     }
   }
 
   const toggleDietaryTag = (tag: string) => {
+    setError(null)
     setDraft((current) => {
       const hasTag = current.dietaryRestrictionTags.includes(tag)
       const nextDietaryRestrictionTags = hasTag
@@ -667,6 +593,8 @@ export function CustomMealFormPage() {
   }
 
   const toggleMealCategoryTag = (tag: string) => {
+    clearFieldError('mealCategoryTags')
+    setError(null)
     setDraft((current) => {
       const restrictedTags = getRestrictedMealCategoryTags(current.dietaryRestrictionTags)
 
@@ -685,22 +613,43 @@ export function CustomMealFormPage() {
     })
   }
 
-  const validateDraft = (): string | null => {
+  const validateDraft = (): CustomMealFieldErrors => {
+    const errors: CustomMealFieldErrors = {}
+
     if (!draft.name.trim()) {
-      return 'Please enter a meal name.'
+      errors.name = 'Please enter a meal name.'
     }
 
-    if (
-      draft.price === '' ||
-      draft.calories === '' ||
-      draft.carbsG === '' ||
-      draft.fatG === '' ||
-      draft.proteinG === '' ||
-      !draft.state ||
-      !draft.district.trim() ||
-      !draft.restaurantName.trim()
-    ) {
-      return 'Please complete the custom meal details.'
+    if (draft.price === '') {
+      errors.price = 'Please enter the meal price.'
+    }
+
+    if (draft.calories === '') {
+      errors.calories = 'Please enter calories.'
+    }
+
+    if (draft.carbsG === '') {
+      errors.carbsG = 'Please enter carbs.'
+    }
+
+    if (draft.fatG === '') {
+      errors.fatG = 'Please enter fat.'
+    }
+
+    if (draft.proteinG === '') {
+      errors.proteinG = 'Please enter protein.'
+    }
+
+    if (!draft.state) {
+      errors.state = 'Please select a state.'
+    }
+
+    if (!draft.district.trim()) {
+      errors.district = 'Please enter the district.'
+    }
+
+    if (!draft.restaurantName.trim()) {
+      errors.restaurantName = 'Please enter the restaurant name.'
     }
 
     const categoryError = validateMealCategoryTags(
@@ -709,14 +658,14 @@ export function CustomMealFormPage() {
     )
 
     if (categoryError) {
-      return categoryError
+      errors.mealCategoryTags = categoryError
     }
 
     if (mealImage && mealImage.size > 5 * 1024 * 1024) {
-      return 'Image must not exceed 5 MB.'
+      errors.image = 'Image must not exceed 5 MB.'
     }
 
-    return null
+    return errors
   }
 
   const createCustomMeal = async () => {
@@ -743,6 +692,7 @@ export function CustomMealFormPage() {
 
     setIsSaving(true)
     setError(null)
+    setFieldErrors({})
 
     try {
       const response = await axios.post<CustomMealResponse>(
@@ -772,6 +722,7 @@ export function CustomMealFormPage() {
       } else {
         setError('Could not save this custom meal.')
       }
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     } finally {
       setIsSaving(false)
     }
@@ -780,14 +731,15 @@ export function CustomMealFormPage() {
   const saveCustomMeal = async () => {
     setError(null)
 
-    const validationError = validateDraft()
+    const validationErrors = validateDraft()
 
-    if (validationError) {
-      setError(validationError)
+    if (Object.keys(validationErrors).length > 0) {
+      showFieldErrors(validationErrors)
       return
     }
 
     setIsCheckingConsent(true)
+    setFieldErrors({})
 
     try {
       const response = await axios.get<PreferenceData>(
@@ -810,6 +762,7 @@ export function CustomMealFormPage() {
     } catch (error) {
       console.error('Failed to check data sharing consent', error)
       setError('Could not check your data sharing preference.')
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     } finally {
       setIsCheckingConsent(false)
     }
@@ -838,6 +791,7 @@ export function CustomMealFormPage() {
     } catch (error) {
       console.error('Failed to save data sharing consent', error)
       setError('Could not save your data sharing preference.')
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     } finally {
       setConsentChoiceBeingSaved(null)
     }
@@ -846,87 +800,14 @@ export function CustomMealFormPage() {
 
   return (
     <Box className="ui-settings-page ui-meal-add-page">
-      <Modal
+      <CustomMealConsentModal
         opened={isConsentModalOpen}
-        onClose={() => {
-          if (consentChoiceBeingSaved === null) {
-            setIsConsentModalOpen(false)
-          }
+        consentChoiceBeingSaved={consentChoiceBeingSaved}
+        onClose={() => setIsConsentModalOpen(false)}
+        onSaveConsent={(consent) => {
+          void saveConsentAndCreateMeal(consent)
         }}
-        closeOnClickOutside={
-          consentChoiceBeingSaved === null
-        }
-        closeOnEscape={
-          consentChoiceBeingSaved === null
-        }
-        centered
-        title="Choose your meal sharing preference"
-      >
-        <Stack gap="md">
-          <Text>
-            This preference applies to every custom meal you create. You can change it later from Preferences.
-          </Text>
-
-          <Box className="ui-card-field-group">
-            <Text fw={900}>Share anonymously</Text>
-            <Text size="sm">
-              Other users may discover your custom meals, but your personal account details are not shown
-            </Text>
-          </Box>
-
-          <Box className="ui-card-field-group">
-            <Text fw={900}>Keep my meals private</Text>
-            <Text size="sm">
-              Only you can view and search your custom meals.
-            </Text>
-          </Box>
-
-          <Button
-            className="ui-primary-button"
-            loading={
-              consentChoiceBeingSaved === true
-            }
-            disabled={
-              consentChoiceBeingSaved !== null &&
-              consentChoiceBeingSaved !== true
-            }
-            onClick={() => {
-              void saveConsentAndCreateMeal(true)
-            }}
-          >
-            Share anonymously
-          </Button>
-
-          <Button
-            variant="outline"
-            loading={
-              consentChoiceBeingSaved === false
-            }
-            disabled={
-              consentChoiceBeingSaved !== null &&
-              consentChoiceBeingSaved !== true
-            }
-            onClick={() => {
-              void saveConsentAndCreateMeal(false)
-            }}
-          >
-            No, keep my meals private
-          </Button>
-
-          <Button
-            variant="subtle"
-            disabled={
-              consentChoiceBeingSaved !== null
-            }
-            onClick={() => 
-              setIsConsentModalOpen(false)
-            }
-          >
-            Cancel
-          </Button>
-        </Stack>
-
-      </Modal>
+      />
       <Box component="main" className="ui-settings-frame">
         <MainNav active="recommendation" />
 
@@ -934,181 +815,48 @@ export function CustomMealFormPage() {
           <Title order={1}>Enter the details for your custom meal item</Title>
         </Box>
 
-        <Box component="section" className="ui-custom-meal-form ui-surface">
-          
-          <Box className="ui-custom-meal-fields">
+        <Box ref={formRef} component="section" className="ui-custom-meal-form ui-surface">
           {error && <Alert color="red" className="ui-custom-meal-error">{error}</Alert>}
-            <TextInput
-              classNames={{ input: 'ui-input' }}
-              placeholder="Meal Name"
-              value={draft.name}
-              onChange={(event) => updateDraft('name', event.currentTarget.value)}
-            />
 
-            <NumberInput
-              classNames={{ input: 'ui-input' }}
-              min={0}
-              decimalScale={2}
-              placeholder="Price (RM)"
-              value={draft.price}
-              onChange={(value) => updateDraft('price', value === '' ? '' : Number(value))}
-            />
-
-            <Box className="ui-serving-size">
-              <Text fw={900}>Nutritional info</Text>
-              <Group gap="sm" align="center">
-                <NumberInput
-                  hideControls
-                  classNames={{ input: 'ui-input ui-short-input' }}
-                  min={0}
-                  clampBehavior="none"
-                  decimalScale={0}
-                  value={draft.calories}
-                  onChange={(value) => updateDraft('calories', value === '' ? '' : Number(value))}
-                />
-                <Text fw={900}>kcal</Text>
-              </Group>
-
-              <SimpleGrid cols={{ base: 1, xs: 3 }} spacing="sm">
-                <NumberInput
-                  classNames={{ input: 'ui-input' }}
-                  min={0}
-                  clampBehavior="none"
-                  decimalScale={2}
-                  placeholder="Carbs"
-                  rightSection={<Text fw={900}>g</Text>}
-                  value={draft.carbsG}
-                  onChange={(value) => updateDraft('carbsG', value === '' ? '' : Number(value))}
-                />
-                <NumberInput
-                  classNames={{ input: 'ui-input' }}
-                  min={0}
-                  clampBehavior="none"
-                  decimalScale={2}
-                  placeholder="Fat"
-                  rightSection={<Text fw={900}>g</Text>}
-                  value={draft.fatG}
-                  onChange={(value) => updateDraft('fatG', value === '' ? '' : Number(value))}
-                />
-                <NumberInput
-                  classNames={{ input: 'ui-input' }}
-                  min={0}
-                  clampBehavior="none"
-                  decimalScale={2}
-                  placeholder="Protein"
-                  rightSection={<Text fw={900}>g</Text>}
-                  value={draft.proteinG}
-                  onChange={(value) => updateDraft('proteinG', value === '' ? '' : Number(value))}
-                />
-              </SimpleGrid>
-              <Button
-                variant="outline"
-                loading={isAutocompleting}
-                onClick={autocompleteCustomMeal}
-              >
-                AI autocomplete
-              </Button>
-            </Box>
-          </Box>
+          <CustomMealBasicFields
+            draft={draft}
+            fieldErrors={fieldErrors}
+            inputClassNames={inputClassNames}
+            isAutocompleting={isAutocompleting}
+            onUpdateDraft={updateDraft}
+            onAutocomplete={autocompleteCustomMeal}
+          />
 
           <Box className="ui-custom-meal-fields">
-            <Box className="ui-dietary-tag-group">
-              <Text fw={900}>Dietary tags (optional)</Text>
-              <SimpleGrid cols={{ base: 1, xs: 2, sm: 3 }} spacing="sm">
-                {customMealDietaryOptions.map((option) => (
-                  <MantineProvider theme={theme}>
-                  <Checkbox
-                    key={option.value}
-                    label={option.label}
-                    checked={draft.dietaryRestrictionTags.includes(option.value)}
-                    onChange={() => toggleDietaryTag(option.value)}
-                  />
-                  </MantineProvider>
+            <CustomMealTagFields
+              draft={draft}
+              fieldErrors={fieldErrors}
+              restrictedMealCategoryTags={restrictedMealCategoryTags}
+              onToggleDietaryTag={toggleDietaryTag}
+              onToggleMealCategoryTag={toggleMealCategoryTag}
+            />
 
-                ))}
-              </SimpleGrid>
-            </Box>
-
-            <Box
-              className="ui-dietary-tag-group"
-              role="group"
-              aria-labelledby="meal-category-tags-label"
-              aria-required="true"
-            >
-              <Box>
-                <Text id="meal-category-tags-label" fw={900}>
-                  Meal category tags <Text component="span" c="red">*</Text>
-                </Text>
-                <Text size="sm" c="dimmed">Select at least one.</Text>
-              </Box>
-              <SimpleGrid cols={{ base: 1, xs: 2, sm: 3 }} spacing="sm">
-                {mealCategoryOptions.map((option) => {
-                  const isRestricted = restrictedMealCategoryTags.has(option.value)
-
-                  return (
-                    <Checkbox
-                      key={option.value}
-                      label={option.label}
-                      description={isRestricted ? 'Blocked by selected dietary restriction' : undefined}
-                      disabled={isRestricted}
-                      checked={draft.mealCategoryTags.includes(option.value)}
-                      onChange={() => toggleMealCategoryTag(option.value)}
-                    />
-                  )
-                })}
-              </SimpleGrid>
-            </Box>
-
-            <Box className="ui-location-fields">
-              <Text fw={900}>Enter location where you had this meal</Text>
-              <SimpleGrid cols={{ base: 1, xs: 2 }} spacing="sm">
-                <Select
-                  label="State"
-                  classNames={{ input: 'ui-input' }}
-                  data={stateOptions}
-                  value={draft.state}
-                  onChange={(value) => updateDraft('state', value ?? '')}
-                />
-                <TextInput
-                  label="District"
-                  classNames={{ input: 'ui-input' }}
-                  value={draft.district}
-                  onChange={(event) => updateDraft('district', event.currentTarget.value)}
-                />
-              </SimpleGrid>
-              <TextInput
-                label="Restaurant Name"
-                classNames={{ input: 'ui-input' }}
-                value={draft.restaurantName}
-                onChange={(event) => updateDraft('restaurantName', event.currentTarget.value)}
-              />
-              <FileInput
-                classNames={{ input: 'ui-input' }}
-                clearable 
-                accept="image/png,image/jpeg" 
-                label="Upload meal image (optional)" 
-                value={mealImage}
-                onChange={setMealImage}
-              />
-            </Box>
+            <CustomMealLocationFields
+              draft={draft}
+              fieldErrors={fieldErrors}
+              inputClassNames={inputClassNames}
+              mealImage={mealImage}
+              stateOptions={stateOptions}
+              onUpdateDraft={updateDraft}
+              onMealImageChange={(file) => {
+                clearFieldError('image')
+                setError(null)
+                setMealImage(file)
+              }}
+            />
           </Box>
 
-          <Group justify="space-between" className="ui-custom-meal-actions">
-            <Button
-              className="ui-dark-button"
-              onClick={() => navigate(`/meals/add/${mealTime}`)}
-            >
-              Back
-            </Button>
-
-            <Button
-              className="ui-dark-button"
-              loading={isSaving || isCheckingConsent}
-              onClick={saveCustomMeal}
-            >
-              Save
-            </Button>
-          </Group>
+          <CustomMealFormActions
+            isSaving={isSaving}
+            isCheckingConsent={isCheckingConsent}
+            onBack={() => navigate(`/meals/add/${mealTime}`)}
+            onSave={saveCustomMeal}
+          />
         </Box>
       </Box>
     </Box>

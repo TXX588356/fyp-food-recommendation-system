@@ -51,11 +51,30 @@ export type FilteredMealCandidate = {
   reason: string
 }
 
-export type GenerateRecommendationResponse = {
-	candidate: MatchedMealCandidate[]
+export type GenerateRecommendationsResponse = {
+	candidates: MatchedMealCandidate[]
 	filtered_out: FilteredMealCandidate[]
 	filtering_applied: boolean
 }
+
+export type VisibleRecommendationItem = {
+	candidate: MatchedMealCandidate
+	filteredReason: string | null
+}
+
+export type RecommendationLocationOption = {
+	value: string
+	label: string
+}
+
+export type SpotlightRect = {
+	top: number
+	left: number
+	width: number
+	height: number
+}
+
+export type RecommendationTourStep = 'logMeal' | 'regenerate' | 'addMeal' | 'logsNav'
 
 export type PersistedRecommendationState = {
 	generatedDate: string

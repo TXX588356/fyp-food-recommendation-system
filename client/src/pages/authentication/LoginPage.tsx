@@ -13,6 +13,7 @@ import axios from 'axios'
 import { useForm } from '@mantine/form'
 
 import { useNavigate, useLocation } from 'react-router-dom'
+import { replayInputShake } from '@/theme/inputTransitions'
 
 const thumbnailImage = 'https://images.unsplash.com/photo-1606756790138-261d2b21cd75?q=80&w=765&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
 
@@ -53,16 +54,23 @@ export default function LoginPage() {
         }
       } catch (error) {
         console.error('Login failed', error)
-        setSubmitError('Login failed. Please check your email and password')
+        const message = 'Login failed. Please check your email and password'
+        setSubmitError(message)
+        form.setFieldError('password', message)
+        replayInputShake('.ui-form .t-input[data-error], .ui-form .t-input.is-error')
       } finally {
         setIsSubmitting(false)
       }
     }
 
+    const handleValidationFailure = () => {
+      replayInputShake('.ui-form .t-input[data-error], .ui-form .t-input.is-error')
+    }
+
     const inputClassNames = {
       label: 'ui-input-label',
-      input: 'ui-input',
-      wrapper: 'ui-input-wrapper',
+      input: 'ui-input t-input',
+      wrapper: 'ui-input-wrapper t-input-wrap',
       innerInput: 'ui-password-inner-input',
     }
 
@@ -105,10 +113,12 @@ export default function LoginPage() {
   
               {successMessage && <Alert color="green">{successMessage}</Alert>}
               {submitError && <Alert color="red">{submitError}</Alert>}
-              <Box 
+                <Box 
                 component='form'
-                onSubmit={form.onSubmit(handleSubmit)}
-                className="ui-form">
+                onSubmit={form.onSubmit(handleSubmit, handleValidationFailure)}
+                className="ui-form"
+                noValidate
+              >
                 <TextInput 
                 label='Email' 
                 autoComplete='email' 

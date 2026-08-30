@@ -5,6 +5,7 @@
   --line: rgba(32, 52, 43, 0.16); --line-strong: rgba(32, 52, 43, 0.22); --focus: 0 0 0 5px rgba(15, 107, 67, 0.12);
   --shadow-sm: 0 10px 24px rgba(32, 52, 43, 0.06); --shadow-md: 0 20px 54px rgba(32, 52, 43, 0.12); --shadow-lg: 0 30px 80px rgba(32, 52, 43, 0.18);
   --serif: Georgia, "Times New Roman", serif; --sans: "Avenir Next", "Gill Sans", Candara, Calibri, sans-serif;
+  --shimmer-dur: 2000ms; --shimmer-base: rgba(32, 52, 43, 0.64); --shimmer-highlight: #0f6b43; --shimmer-band: 400%; --shimmer-ease: linear;
 }
 
 .ui-theme-shell {
@@ -30,6 +31,8 @@
   --shadow-sm: 0 12px 26px rgba(0, 0, 0, 0.26);
   --shadow-md: 0 22px 54px rgba(0, 0, 0, 0.34);
   --shadow-lg: 0 30px 80px rgba(0, 0, 0, 0.42);
+  --shimmer-base: rgba(237, 244, 245, 0.56);
+  --shimmer-highlight: #edf4f5;
   color: var(--ink);
   background: #101316;
 }
@@ -223,11 +226,90 @@
 .ui-centered-row { width: 100%; display: flex; justify-content: center; }
 .ui-danger-button { min-height: 50px; width: min(60%, 680px); border-radius: 999px; background: var(--danger); color: #fff8e8; font-weight: 900; }
 
+.t-shimmer {
+  position: relative;
+  display: inline-block;
+  color: var(--shimmer-base);
+}
+
+.t-shimmer::before {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    transparent 40%,
+    var(--shimmer-highlight) 50%,
+    transparent 60%,
+    transparent 100%
+  );
+  background-size: var(--shimmer-band) 100%;
+  background-repeat: no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: t-shimmer var(--shimmer-dur) var(--shimmer-ease) infinite;
+}
+
+@keyframes t-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: 0% 0; }
+}
+
 .ui-settings-page { padding: 20px; }
 .ui-settings-frame { width: 100%; max-width: none; min-height: calc(100vh - 28px); margin: 0; gap: 14px; }
-.ui-settings-nav { position: relative; min-height: 62px; padding-inline: 72px; display: flex; justify-content: center; align-items: center; gap: clamp(18px, 5vw, 54px); }
-.ui-settings-nav a { color: rgba(23, 36, 30, 0.72); font-family: var(--serif); font-size: 18px; font-weight: 700; text-decoration: none; }
-.ui-settings-nav a[aria-current="page"] { color: var(--orange); text-decoration: underline; text-underline-offset: 7px; }
+.ui-settings-nav {
+  --tabs-dur: 250ms;
+  --tabs-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --tabs-text-muted: rgba(23, 36, 30, 0.72);
+  --tabs-text-active: #fff8e8;
+  --tabs-bar-bg: var(--paper-soft);
+  --tabs-pill-bg: var(--green);
+  position: relative; min-height: 62px; padding-inline: 72px; display: flex; justify-content: center; align-items: center; gap: 3px;
+}
+.ui-settings-nav.t-tabs { background: var(--tabs-bar-bg); }
+.ui-settings-nav .t-tab {
+  position: relative;
+  min-height: 38px;
+  padding: 8px 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 48px;
+  color: var(--tabs-text-muted);
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 700;
+  text-decoration: none;
+  z-index: 1;
+  transition: color var(--tabs-dur) var(--tabs-ease);
+}
+.ui-settings-nav .t-tab:not([aria-selected="true"]):hover {
+  color: var(--green-dark);
+}
+.ui-settings-nav .t-tab[aria-selected="true"] {
+  color: var(--tabs-text-active);
+}
+.ui-settings-nav .t-tabs-pill {
+  position: absolute;
+  top: 12px;
+  left: 0;
+  height: 38px;
+  width: 0;
+  background: var(--tabs-pill-bg);
+  border-radius: 48px;
+  transform: translateX(0);
+  transition:
+    transform var(--tabs-dur) var(--tabs-ease),
+    width var(--tabs-dur) var(--tabs-ease);
+  will-change: transform, width;
+  z-index: 0;
+  pointer-events: none;
+  box-shadow: 0 12px 24px rgba(15, 107, 67, 0.2);
+}
 .ui-theme-toggle {
   position: absolute; right: 18px; width: 42px; height: 42px; display: inline-grid; place-items: center; border: 1px solid rgba(15, 107, 67, 0.18);
   border-radius: 999px; background: rgba(255, 251, 239, 0.74); color: var(--green-dark); cursor: pointer;
@@ -235,8 +317,12 @@
 }
 .ui-theme-toggle:hover { transform: translateY(-1px); border-color: rgba(15, 107, 67, 0.38); background: rgba(15, 107, 67, 0.1); color: var(--green); }
 .ui-theme-toggle:focus-visible { outline: none; box-shadow: var(--focus), var(--shadow-sm); }
-.ui-theme-dark .ui-settings-nav a { color: rgba(237, 244, 245, 0.7); }
-.ui-theme-dark .ui-settings-nav a[aria-current="page"] { color: var(--orange); }
+.ui-theme-dark .ui-settings-nav {
+  --tabs-text-muted: rgba(237, 244, 245, 0.7);
+  --tabs-text-active: #101316;
+  --tabs-bar-bg: rgba(21, 26, 31, 0.86);
+  --tabs-pill-bg: var(--green);
+}
 .ui-theme-dark .ui-theme-toggle {
   border-color: rgba(237, 244, 245, 0.14);
   background: rgba(237, 244, 245, 0.07);
@@ -445,6 +531,11 @@
 
 @media (prefers-reduced-motion: reduce) {
   .ui-success-toast { animation: none; }
+  .t-shimmer::before { animation: none !important; }
+  .ui-settings-nav .t-tabs-pill,
+  .ui-settings-nav .t-tab {
+    transition: none !important;
+  }
 }
 
 @media (max-width: 960px) {
@@ -470,7 +561,8 @@
 @media (max-width: 680px) {
   .ui-success-toast { top: 16px; left: 16px; right: 16px; max-width: none; }
   .ui-settings-nav { padding-inline: 54px; gap: clamp(12px, 4vw, 24px); }
-  .ui-settings-nav a { font-size: 15px; }
+  .ui-settings-nav .t-tab { min-height: 34px; padding: 7px 10px; font-size: 15px; }
+  .ui-settings-nav .t-tabs-pill { top: 14px; height: 34px; }
   .ui-theme-toggle { right: 10px; width: 38px; height: 38px; }
   .ui-split-shell { grid-template-rows: minmax(130px, 24vh) minmax(0, 1fr); }
   .ui-centered-content { padding: 12px; }
@@ -499,7 +591,7 @@
   .ui-field-group .mantine-Group-root > * { width: 100%; }
   .ui-settings-page { padding: 12px; }
   .ui-settings-nav { justify-content: space-around; gap: 8px; }
-  .ui-settings-nav a { font-size: 15px; }
+  .ui-settings-nav .t-tab { font-size: 15px; }
   .ui-settings-panel { padding: 22px 16px; border-radius: 22px; }
   .ui-settings-header-row { flex-direction: column; gap: 16px; }
   .ui-settings-profile { width: 100%; max-width: 100%; }

@@ -1,18 +1,11 @@
 import {
-  Accordion,
   Alert,
-  Badge,
   Box,
-  Button,
-  Select,
-  Group,
-  SegmentedControl,
   Text,
-  Title,
 } from '@mantine/core'
 import axios from 'axios'
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { MapPin } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { ClipboardCheck, History, ListPlus, RotateCcw } from 'lucide-react'
 
 import { useAuth } from '@/auth/useAuth'
 import './RecommendationPage.css'
@@ -21,11 +14,26 @@ import type { LoggableMeal, MealLogMonthResponse } from '@/pages/mealLog/mealLog
 import { toMonthKey } from '@/pages/mealLog/mealLogHelpers'
 import LogMealModal from '@/pages/mealLog/LogMealModal'
 import { FiCheck } from 'react-icons/fi'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { resolveWikipediaMealImage } from './wikiMealImages'
 import { formatLocation, parseLocation } from '@/preferences/helpers'
-import { parseMalaysiaCitiesCsv, uniqueSelectOptions, uniqueSelectOptionsByValue, type CityRow } from '@/preferences/options'
 import type { LocationValue, PreferenceData } from '@/preferences/types'
+import DynamicLocationSelect from './components/DynamicLocationSelect'
+import RecommendationAccordion from './components/RecommendationAccordion'
+import RecommendationIcon from './components/RecommendationIcon'
+import RecommendationMealCard from './components/RecommendationMealCard'
+import RecommendationSpotlight from './components/RecommendationSpotlight'
+import type {
+  CategoryState,
+  FilteredMealCandidate,
+  GenerateRecommendationsResponse,
+  MatchedMealCandidate,
+  MealCategory,
+  RecommendationLocationOption,
+  RecommendationTourStep,
+  SpotlightRect,
+  VisibleRecommendationItem,
+} from './recommendationTypes'
 import {
   buildRecommendationStorageKey,
   emptyCandidates,
@@ -45,75 +53,6 @@ import {
 } from '../customMeal/customMealNavigation'
 
 
-type MealCategory = 'breakfast' | 'lunch' | 'dinner' | 'snack'
-
-type PriceRange = {
-  min: number
-  max: number
-}
-
-type GeneratedMeal = {
-  name: string
-  alternative_search_terms: string[]
-  estimated_price_range: PriceRange
-  sodium_level: string
-  sugar_level: string
-  purine_risk: string
-  health_flags: Record<string, string>
-}
-
-type FoodSearchResult = {
-  id: string
-  name: string
-  source?: 'prebuilt' | 'custom'
-  tags: string[]
-  calories: number
-  fat_g: number
-  protein_g: number
-  carbs_g: number
-  price?: number
-  serving_description?: string
-  image_url?: string
-}
-
-type CandidateScoreBreakdown = {
-  goal_alignment: number
-  budget_fit: number
-  recency_penalty: number
-  preference: number
-}
-
-type MatchedMealCandidate = {
-  generated_meal: GeneratedMeal
-  food: FoodSearchResult
-  matched_query: string
-  score?: number
-  score_breakdown?: CandidateScoreBreakdown
-}
-
-type FilteredMealCandidate = {
-  candidate: MatchedMealCandidate
-  reason: string
-}
-
-type GenerateRecommendationsResponse = {
-  candidates: MatchedMealCandidate[]
-  filtered_out: FilteredMealCandidate[]
-  filtering_applied: boolean
-}
-
-type RecommendationLocationOption = {
-  value: string
-  label: string
-}
-
-type CategoryState<T> = Record<MealCategory, T>
-
-type VisibleRecommendationItem = {
-  candidate: MatchedMealCandidate
-  filteredReason: string | null
-}
-
 const mealCategoryOptions: Array<{ value: MealCategory; label: string;}> = [
   { value: 'breakfast', label: 'Breakfast'},
   { value: 'lunch', label: 'Lunch'},
@@ -128,13 +67,6 @@ const emptyLoading: CategoryState<boolean> = {
   snack: false,
 }
 
-const formatRecommendationScore = (score: number | undefined) => {
-  if (typeof score !== 'number' || Number.isNaN(score)) {
-    return null
-  }
-  return Math.round(score).toString()
-}
-
 const emptyErrors: CategoryState<string | null> = {
   breakfast: null,
   lunch: null,
@@ -142,7 +74,11 @@ const emptyErrors: CategoryState<string | null> = {
   snack: null,
 }
 
-const formatRM = (value: number) => `RM ${value.toFixed(2)}`
+const generatedTourStorageKeyPrefix = 'recommendation-generated-tour-v2-dismissed'
+const postLogTourStorageKeyPrefix = 'recommendation-post-log-tour-v2-dismissed'
+
+const buildUserTourStorageKey = (prefix: string, userKey: string | undefined) =>
+  `${prefix}:${userKey ?? 'anonymous'}`
 
 const selectDefaultRecommendationLocation = (preference: PreferenceData) => {
   const today = new Date().getDay()
@@ -176,191 +112,22 @@ const buildSavedLocationOptions = (preference: PreferenceData): RecommendationLo
   }))
 }
 
-function DynamicLocationSelect({
-  selectedLocation,
-  savedLocations,
-  onChange,
-}: {
-  selectedLocation: LocationValue
-  savedLocations: RecommendationLocationOption[]
-  onChange: (value: LocationValue) => void
-}) {
-  const [cities, setCities] = useState<CityRow[]>([])
-  const [states, setStates] = useState<RecommendationLocationOption[]>([])
-
-  useEffect(() => {
-    fetch('/malaysia_cities.csv')
-      .then((response) => response.text())
-      .then((csv) => {
-        const rows = parseMalaysiaCitiesCsv(csv)
-        setCities(rows)
-        setStates(uniqueSelectOptions(rows.map((row) => row.subcountry)))
-      })
-      .catch((error) => {
-        console.error('Error loading Malaysia cities CSV: ', error)
-        setCities([])
-        setStates([])
-      })
-  }, [])
-
-  const districts = useMemo(() => {
-    if (!selectedLocation.state) return []
-
-    return uniqueSelectOptions(
-      cities
-        .filter((city) => city.subcountry === selectedLocation.state)
-        .map((city) => city.name),
-    )
-  }, [cities, selectedLocation.state])
-
-  const selectedLocationValue = formatLocation(selectedLocation)
-  const savedLocationOptions = useMemo(
-    () => uniqueSelectOptionsByValue(savedLocations),
-    [savedLocations],
-  )
-  const selectedSavedLocationValue = savedLocationOptions.some((location) => location.value === selectedLocationValue)
-    ? selectedLocationValue
-    : null
-
-  return (
-    <Box className='ui-recommendation-location'>
-      <Group className='ui-recommendation-location-title' gap={6}>
-        <MapPin size={15} strokeWidth={2.3} aria-hidden="true" />
-        <Text>Recommendation Location</Text>
-      </Group>
-
-      <Group className='ui-recommendation-location-fields' align="flex-start">
-        <Select 
-          label='Saved'
-          placeholder='Use saved location'
-          data={savedLocationOptions}
-          value={selectedSavedLocationValue}
-          size="xs"
-          onChange={(value) => {
-            if (!value) return
-            onChange(parseLocation(value))
-          }}
-          classNames={{
-            label: 'ui-input-label',
-            input: 'ui-input'
-          }}
-        />
-
-        <Select 
-          label='State'
-          placeholder='Select state'
-          data={states}
-          value={selectedLocation.state || null}
-          allowDeselect={false}
-          size="xs"
-          onChange={(state) => {
-            if (!state || state === selectedLocation.state) return
-            onChange({ state, district: '' })
-          }}
-          classNames={{
-            label: 'ui-input-label',
-            input: 'ui-input'
-          }}
-        />
-
-        <Select 
-          label='District'
-          placeholder='Select district'
-          data={districts}
-          value={selectedLocation.district || null}
-          allowDeselect={false}
-          disabled={!selectedLocation.state || districts.length === 0}
-          size="xs"
-          onChange={(district) => {
-            if (!district || district === selectedLocation.district) return
-            onChange({ ...selectedLocation, district: district ?? '' })
-          }}
-          classNames={{
-            label: 'ui-input-label',
-            input: 'ui-input'
-          }}
-        />
-      </Group>
-    </Box>
-  )
-}
-
-type IconName = 'refresh' | 'bowl' | 'fork' | 'sparkle' | 'warning'
-
-function RecommendationIcon({ name, size = 20 }: { name: IconName; size?: number }) {
-  const commonProps = {
-    width: size,
-    height: size,
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: 2,
-    strokeLinecap: 'round' as const,
-    strokeLinejoin: 'round' as const,
-    'aria-hidden': true,
-  }
-
-  if (name === 'refresh') {
-    return (
-      <svg {...commonProps}>
-        <path d="M20 12a8 8 0 0 1-13.7 5.6" />
-        <path d="M4 12A8 8 0 0 1 17.7 6.4" />
-        <path d="M18 3v4h-4" />
-        <path d="M6 21v-4h4" />
-      </svg>
-    )
-  }
-
-  if (name === 'bowl') {
-    return (
-      <svg {...commonProps}>
-        <path d="M4 11h16" />
-        <path d="M6 11c0 4 2.7 7 6 7s6-3 6-7" />
-        <path d="M8 20h8" />
-        <path d="M9 7c0-1 1-1 1-2s-1-1-1-2" />
-        <path d="M14 7c0-1 1-1 1-2s-1-1-1-2" />
-      </svg>
-    )
-  }
-
-  if (name === 'fork') {
-    return (
-      <svg {...commonProps}>
-        <path d="M7 3v8" />
-        <path d="M5 3v4" />
-        <path d="M9 3v4" />
-        <path d="M7 11v10" />
-        <path d="M15 3v18" />
-        <path d="M15 3c3 2 4 5 1 8" />
-      </svg>
-    )
-  }
-
-  if (name === 'warning') {
-    return (
-      <svg {...commonProps}>
-        <path d="M12 9v4" />
-        <path d="M12 17h.01" />
-        <path d="M10.3 4.4 2.7 18a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 4.4a2 2 0 0 0-3.4 0Z" />
-      </svg>
-    )
-  }
-
-  return (
-    <svg {...commonProps}>
-      <path d="M12 3l1.8 5.1L19 10l-5.2 1.9L12 17l-1.8-5.1L5 10l5.2-1.9L12 3Z" />
-      <path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z" />
-    </svg>
-  )
-}
-
 export default function RecommendationPage() {
   const { user } = useAuth()
   const location = useLocation()
+  const navigate = useNavigate()
   const userKey = user?.id ?? user?.email
 
   const recommendationStorageKey = useMemo(
     () => buildRecommendationStorageKey(userKey),
+    [userKey],
+  )
+  const generatedTourStorageKey = useMemo(
+    () => buildUserTourStorageKey(generatedTourStorageKeyPrefix, userKey),
+    [userKey],
+  )
+  const postLogTourStorageKey = useMemo(
+    () => buildUserTourStorageKey(postLogTourStorageKeyPrefix, userKey),
     [userKey],
   )
 
@@ -396,6 +163,56 @@ export default function RecommendationPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(() =>
     getCustomMealSuccessMessage(location.state),
   )
+
+  const [tourGeneratedCategory, setTourGeneratedCategory] = useState<MealCategory | null>(null)
+  const [activeTourStep, setActiveTourStep] = useState<RecommendationTourStep | null>(null)
+  const [spotlightRect, setSpotlightRect] = useState<SpotlightRect | null>(null)
+  const [hasLoggedRecommendation, setHasLoggedRecommendation] = useState(false)
+
+  const finishGeneratedTour = useCallback(() => {
+    localStorage.setItem(generatedTourStorageKey, 'true')
+    setActiveTourStep(null)
+    setTourGeneratedCategory(null)
+    setSpotlightRect(null)
+  }, [generatedTourStorageKey])
+
+  const finishPostLogTour = useCallback(() => {
+    localStorage.setItem(postLogTourStorageKey, 'true')
+    setActiveTourStep(null)
+    setSpotlightRect(null)
+  }, [postLogTourStorageKey])
+
+  const dismissActiveTour = useCallback(() => {
+    if (activeTourStep === 'logsNav') {
+      finishPostLogTour()
+      return
+    }
+
+    finishGeneratedTour()
+  }, [activeTourStep, finishGeneratedTour, finishPostLogTour])
+
+  const advanceActiveTour = useCallback(() => {
+    if (activeTourStep === 'logMeal') {
+      setActiveTourStep('regenerate')
+      return
+    }
+
+    if (activeTourStep === 'regenerate') {
+      setActiveTourStep('addMeal')
+      return
+    }
+
+    if (activeTourStep === 'addMeal') {
+      finishGeneratedTour()
+      return
+    }
+
+    if (activeTourStep === 'logsNav') {
+      finishPostLogTour()
+      navigate('/meal-logs')
+    }
+  }, [activeTourStep, finishGeneratedTour, finishPostLogTour, navigate])
+
   const { isDarkMode } = useThemeMode()
   const [savedLocations, setSavedLocations] = useState<RecommendationLocationOption[]>([])
   const [selectedLocation, setSelectedLocation] = useState<LocationValue>({
@@ -403,7 +220,75 @@ export default function RecommendationPage() {
     district: '',
   })
   const [locationError, setLocationError] = useState<string | null>(null)
-  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (!activeCategory || activeCategory !== tourGeneratedCategory) {
+      return
+    }
+
+    const guideDismissed = localStorage.getItem(generatedTourStorageKey) === 'true'
+    const hasVisibleCandidates = candidatesByCategory[activeCategory].length > 0
+
+    if (
+      !activeTourStep &&
+      generatedByCategory[activeCategory] &&
+      hasVisibleCandidates &&
+      !guideDismissed &&
+      !hasLoggedRecommendation
+    ) {
+      const guideTimer = window.setTimeout(() => setActiveTourStep('logMeal'), 0)
+
+      return () => window.clearTimeout(guideTimer)
+    }
+  }, [
+    activeCategory,
+    activeTourStep,
+    candidatesByCategory,
+    generatedByCategory,
+    generatedTourStorageKey,
+    hasLoggedRecommendation,
+    tourGeneratedCategory,
+  ])
+
+  useEffect(() => {
+    if (!activeTourStep) {
+      return
+    }
+
+    const updateSpotlightRect = () => {
+      const selectorByStep: Record<RecommendationTourStep, string> = {
+        logMeal: '[data-recommendation-tour="log-meal"]',
+        regenerate: '[data-recommendation-tour="regenerate"]',
+        addMeal: '[data-recommendation-tour="add-meal"]',
+        logsNav: '[data-main-nav-tour="logs"]',
+      }
+      const target = document.querySelector<HTMLElement>(selectorByStep[activeTourStep])
+
+      if (!target) {
+        setSpotlightRect(null)
+        return
+      }
+
+      const rect = target.getBoundingClientRect()
+
+      setSpotlightRect({
+        top: rect.top,
+        left: rect.left,
+        width: rect.width,
+        height: rect.height,
+      })
+    }
+
+    updateSpotlightRect()
+
+    window.addEventListener('resize', updateSpotlightRect)
+    window.addEventListener('scroll', updateSpotlightRect, true)
+
+    return () => {
+      window.removeEventListener('resize', updateSpotlightRect)
+      window.removeEventListener('scroll', updateSpotlightRect, true)
+    }
+  }, [activeTourStep, activeCategory])
 
   useEffect(() => {
     if (!getCustomMealSuccessMessage(location.state)) {
@@ -516,6 +401,13 @@ export default function RecommendationPage() {
       ...current,
       [mealCategory]: filteredOut,
     }))
+
+    if (
+      candidates.length > 0 &&
+      localStorage.getItem(generatedTourStorageKey) !== 'true'
+    ) {
+      setTourGeneratedCategory(mealCategory)
+    }
   }
 
   const generateRecommendations = async (mealCategory: MealCategory, force = false) => {
@@ -699,88 +591,23 @@ export default function RecommendationPage() {
   }
 
   const renderCandidateCard = (mealCategory: MealCategory, item: VisibleRecommendationItem, index: number) => {
-    const { candidate, filteredReason } = item
-    const recommendationScore = formatRecommendationScore(candidate.score)
-    const customMealPrice =
-      candidate.food.source === 'custom' && typeof candidate.food.price === 'number'
-        ? candidate.food.price
-        : null
-
-    const openDetailPage = () => {
-      if (filteredReason) { return }
-
-      navigate(`/recommendation/${mealCategory}/${candidate.food.id}`)
-    }
-
-    const handleCardKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault()
-        openDetailPage()
-      }
-    }
-
     return (
-    <Box 
-      className={`ui-meal-card ui-card ${filteredReason ? 'ui-meal-card-filtered' : 'ui-meal-card-clickable'}`} 
-      key={`${candidate.food.id}-${candidate.matched_query}-${index}`}
-      role={filteredReason ? undefined : 'button'}
-      tabIndex={filteredReason ? undefined : 0}
-      onClick={openDetailPage}
-      onKeyDown={handleCardKeyDown}
-      >
-      <Box className="ui-meal-photo" aria-hidden={!candidate.food.image_url}>
-        {candidate.food.image_url ? (
-          <img
-            src={candidate.food.image_url}
-            alt={candidate.food.name}
-            loading="lazy"
-            referrerPolicy="no-referrer"
-          />
-        ) : (
-          <RecommendationIcon name="bowl" size={24} />
-        )}
-      </Box>
-      <Box className="ui-meal-summary">
-        <Group gap="xs" align="center">
-          <Title order={2}>{candidate.food.name}</Title>
-          {candidate.food.source === 'custom' && (
-            <Badge className="ui-meal-source-badge">Community</Badge>
-          )}
-          {recommendationScore && (
-            <Badge className="ui-meal-score-badge">Score {recommendationScore}</Badge>
-          )}
-        </Group>
-        <Text>{Math.round(candidate.food.calories)} kcal</Text>
-        <Group gap="xs" align="center">
-          <Text className="ui-meal-price">
-            {customMealPrice !== null
-              ? formatRM(customMealPrice)
-              : `${formatRM(candidate.generated_meal.estimated_price_range.min)} - ${formatRM(candidate.generated_meal.estimated_price_range.max)}`}
-          </Text>
-          <Badge
-            variant="gradient"
-            gradient={{ from: 'rgba(37, 161, 21, 1)', to: 'rgba(247, 200, 153, 1)', deg: 90 }}
-          >{customMealPrice !== null ? 'Actual' : 'Estimated'}</Badge>
-        </Group>
-        {filteredReason && (
-          <Badge color="red" className="ui-meal-filtered-badge">
-            Reason: {filteredReason}
-          </Badge>
-        )}
-      </Box>
-
-      <Button 
-        className="ui-meal-log-button" 
-        variant="subtle"
-        disabled={filteredReason !== null}
-        onClick={(event) => {
-          event.stopPropagation()
-          openLogModal(candidate)
+      <RecommendationMealCard
+        key={`${item.candidate.food.id}-${item.candidate.matched_query}-${index}`}
+        mealCategory={mealCategory}
+        item={item}
+        index={index}
+        isSpotlightTarget={
+          activeTourStep === 'logMeal' &&
+          mealCategory === activeCategory &&
+          index === 0 &&
+          item.filteredReason === null
+        }
+        onOpenDetail={(mealCategory, mealId) => navigate(`/recommendation/${mealCategory}/${mealId}`)}
+        onLog={() => {
+          openLogModal(item.candidate)
         }}
-        >
-        Log
-      </Button>
-    </Box>
+      />
     )
   }
 
@@ -792,11 +619,44 @@ export default function RecommendationPage() {
     day: "numeric",
   } as const
   const formattedDate = today.toLocaleDateString('en-US', options)
+  const activeCategoryLabel =
+    mealCategoryOptions.find((option) => option.value === activeCategory)?.label ?? 'meal'
+  const activeTourContent = activeTourStep
+    ? {
+        logMeal: {
+          title: 'Log this meal',
+          description: 'Save this meal to your history so it can be included in your spending and meal reports.',
+          icon: <ClipboardCheck size={18} aria-hidden="true" />,
+          primaryLabel: 'Next',
+        },
+        regenerate: {
+          title: `Regenerate ${activeCategoryLabel.toLowerCase()}`,
+          description: 'Not happy with these meals? Generate a new set using the same preferences and location.',
+          icon: <RotateCcw size={18} aria-hidden="true" />,
+          primaryLabel: 'Next',
+        },
+        addMeal: {
+          title: `Add your own ${activeCategoryLabel.toLowerCase()}`,
+          description: 'Can’t find the meal you ate? Add it manually so you can log it and use it in future recommendations.',
+          icon: <ListPlus size={18} aria-hidden="true" />,
+          primaryLabel: 'Got it',
+        },
+        logsNav: {
+          title: 'View your meal logs',
+          description: 'YSee your logged meals, update past entries, and generate weekly or monthly reports.',
+          icon: <History size={18} aria-hidden="true" />,
+          primaryLabel: 'Go to Logs',
+        },
+      }[activeTourStep]
+    : null
 
   return (
     <Box className={`ui-settings-page ui-recommendation-page ${isDarkMode ? 'ui-recommendation-dark' : ''}`}>
       <Box component="main" className="ui-settings-frame">
-        <MainNav active="recommendation" />
+        <MainNav
+          active="recommendation"
+          tourTarget={activeTourStep === 'logsNav' ? 'logs' : undefined}
+        />
 
         <Box className="ui-recommendation-layout">
         <Text
@@ -822,134 +682,51 @@ export default function RecommendationPage() {
             setGeneratedByCategory(emptyGenerated)
             setCandidatesByCategory(emptyCandidates)
             setFilteredOutByCategory(emptyFilteredOut)
+            setTourGeneratedCategory(null)
           }}
         />
 
           <Box component="section" className="ui-recommendation-results">
-            <Accordion
-              value={activeCategory}
-              onChange={handleCategoryChange}
-              className="ui-meal-accordion"
-              chevronPosition="right"
-            >
-              {mealCategoryOptions.map((option) => {
-                const candidates = candidatesByCategory[option.value]
-                const filteredOut = filteredOutByCategory[option.value]
-                const isLoading = loadingByCategory[option.value]
-                const hasGenerated = generatedByCategory[option.value]
-                const error = errorsByCategory[option.value]
-                const visibleItems =
-                  displayMode === 'filtered'
-                    ? candidates.map((candidate) => ({
-                        candidate,
-                        filteredReason: null,
-                      }))
-                    : [
-                        ...candidates.map((candidate) => ({
-                          candidate,
-                          filteredReason: null,
-                        })),
-                        ...filteredOut.map((item) => ({
-                          candidate: item.candidate,
-                          filteredReason: item.reason,
-                        })),
-                      ]
-
-                
-
-                return (
-                  <Accordion.Item value={option.value} key={option.value} className="ui-meal-accordion-item">
-                    <Accordion.Control className="ui-meal-accordion-control">
-                      <Box className="ui-meal-accordion-heading">
-                        <Box className="ui-meal-accordion-icon">
-                          <RecommendationIcon name="fork" size={20} />
-                        </Box>
-                        <Title order={2}>{option.label}</Title>
-                        <Badge className="ui-meal-accordion-count">
-                          {isLoading ? 'Generating' : hasGenerated ? `${candidates.length} matches` : 'Folded'}
-                        </Badge>
-                      </Box>
-                    </Accordion.Control>
-
-                    <Accordion.Panel className="ui-meal-accordion-panel">
-                      {error && (
-                        <Alert color="red" icon={<RecommendationIcon name="warning" size={20} />}>
-                          {error}
-                        </Alert>
-                      )}
-                      
-                      <Box className="ui-recommendation-filter-row">
-                        <SegmentedControl
-                          className="ui-recommendation-filter-toggle"
-                          value={displayMode}
-                          onChange={(value) => setDisplayMode(value as 'filtered' | 'all')}
-                          data={[
-                            { label: 'Show recommended only', value: 'filtered' },
-                            { label: 'Show all results', value: 'all' },
-                          ]}
-                        />
-                      </Box>
-                      {isLoading && (
-                        <Box className="ui-recommendation-state ui-card">
-                          <RecommendationIcon name="sparkle" size={28} />
-                          <Text fw={900}>Generating and sorting {option.label.toLowerCase()} meals...</Text>
-                        </Box>
-                      )}
-
-                      {!isLoading && hasGenerated && visibleItems.length === 0 && (
-                        <Box className="ui-recommendation-state ui-card">
-                          <RecommendationIcon name="bowl" size={30} />
-                          <Text fw={900}>No dataset matches found.</Text>
-                          <Text className="ui-field-copy">
-                            Try regenerating or add your custom meal.
-                          </Text>
-                        </Box>
-                      )}
-
-                      {!isLoading && !hasGenerated && (
-                        <Box className="ui-recommendation-state ui-card">
-                          <RecommendationIcon name="bowl" size={30} />
-                          <Text fw={900}>Preparing this mealtime.</Text>
-                        </Box>
-                      )}
-
-                      {!isLoading && visibleItems.length > 0 && (
-                        <Box className="ui-recommendation-grid">
-                          {visibleItems.map((item, index) => renderCandidateCard(option.value, item, index))}
-                        </Box>
-                      )}
-
-                      <Button
-                        className="ui-primary-button ui-recommendation-regenerate"
-                        leftSection={<RecommendationIcon name="refresh" size={18} />}
-                        onClick={() => generateRecommendations(option.value, true)}
-                        loading={isLoading}
-                      >
-                        Regenerate {option.label.toLowerCase()}
-                      </Button>
-
-                      <Button
-                        component={Link}
-                        to={`/meals/add/${option.value}?location=${encodeURIComponent(formatLocation(selectedLocation))}`}
-                        className="ui-ghost-button ui-recommendation-add-meal"
-                        variant="subtle"
-                      >
-                        Add other meal to {option.label.toLowerCase()}
-                      </Button>
-                    </Accordion.Panel>
-                  </Accordion.Item>
-                )
-              })}
-            </Accordion>
+            <RecommendationAccordion
+              activeCategory={activeCategory}
+              mealCategoryOptions={mealCategoryOptions}
+              candidatesByCategory={candidatesByCategory}
+              filteredOutByCategory={filteredOutByCategory}
+              loadingByCategory={loadingByCategory}
+              generatedByCategory={generatedByCategory}
+              errorsByCategory={errorsByCategory}
+              displayMode={displayMode}
+              selectedLocation={selectedLocation}
+              activeTourStep={activeTourStep}
+              onCategoryChange={handleCategoryChange}
+              onDisplayModeChange={setDisplayMode}
+              onGenerateRecommendations={generateRecommendations}
+              renderCandidateCard={renderCandidateCard}
+            />
           </Box>
         </Box>
       </Box>
+      {activeTourStep && activeTourContent && (
+        <RecommendationSpotlight
+          targetRect={spotlightRect}
+          title={activeTourContent.title}
+          description={activeTourContent.description}
+          icon={activeTourContent.icon}
+          primaryLabel={activeTourContent.primaryLabel}
+          onDismiss={dismissActiveTour}
+          onPrimary={advanceActiveTour}
+        />
+      )}
       <LogMealModal
         opened={mealToLog !== null}
         meal={mealToLog}
         onClose={() => setMealToLog(null)}
         onLogged={() => {
           setSuccessMessage(`${mealToLog?.name ?? 'Meal'} logged successfully`)
+          setHasLoggedRecommendation(true)
+          if (localStorage.getItem(postLogTourStorageKey) !== 'true') {
+            setActiveTourStep('logsNav')
+          }
           setMealToLog(null)
         }}
       />

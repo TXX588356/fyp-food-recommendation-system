@@ -11,6 +11,7 @@ import { useForm } from '@mantine/form'
 import { useState } from 'react'
 import axios from 'axios'
 import { useNavigate } from 'react-router-dom'
+import { replayInputShake } from '@/theme/inputTransitions'
 
 const thumbnailImage = 'https://images.unsplash.com/photo-1606756790138-261d2b21cd75?q=80&w=765&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
 
@@ -47,7 +48,15 @@ export default function RegisterPage() {
       if (axios.isAxiosError(error)) {
         const message = error.response?.data?.error
 
-        setSubmitError(typeof message === 'string' ? message : 'Registration failed. Please check your details and try again.')
+        const errorMessage = typeof message === 'string'
+          ? message
+          : 'Registration failed. Please check your details and try again.'
+
+        setSubmitError(errorMessage)
+        if (/email/i.test(errorMessage)) {
+          form.setFieldError('email', errorMessage)
+          replayInputShake('.ui-form .t-input[data-error], .ui-form .t-input.is-error')
+        }
       } else {
         setSubmitError('Registration failed. Please check your details and try again.')
 
@@ -58,10 +67,14 @@ export default function RegisterPage() {
     }
   }
 
+  const handleValidationFailure = () => {
+    replayInputShake('.ui-form .t-input[data-error], .ui-form .t-input.is-error')
+  }
+
   const inputClassNames = {
     label: 'ui-input-label',
-    input: 'ui-input',
-    wrapper: 'ui-input-wrapper',
+    input: 'ui-input t-input',
+    wrapper: 'ui-input-wrapper t-input-wrap',
     innerInput: 'ui-password-inner-input',
   }
 
@@ -104,7 +117,7 @@ export default function RegisterPage() {
             {submitError && (<Alert color="red">{submitError}</Alert>)}
             <Box 
               component='form'
-              onSubmit={form.onSubmit(handleSubmit)}
+              onSubmit={form.onSubmit(handleSubmit, handleValidationFailure)}
               className="ui-form"
               noValidate
             >
