@@ -665,7 +665,7 @@ export default function RecommendationPage() {
         },
         logsNav: {
           title: 'View your meal logs',
-          description: 'YSee your logged meals, update past entries, and generate weekly or monthly reports.',
+          description: 'See your logged meals, update past entries, and generate weekly or monthly reports.',
           icon: <History size={18} aria-hidden="true" />,
           primaryLabel: 'Go to Logs',
         },
