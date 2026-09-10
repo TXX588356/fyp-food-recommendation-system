@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build && find ../static -mindepth 1 ! -name embed.go -exec rm -rf {} + && mkdir -p ../static && cp -a dist/. ../static/",
+    "build": "tsc -b && vite build && rm -rf ../static && mkdir -p ../static && cp -a dist/. ../static/",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -36,5 +36,11 @@
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.58.2",
     "vite": "^8.0.10"
+  },
+  "packageManager": "pnpm@10.30.3",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   }
 }

@@ -203,6 +203,35 @@ func (s *service) Logout(ctx context.Context, rawRefreshToken string) error {
 	return s.refreshTokenRepo.RevokeByHash(ctx, hash)
 }
 
+func (s *service) ResetPassword(ctx context.Context, input interfaces.ResetPasswordInput) error {
+	email := strings.ToLower(strings.TrimSpace(input.Email))
+	if _, err := mail.ParseAddress(email); err != nil {
+		return errors.New("invalid email")
+	}
+	if len(input.NewPassword) < 6 {
+		return errors.New("password must be at least 6 characters")
+	}
+
+	user, err := s.userRepo.FindByEmail(ctx, email)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return errors.New("email is not registered")
+	}
+	if err != nil {
+		return err
+	}
+
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(input.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	if err := s.userRepo.UpdatePassword(ctx, user.ID, string(passwordHash)); err != nil {
+		return err
+	}
+
+	return s.refreshTokenRepo.RevokeAllForUser(ctx, user.ID)
+}
+
 func validateRegisterInput(input interfaces.RegisterInput) error {
 	required := map[string]string{
 		"name":     input.Name,

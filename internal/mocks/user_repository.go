@@ -243,6 +243,41 @@ func (_c *UserRepository_FindByID_Call) RunAndReturn(run func(ctx context.Contex
 	return _c
 }
 
+// UpdatePassword provides a mock function for the type UserRepository
+func (_mock *UserRepository) UpdatePassword(ctx context.Context, id uuid.UUID, passwordHash string) error {
+	ret := _mock.Called(ctx, id, passwordHash)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdatePassword")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) error); ok {
+		r0 = returnFunc(ctx, id, passwordHash)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+type UserRepository_UpdatePassword_Call struct {
+	*mock.Call
+}
+
+func (_e *UserRepository_Expecter) UpdatePassword(ctx interface{}, id interface{}, passwordHash interface{}) *UserRepository_UpdatePassword_Call {
+	return &UserRepository_UpdatePassword_Call{Call: _e.mock.On("UpdatePassword", ctx, id, passwordHash)}
+}
+
+func (_c *UserRepository_UpdatePassword_Call) Return(err error) *UserRepository_UpdatePassword_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *UserRepository_UpdatePassword_Call) RunAndReturn(run func(ctx context.Context, id uuid.UUID, passwordHash string) error) *UserRepository_UpdatePassword_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UpdateOnboardingStatus provides a mock function for the type UserRepository
 func (_mock *UserRepository) UpdateOnboardingStatus(ctx context.Context, id uuid.UUID, completed bool) error {
 	ret := _mock.Called(ctx, id, completed)

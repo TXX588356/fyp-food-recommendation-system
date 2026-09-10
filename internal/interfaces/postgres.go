@@ -12,6 +12,7 @@ type UserRepository interface {
 	Create(ctx context.Context, data *model.User) (*model.User, error)
 	FindByEmail(ctx context.Context, email string) (*model.User, error)
 	FindByID(ctx context.Context, id uuid.UUID) (*model.User, error)
+	UpdatePassword(ctx context.Context, id uuid.UUID, passwordHash string) error
 	UpdateOnboardingStatus(ctx context.Context, id uuid.UUID, completed bool) error
 }
 
@@ -20,6 +21,7 @@ type RefreshTokenRepository interface {
 	Rotate(ctx context.Context, oldToken uuid.UUID, newToken *model.RefreshToken) error
 	FindByHash(ctx context.Context, hash string) (*model.RefreshToken, error)
 	RevokeByHash(ctx context.Context, hash string) error
+	RevokeAllForUser(ctx context.Context, userID uuid.UUID) error
 }
 
 type PreferenceRepository interface {

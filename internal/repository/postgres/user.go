@@ -37,6 +37,17 @@ func (r *userRepository) FindByID(ctx context.Context, id uuid.UUID) (*model.Use
 	return &user, err
 }
 
+func (r *userRepository) UpdatePassword(ctx context.Context, id uuid.UUID, passwordHash string) error {
+	return r.db.WithContext(ctx).
+		Model(&model.User{}).
+		Where("id = ?", id).
+		Updates(map[string]any{
+			"password_hash": passwordHash,
+			"updated_at":    gorm.Expr("now()"),
+		}).
+		Error
+}
+
 func (r *userRepository) UpdateOnboardingStatus(ctx context.Context, id uuid.UUID, completed bool) error {
 	return r.db.WithContext(ctx).
 		Model(&model.User{}).

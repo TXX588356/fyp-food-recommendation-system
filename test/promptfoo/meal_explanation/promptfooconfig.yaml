@@ -1,0 +1,258 @@
+description: Meal Recommendation Explanation Quality Evaluation
+
+prompts:
+  - file://meal_explanation_prompt.txt
+
+providers:
+  - id: google:gemini-3.5-flash-lite
+    config:
+      temperature: 0
+
+tests:
+  - description: EQ-01 Diabetes-friendly Explanation
+    vars:
+      meal_name: Grilled Chicken Salad
+      meal_category: lunch
+      calories: 420
+      fat_g: 12
+      protein_g: 35
+      carbs_g: 28
+      price_min: 8
+      price_max: 11
+      sodium_level: LOW
+      sugar_level: LOW
+      purine_risk: LOW
+      health_flags: diabetes=SAFE
+      user_goal: eat_healthier
+      dietary_restrictions: none
+      health_concerns: diabetes
+      preferred_meal_tags: salads, poultry
+      monthly_budget: 300
+      current_spending: 120
+      remaining_budget: 180
+      per_meal_budget: 12
+      location: Kuala Lumpur
+      location_basis: work_school
+    assert:
+      - type: not-contains
+        value: cures
+      - type: not-contains
+        value: treats diabetes
+      - type: llm-rubric
+        provider:
+          id: google:gemini-3.1-flash-lite
+          config:
+            temperature: 0
+        value: >
+          The explanation should be one concise paragraph, explain why the meal
+          fits the user's diabetes concern and eat-healthier goal, avoid medical
+          claims, avoid repeating too many raw numbers, and mention only the
+          strongest relevant reasons.
+
+  - description: EQ-02 Over-budget Explanation
+    vars:
+      meal_name: Salmon Rice Bowl
+      meal_category: dinner
+      calories: 650
+      fat_g: 22
+      protein_g: 38
+      carbs_g: 70
+      price_min: 18
+      price_max: 24
+      sodium_level: MEDIUM
+      sugar_level: LOW
+      purine_risk: MEDIUM
+      health_flags: diabetes=SAFE
+      user_goal: eat_healthier
+      dietary_restrictions: none
+      health_concerns: diabetes
+      preferred_meal_tags: rice_dishes, seafood
+      monthly_budget: 300
+      current_spending: 250
+      remaining_budget: 50
+      per_meal_budget: 12
+      location: Kuala Lumpur
+      location_basis: home
+    assert:
+      - type: contains
+        value: budget
+      - type: not-contains
+        value: comfortably within budget
+      - type: llm-rubric
+        provider:
+          id: google:gemini-3.1-flash-lite
+          config:
+            temperature: 0
+        value: >
+          The explanation should honestly mention that the meal may be above
+          the user's per-meal budget because the upper price range exceeds RM12.
+          It should still explain any nutritional or preference fit without
+          inventing facts.
+
+  - description: EQ-03 Gout-aware Explanation
+    vars:
+      meal_name: Tofu Porridge
+      meal_category: dinner
+      calories: 380
+      fat_g: 7
+      protein_g: 18
+      carbs_g: 50
+      price_min: 7
+      price_max: 9
+      sodium_level: LOW
+      sugar_level: LOW
+      purine_risk: LOW
+      health_flags: gout=SAFE
+      user_goal: eat_healthier
+      dietary_restrictions: none
+      health_concerns: gout
+      preferred_meal_tags: porridge, tofu_soy
+      monthly_budget: 300
+      current_spending: 150
+      remaining_budget: 150
+      per_meal_budget: 12
+      location: Kuala Lumpur
+      location_basis: home
+    assert:
+      - type: not-contains
+        value: cures
+      - type: not-contains
+        value: prevents gout
+      - type: not-contains
+        value: treats gout
+      - type: llm-rubric
+        provider:
+          id: google:gemini-3.1-flash-lite
+          config:
+            temperature: 0
+        value: >
+          The explanation should be one concise paragraph that connects the meal
+          to the user's gout concern using the supplied low purine risk and SAFE
+          gout flag. It should be health-aware without giving medical advice or
+          claiming to treat, prevent, or cure gout.
+
+  - description: EQ-04 Vegetarian Explanation
+    vars:
+      meal_name: Vegetable Fried Rice
+      meal_category: lunch
+      calories: 520
+      fat_g: 14
+      protein_g: 12
+      carbs_g: 82
+      price_min: 6
+      price_max: 9
+      sodium_level: MEDIUM
+      sugar_level: LOW
+      purine_risk: LOW
+      health_flags: none
+      user_goal: quick_recommendation
+      dietary_restrictions: vegetarian
+      health_concerns: none
+      preferred_meal_tags: rice_dishes, vegetables
+      monthly_budget: 300
+      current_spending: 100
+      remaining_budget: 200
+      per_meal_budget: 10
+      location: Kuala Lumpur
+      location_basis: work_school
+    assert:
+      - type: not-contains
+        value: chicken
+      - type: not-contains
+        value: beef
+      - type: not-contains
+        value: pork
+      - type: llm-rubric
+        provider:
+          id: google:gemini-3.1-flash-lite
+          config:
+            temperature: 0
+        value: >
+          The explanation should connect the meal to the user's vegetarian
+          restriction and preference for rice or vegetables. It should not imply
+          that the meal contains meat or that meat-based qualities make it
+          suitable.
+
+  - description: EQ-05 Muscle-gain Explanation
+    vars:
+      meal_name: Grilled Chicken Rice
+      meal_category: lunch
+      calories: 620
+      fat_g: 12
+      protein_g: 38
+      carbs_g: 68
+      price_min: 10
+      price_max: 13
+      sodium_level: MEDIUM
+      sugar_level: LOW
+      purine_risk: LOW
+      health_flags: none
+      user_goal: muscle_gain
+      dietary_restrictions: none
+      health_concerns: none
+      preferred_meal_tags: rice_dishes, poultry, grilled_roasted
+      monthly_budget: 450
+      current_spending: 180
+      remaining_budget: 270
+      per_meal_budget: 15
+      location: Kuala Lumpur
+      location_basis: work_school
+    assert:
+      - type: contains
+        value: protein
+      - type: not-contains
+        value: cures
+      - type: llm-rubric
+        provider:
+          id: google:gemini-3.1-flash-lite
+          config:
+            temperature: 0
+        value: >
+          The explanation should explain in plain language why the meal supports
+          the user's muscle_gain goal, especially its higher protein and filling
+          rice-based meal style. It should avoid becoming a list of raw nutrition
+          numbers and should not invent additional fitness or medical benefits.
+
+  - description: EQ-06 Health Tradeoff Explanation
+    vars:
+      meal_name: Beef Noodles
+      meal_category: lunch
+      calories: 700
+      fat_g: 24
+      protein_g: 30
+      carbs_g: 78
+      price_min: 10
+      price_max: 13
+      sodium_level: HIGH
+      sugar_level: LOW
+      purine_risk: MEDIUM
+      health_flags: diabetes=CAUTION
+      user_goal: eat_healthier
+      dietary_restrictions: none
+      health_concerns: diabetes
+      preferred_meal_tags: noodle_dishes
+      monthly_budget: 300
+      current_spending: 160
+      remaining_budget: 140
+      per_meal_budget: 12
+      location: Kuala Lumpur
+      location_basis: work_school
+    assert:
+      - type: contains
+        value: caution
+      - type: not-contains
+        value: perfectly safe
+      - type: not-contains
+        value: cures
+      - type: not-contains
+        value: treats diabetes
+      - type: llm-rubric
+        provider:
+          id: google:gemini-3.1-flash-lite
+          config:
+            temperature: 0
+        value: >
+          The explanation should honestly mention the diabetes CAUTION flag or
+          a health tradeoff without overstating suitability. It should still
+          explain any relevant preference or budget fit, but it must not claim
+          the meal is perfectly safe, therapeutic, or medically recommended.

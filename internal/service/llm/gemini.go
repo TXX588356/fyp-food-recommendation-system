@@ -13,7 +13,7 @@ import (
 	"google.golang.org/genai"
 )
 
-const defaultModel = "gemini-3.1-flash-lite"
+const defaultModel = "gemini-3.5-flash-lite"
 
 var riskLevels = map[string]bool{
 	"LOW":    true,

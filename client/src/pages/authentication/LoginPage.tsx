@@ -135,6 +135,9 @@ export default function LoginPage() {
                   key={form.key('password')}
                 {...form.getInputProps('password')}
                 />
+                <Anchor href="/forgot-password" className="ui-form-helper-link">
+                  Forgot password?
+                </Anchor>
 
                 <Button
                   type='submit'

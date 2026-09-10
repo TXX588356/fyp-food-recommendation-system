@@ -19,6 +19,11 @@ type RefreshInput struct {
 	RefreshToken string `json:"refreshToken"`
 }
 
+type ResetPasswordInput struct {
+	Email       string `json:"email"`
+	NewPassword string `json:"newPassword"`
+}
+
 type AuthUser struct {
 	ID                     string `json:"id"`
 	Name                   string `json:"name"`
@@ -37,4 +42,5 @@ type AuthService interface {
 	Login(ctx context.Context, input LoginInput) (*AuthResult, error)
 	Refresh(ctx context.Context, rawRefreshToken string) (*AuthResult, error)
 	Logout(ctx context.Context, rawRefreshToken string) error
+	ResetPassword(ctx context.Context, input ResetPasswordInput) error
 }

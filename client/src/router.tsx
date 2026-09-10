@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom'
 
 import RegisterPage from '@/pages/authentication/RegisterPage'
 import LoginPage from '@/pages/authentication/LoginPage'
+import ForgotPasswordPage from '@/pages/authentication/ForgotPasswordPage'
 import RecommendationPage from '@/pages/recommendation/RecommendationPage'
 import PreferencesOnboardingPage from '@/pages/onboarding/PreferencesOnboardingPage'
 import PreferencePage from '@/pages/preferences/PreferencePage'
@@ -22,6 +23,7 @@ export const router = createBrowserRouter([
   {path: '/', element: <HomeRedirect />,},
   {path: '/register', element: <RegisterPage />,},
   {path: '/login', element: <LoginPage />,},
+  {path: '/forgot-password', element: <ForgotPasswordPage />,},
   {path: 'recommendation', element: (
     <ProtectedRoute>
       <RecommendationPage />

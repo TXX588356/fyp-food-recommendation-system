@@ -61,3 +61,12 @@ func (r *refreshTokenRepository) RevokeByHash(ctx context.Context, hash string) 
 		Where("token_hash = ? AND revoked_at IS NULL", hash).
 		Update("revoked_at", now).Error
 }
+
+func (r *refreshTokenRepository) RevokeAllForUser(ctx context.Context, userID uuid.UUID) error {
+	now := time.Now()
+
+	return r.db.WithContext(ctx).
+		Model(&model.RefreshToken{}).
+		Where("user_id = ? AND revoked_at IS NULL", userID).
+		Update("revoked_at", now).Error
+}

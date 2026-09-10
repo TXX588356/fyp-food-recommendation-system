@@ -221,6 +221,41 @@ func (_c *RefreshTokenRepository_RevokeByHash_Call) RunAndReturn(run func(ctx co
 	return _c
 }
 
+// RevokeAllForUser provides a mock function for the type RefreshTokenRepository
+func (_mock *RefreshTokenRepository) RevokeAllForUser(ctx context.Context, userID uuid.UUID) error {
+	ret := _mock.Called(ctx, userID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for RevokeAllForUser")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) error); ok {
+		r0 = returnFunc(ctx, userID)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+type RefreshTokenRepository_RevokeAllForUser_Call struct {
+	*mock.Call
+}
+
+func (_e *RefreshTokenRepository_Expecter) RevokeAllForUser(ctx interface{}, userID interface{}) *RefreshTokenRepository_RevokeAllForUser_Call {
+	return &RefreshTokenRepository_RevokeAllForUser_Call{Call: _e.mock.On("RevokeAllForUser", ctx, userID)}
+}
+
+func (_c *RefreshTokenRepository_RevokeAllForUser_Call) Return(err error) *RefreshTokenRepository_RevokeAllForUser_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *RefreshTokenRepository_RevokeAllForUser_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID) error) *RefreshTokenRepository_RevokeAllForUser_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Rotate provides a mock function for the type RefreshTokenRepository
 func (_mock *RefreshTokenRepository) Rotate(ctx context.Context, oldToken uuid.UUID, newToken *model.RefreshToken) error {
 	ret := _mock.Called(ctx, oldToken, newToken)

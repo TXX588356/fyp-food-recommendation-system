@@ -32,6 +32,7 @@ func RegisterAuthRoutes(ctx context.Context, e *echo.Echo) {
 	auth.POST("/login", h.login)
 	auth.POST("/refresh", h.refresh)
 	auth.POST("/logout", h.logout)
+	auth.POST("/reset-password", h.resetPassword)
 
 }
 
@@ -98,6 +99,20 @@ func (h *authHandler) logout(c *echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, map[string]string{"message": "logged out"})
+}
+
+func (h *authHandler) resetPassword(c *echo.Context) error {
+	var input interfaces.ResetPasswordInput
+
+	if err := c.Bind(&input); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+	}
+
+	if err := h.authService.ResetPassword(c.Request().Context(), input); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{"message": "password reset"})
 }
 
 func init() {

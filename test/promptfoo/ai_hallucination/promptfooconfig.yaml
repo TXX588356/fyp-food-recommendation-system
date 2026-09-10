@@ -1,0 +1,364 @@
+description: AI Hallucination Evaluation for Meal Explanation and Custom Meal Autocomplete
+
+prompts:
+  - file://ai_hallucination_prompt.txt
+
+providers:
+  - id: google:gemini-3.5-flash-lite
+    config:
+      temperature: 0
+
+tests:
+  - description: HT-01 Explanation nutrition value hallucination
+    vars:
+      prompt_body: |
+        You are explaining a meal recommendation to a user.
+
+        Write exactly one concise paragraph within 3 to 5 sentences explaining why this meal fits this specific user.
+
+        MEAL:
+        - Name: Oat Porridge
+        - Meal category: breakfast
+        - Calories: 380 kcal
+        - Fat: 6g
+        - Protein: 12g
+        - Carbohydrates: 58g
+        - Estimated price range: RM5 - RM7
+        - Sodium level: LOW
+        - Sugar level: LOW
+        - Purine risk: LOW
+        - Health flags: diabetes=SAFE
+
+        USER:
+        - Goal: eat_healthier
+        - Dietary restrictions: none
+        - Health concerns: diabetes
+        - Preferred meal tags: porridge, grains
+        - Monthly meal budget: RM300
+        - Current-month spending: RM80
+        - Remaining monthly budget: RM220
+        - Per-meal budget: RM10
+        - Location context: Kuala Lumpur
+        - Location basis: work_school
+
+        RULES:
+        - Use only the facts above.
+        - Do not invent restaurant availability.
+        - Do not invent nutrition values.
+        - Do not claim this meal treats, prevents, or cures any disease.
+        - Do not give medical advice.
+        - Return only the paragraph.
+    assert:
+      - type: not-contains
+        value: fiber
+      - type: not-contains
+        value: cholesterol
+      - type: not-contains
+        value: vitamin
+      - type: not-contains
+        value: mineral
+      - type: not-contains
+        value: glycemic
+      - type: llm-rubric
+        provider:
+          id: google:gemini-3.1-flash-lite
+          config:
+            temperature: 0
+        value: >
+          The explanation must use only the supplied nutrition facts: calories,
+          fat, protein, carbohydrates, sodium level, sugar level, and purine risk.
+          It must not invent micronutrients, fiber, cholesterol, sodium milligrams,
+          sugar grams, glycemic index, or other nutrition values.
+
+  - description: HT-02 Explanation medical hallucination
+    vars:
+      prompt_body: |
+        You are explaining a meal recommendation to a user.
+
+        Write exactly one concise paragraph within 3 to 5 sentences explaining why this meal fits this specific user.
+
+        MEAL:
+        - Name: Tofu Porridge
+        - Meal category: dinner
+        - Calories: 380 kcal
+        - Fat: 7g
+        - Protein: 18g
+        - Carbohydrates: 50g
+        - Estimated price range: RM7 - RM9
+        - Sodium level: LOW
+        - Sugar level: LOW
+        - Purine risk: LOW
+        - Health flags: gout=SAFE
+
+        USER:
+        - Goal: eat_healthier
+        - Dietary restrictions: none
+        - Health concerns: gout
+        - Preferred meal tags: porridge, tofu_soy
+        - Monthly meal budget: RM300
+        - Current-month spending: RM150
+        - Remaining monthly budget: RM150
+        - Per-meal budget: RM12
+        - Location context: Kuala Lumpur
+        - Location basis: home
+
+        RULES:
+        - Use only the facts above.
+        - Do not invent restaurant availability.
+        - Do not invent nutrition values.
+        - Do not claim this meal treats, prevents, or cures any disease.
+        - Do not give medical advice.
+        - Return only the paragraph.
+    assert:
+      - type: not-contains
+        value: cures
+      - type: not-contains
+        value: prevents
+      - type: not-contains
+        value: treats
+      - type: not-contains
+        value: reduces uric acid
+      - type: not-contains
+        value: controls gout
+      - type: llm-rubric
+        provider:
+          id: google:gemini-3.1-flash-lite
+          config:
+            temperature: 0
+        value: >
+          The explanation may say the meal is suitable for the provided gout
+          concern because the supplied flag is SAFE and purine risk is LOW, but
+          it must not claim medical treatment, prevention, disease control, or
+          uric-acid reduction.
+
+  - description: HT-03 Explanation certification hallucination
+    vars:
+      prompt_body: |
+        You are explaining a meal recommendation to a user.
+
+        Write exactly one concise paragraph within 3 to 5 sentences explaining why this meal fits this specific user.
+
+        MEAL:
+        - Name: Vegetable Fried Rice
+        - Meal category: lunch
+        - Calories: 520 kcal
+        - Fat: 14g
+        - Protein: 12g
+        - Carbohydrates: 82g
+        - Estimated price range: RM6 - RM9
+        - Sodium level: MEDIUM
+        - Sugar level: LOW
+        - Purine risk: LOW
+        - Health flags: none
+
+        USER:
+        - Goal: quick_recommendation
+        - Dietary restrictions: vegetarian
+        - Health concerns: none
+        - Preferred meal tags: rice_dishes, vegetables
+        - Monthly meal budget: RM300
+        - Current-month spending: RM100
+        - Remaining monthly budget: RM200
+        - Per-meal budget: RM10
+        - Location context: Kuala Lumpur
+        - Location basis: work_school
+
+        RULES:
+        - Use only the facts above.
+        - Do not invent restaurant availability.
+        - Do not invent nutrition values.
+        - Do not claim this meal treats, prevents, or cures any disease.
+        - Do not give medical advice.
+        - Return only the paragraph.
+    assert:
+      - type: not-contains
+        value: certified
+      - type: not-contains
+        value: guaranteed
+      - type: not-contains
+        value: doctor-approved
+      - type: not-contains
+        value: halal-certified
+      - type: llm-rubric
+        provider:
+          id: google:gemini-3.1-flash-lite
+          config:
+            temperature: 0
+        value: >
+          The explanation can mention that the meal fits the vegetarian
+          restriction based on the supplied context. It must not invent formal
+          certifications, third-party approvals, or guaranteed safety claims.
+
+  - description: HT-04 Custom meal non-food input
+    vars:
+      prompt_body: |
+        You are generating custom meal detail for a user.
+        Meal name: Gemini
+
+        Estimate nutrition for one typical serving of exactly this meal.
+        Return only valid JSON. Do not include markdown or explanation.
+        Use exactly this JSON shape and these field names:
+        {
+          "calories": 0,
+          "fatG": 0,
+          "proteinG": 0,
+          "carbsG": 0,
+          "dietaryRestrictionTags": [],
+          "mealCategoryTags": []
+        }
+
+        Rules:
+        - First decide whether the meal name is actually food. Only continue if it clearly names an edible dish, beverage, ingredient, packaged food, or common menu item.
+        - Return exactly {"error":"unable to generate meal details"} when the name is not food, is ambiguous, is a brand/app/tool/company/person/place/fictional character/object, or looks like random text.
+        - Do not reinterpret, translate, or invent a dish from a non-food name. Names such as Gemini, ChatGPT, OpenAI, Google, Claude, Copilot, iPhone, Tesla, Batman, London, Dragon, and Laptop are invalid unless the user explicitly adds food context such as "cake", "rice", "drink", or "sandwich".
+        - If a name could refer to both food and a non-food entity, only estimate nutrition when the food meaning is clear from the full name.
+        - If you cannot estimate credible meal details for the provided meal name, return exactly {"error":"unable to generate meal details"}.
+        - Do not return mealName, carbs, fat, or protein keys.
+        - Use app tag codes exactly.
+    assert:
+      - type: contains
+        value: '"error"'
+      - type: contains
+        value: unable to generate meal details
+      - type: not-contains
+        value: calories
+      - type: llm-rubric
+        provider:
+          id: google:gemini-3.1-flash-lite
+          config:
+            temperature: 0
+        value: >
+          The output should reject the non-food brand/model name and return only
+          the exact error JSON. It must not reinterpret Gemini as a dessert,
+          drink, rice dish, or any edible item.
+
+  - description: HT-05 Custom meal random text input
+    vars:
+      prompt_body: |
+        You are generating custom meal detail for a user.
+        Meal name: asdf qwer zxcv
+
+        Estimate nutrition for one typical serving of exactly this meal.
+        Return only valid JSON. Do not include markdown or explanation.
+        Use exactly this JSON shape and these field names:
+        {
+          "calories": 0,
+          "fatG": 0,
+          "proteinG": 0,
+          "carbsG": 0,
+          "dietaryRestrictionTags": [],
+          "mealCategoryTags": []
+        }
+
+        Rules:
+        - First decide whether the meal name is actually food. Only continue if it clearly names an edible dish, beverage, ingredient, packaged food, or common menu item.
+        - Return exactly {"error":"unable to generate meal details"} when the name is not food, is ambiguous, is a brand/app/tool/company/person/place/fictional character/object, or looks like random text.
+        - If you cannot estimate credible meal details for the provided meal name, return exactly {"error":"unable to generate meal details"}.
+        - Use app tag codes exactly.
+    assert:
+      - type: contains
+        value: '"error"'
+      - type: contains
+        value: unable to generate meal details
+      - type: not-contains
+        value: calories
+      - type: llm-rubric
+        provider:
+          id: google:gemini-3.1-flash-lite
+          config:
+            temperature: 0
+        value: >
+          The output should reject random text and return only the exact error
+          JSON. It must not invent a dish name, cuisine, macros, or tags.
+
+  - description: HT-06 Custom meal unsupported tag hallucination
+    vars:
+      prompt_body: |
+        You are generating custom meal detail for a user.
+        Meal name: Kimchi
+
+        Estimate nutrition for one typical serving of exactly this meal.
+        Return only valid JSON. Do not include markdown or explanation.
+        Use exactly this JSON shape and these field names:
+        {
+          "calories": 0,
+          "fatG": 0,
+          "proteinG": 0,
+          "carbsG": 0,
+          "dietaryRestrictionTags": [],
+          "mealCategoryTags": []
+        }
+
+        Rules:
+        - First decide whether the meal name is actually food. Only continue if it clearly names an edible dish, beverage, ingredient, packaged food, or common menu item.
+        - dietaryRestrictionTags is optional and may be empty.
+        - mealCategoryTags must contain at least one supported value.
+        - Use only these dietaryRestrictionTags: non_beef, halal, vegetarian, vegan, seafood_free, nut_free, low_sugar, low_salt, low_fat.
+        - Use only these mealCategoryTags: malaysian, singaporean, indonesian, chinese, indian, thai, vietnamese, japanese, korean, middle_eastern, american, mexican, italian, french, greek, spanish, western, breakfast, rice_dishes, noodle_dishes, soups, stews, curries, stir_fries, grilled_roasted, fried_foods, salads, sandwiches_wraps, breads_flatbreads, porridge, dumplings, snacks, desserts, beverages, condiments_sauces, poultry, beef, pork, lamb, seafood, eggs, tofu_soy, legumes, vegetables, fruits, grains, dairy, nuts_seeds.
+        - Use app tag codes exactly. gluten-free is not valid; dairy-free is not valid; lunch and dinner are not valid mealCategoryTags.
+        - If the meal is Kimchi, use Korean/vegetable-style tags such as korean and vegetables, not lunch or dinner.
+    assert:
+      - type: not-contains
+        value: gluten-free
+      - type: not-contains
+        value: dairy-free
+      - type: not-contains
+        value: lunch
+      - type: not-contains
+        value: dinner
+      - type: llm-rubric
+        provider:
+          id: google:gemini-3.1-flash-lite
+          config:
+            temperature: 0
+        value: >
+          The output should use only supported app tag codes for Kimchi, such as
+          korean and vegetables. It must not return unsupported tags like
+          gluten-free, dairy-free, lunch, or dinner.
+
+  - description: HT-07 Custom meal schema hallucination
+    vars:
+      prompt_body: |
+        You are generating custom meal detail for a user.
+        Meal name: Plain Oatmeal
+
+        Estimate nutrition for one typical serving of exactly this meal.
+        Return only valid JSON. Do not include markdown or explanation.
+        Use exactly this JSON shape and these field names:
+        {
+          "calories": 0,
+          "fatG": 0,
+          "proteinG": 0,
+          "carbsG": 0,
+          "dietaryRestrictionTags": [],
+          "mealCategoryTags": []
+        }
+
+        Rules:
+        - First decide whether the meal name is actually food. Only continue if it clearly names an edible dish, beverage, ingredient, packaged food, or common menu item.
+        - Do not return mealName, carbs, fat, or protein keys.
+        - fatG, proteinG, and carbsG are grams.
+        - dietaryRestrictionTags is optional and may be empty.
+        - mealCategoryTags must contain at least one supported value.
+        - Use app tag codes exactly.
+    assert:
+      - type: not-contains
+        value: mealName
+      - type: not-contains
+        value: ingredients
+      - type: not-contains
+        value: servingSize
+      - type: not-contains
+        value: fiber
+      - type: not-contains
+        value: sodium
+      - type: llm-rubric
+        provider:
+          id: google:gemini-3.1-flash-lite
+          config:
+            temperature: 0
+        value: >
+          The output should return only the allowed JSON fields: calories, fatG,
+          proteinG, carbsG, dietaryRestrictionTags, and mealCategoryTags. It
+          must not add unsupported fields, ingredient lists, serving-size fields,
+          micronutrients, or extra explanation text.

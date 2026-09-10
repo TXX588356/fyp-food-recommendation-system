@@ -298,3 +298,38 @@ func (_c *AuthService_Register_Call) RunAndReturn(run func(ctx context.Context, 
 	_c.Call.Return(run)
 	return _c
 }
+
+// ResetPassword provides a mock function for the type AuthService
+func (_mock *AuthService) ResetPassword(ctx context.Context, input interfaces.ResetPasswordInput) error {
+	ret := _mock.Called(ctx, input)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ResetPassword")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, interfaces.ResetPasswordInput) error); ok {
+		r0 = returnFunc(ctx, input)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+type AuthService_ResetPassword_Call struct {
+	*mock.Call
+}
+
+func (_e *AuthService_Expecter) ResetPassword(ctx interface{}, input interface{}) *AuthService_ResetPassword_Call {
+	return &AuthService_ResetPassword_Call{Call: _e.mock.On("ResetPassword", ctx, input)}
+}
+
+func (_c *AuthService_ResetPassword_Call) Return(err error) *AuthService_ResetPassword_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *AuthService_ResetPassword_Call) RunAndReturn(run func(ctx context.Context, input interfaces.ResetPasswordInput) error) *AuthService_ResetPassword_Call {
+	_c.Call.Return(run)
+	return _c
+}

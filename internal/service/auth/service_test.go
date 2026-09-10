@@ -235,6 +235,51 @@ var _ = Describe("Auth service", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
+	It("should reset password for an existing email and revoke active refresh tokens", func() {
+		userID := uuid.New()
+
+		userRepo.EXPECT().
+			FindByEmail(ctx, "ada@example.com").
+			Return(&model.User{
+				ID:    userID,
+				Email: "ada@example.com",
+			}, nil).
+			Once()
+
+		userRepo.EXPECT().
+			UpdatePassword(ctx, userID, mock.MatchedBy(func(passwordHash string) bool {
+				return bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte("new-secret")) == nil
+			})).
+			Return(nil).
+			Once()
+
+		refreshTokenRepo.EXPECT().
+			RevokeAllForUser(ctx, userID).
+			Return(nil).
+			Once()
+
+		err := svc.ResetPassword(ctx, interfaces.ResetPasswordInput{
+			Email:       " ADA@example.com ",
+			NewPassword: "new-secret",
+		})
+
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("should reject password reset for an unknown email", func() {
+		userRepo.EXPECT().
+			FindByEmail(ctx, "missing@example.com").
+			Return(nil, gorm.ErrRecordNotFound).
+			Once()
+
+		err := svc.ResetPassword(ctx, interfaces.ResetPasswordInput{
+			Email:       "missing@example.com",
+			NewPassword: "new-secret",
+		})
+
+		Expect(err).To(MatchError("email is not registered"))
+	})
+
 	It("should return configured errors from refresh token creation", func() {
 		userID := uuid.New()
 		createErr := errors.New("refresh token store failed")

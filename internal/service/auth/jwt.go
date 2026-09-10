@@ -39,19 +39,26 @@ func (s *service) generateAccessToken(user *model.User) (string, error) {
 }
 
 func (s *service) generateRefreshToken() (string, string, error) {
+	return generateRawToken()
+}
+
+func generateRawToken() (string, string, error) {
 	bytes := make([]byte, 32)
 	if _, err := rand.Read(bytes); err != nil {
 		return "", "", err
 	}
 
 	raw := base64.RawURLEncoding.EncodeToString(bytes)
-	hash := sha256.Sum256([]byte(raw))
 
-	return raw, hex.EncodeToString(hash[:]), nil
+	return raw, hashToken(raw), nil
 }
 
 // hashRefreshToken is used when client sends refresh token back
 func hashRefreshToken(raw string) string {
+	return hashToken(raw)
+}
+
+func hashToken(raw string) string {
 	hash := sha256.Sum256([]byte(raw))
 	return hex.EncodeToString(hash[:])
 }

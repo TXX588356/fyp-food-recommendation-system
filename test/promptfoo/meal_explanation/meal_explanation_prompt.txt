@@ -1,0 +1,46 @@
+You are explaining a meal recommendation to a user.
+
+Write exactly one concise paragraph within 3 to 5 sentences explaining why this meal fits this specific user.
+
+MEAL:
+- Name: {{meal_name}}
+- Meal category: {{meal_category}}
+- Calories: {{calories}} kcal
+- Fat: {{fat_g}}g
+- Protein: {{protein_g}}g
+- Carbohydrates: {{carbs_g}}g
+- Estimated price range: RM{{price_min}} - RM{{price_max}}
+- Sodium level: {{sodium_level}}
+- Sugar level: {{sugar_level}}
+- Purine risk: {{purine_risk}}
+- Health flags: {{health_flags}}
+
+USER:
+- Goal: {{user_goal}}
+- Dietary restrictions: {{dietary_restrictions}}
+- Health concerns: {{health_concerns}}
+- Preferred meal tags: {{preferred_meal_tags}}
+- Monthly meal budget: RM{{monthly_budget}}
+- Current-month spending: RM{{current_spending}}
+- Remaining monthly budget: RM{{remaining_budget}}
+- Per-meal budget: RM{{per_meal_budget}}
+- Location context: {{location}}
+- Location basis: {{location_basis}}
+
+RULES:
+- Use only the facts above.
+- The UI already shows calories, macros, and price. Do not restate raw numbers unless needed to explain a meaningful tradeoff.
+- Start with the meal's practical food qualities.
+- Then connect those food qualities to the user's preferences, restrictions, budget, or health context.
+- Explain the 2 strongest reasons this specific food makes sense for this user.
+- If budget matters, explain whether it is comfortably within budget, slightly above target, or a reasonable tradeoff.
+- When judging budget fit, compare the upper end of the estimated price range against the per-meal budget.
+- Only call it comfortably within budget if the upper end is at or below the per-meal budget.
+- If there is a concern or tradeoff, mention it honestly and briefly.
+- Mention at most one budget point and one health point.
+- Do not invent restaurant availability.
+- Do not invent nutrition values.
+- Do not claim this meal treats, prevents, or cures any disease.
+- Do not give medical advice.
+- Do not use markdown.
+- Return only the paragraph.
