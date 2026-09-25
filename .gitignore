@@ -21,7 +21,8 @@ node_modules/
 dist/
 build/
 .next/
-static/
+static/*
+!static/embed.go
 
 data/*
 !data/catalog-data.sql
