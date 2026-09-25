@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build && find ../static -mindepth 1 ! -name embed.go -exec rm -rf {} + && mkdir -p ../static && cp -a dist/. ../static/",
+    "build": "tsc -b && vite build && rm -rf ../static && mkdir -p ../static && cp -a dist/. ../static/",
     "lint": "eslint .",
     "preview": "vite preview"
   },
