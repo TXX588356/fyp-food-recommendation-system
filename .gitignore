@@ -21,6 +21,7 @@ node_modules/
 dist/
 build/
 .next/
+static/
 
 data/*
 !data/catalog-data.sql
