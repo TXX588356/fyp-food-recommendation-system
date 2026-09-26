@@ -29,6 +29,7 @@ data/*
 docs/*
 
 client/dist/
+static/
 requirements/
 CONTEXT.md
 
