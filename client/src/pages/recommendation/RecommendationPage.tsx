@@ -339,6 +339,7 @@ export default function RecommendationPage() {
     setMealToLog({
       source: candidate.food.source === 'custom' ? 'custom' : 'prebuilt',
       mealId: candidate.food.id,
+      recommendationId: candidate.recommendation_id,
       name: candidate.food.name,
       calories: candidate.food.calories,
     })

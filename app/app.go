@@ -95,6 +95,7 @@ func (a *App) GetMealLogService(ctx context.Context) (interfaces.MealLogService,
 	}
 
 	mealLogRepo := postgres.NewMealLogPostgresRepository(a.PostgresDB)
+	interactionRepo := postgres.NewRecommendationInteractionPostgresRepository(a.PostgresDB)
 
 	customMealService, err := a.GetCustomMealService(ctx)
 	if err != nil {
@@ -111,7 +112,7 @@ func (a *App) GetMealLogService(ctx context.Context) (interfaces.MealLogService,
 		return nil, err
 	}
 
-	a.mealLogService = meallog.NewService(mealLogRepo, customMealService, catalogService, preferenceService)
+	a.mealLogService = meallog.NewService(mealLogRepo, customMealService, catalogService, preferenceService, interactionRepo)
 
 	return a.mealLogService, nil
 }
@@ -224,6 +225,7 @@ func (a *App) GetRecommendationService(ctx context.Context) (interfaces.Recommen
 
 	mealLogRepo := postgres.NewMealLogPostgresRepository(a.PostgresDB)
 	customMealRepo := postgres.NewCustomMealPostgresRepository(a.PostgresDB)
+	interactionRepo := postgres.NewRecommendationInteractionPostgresRepository(a.PostgresDB)
 
 	mealGenerator, err := a.GetAIClient(ctx)
 	if err != nil {
@@ -269,6 +271,7 @@ func (a *App) GetRecommendationService(ctx context.Context) (interfaces.Recommen
 		preferenceService,
 		mealGenerator,
 		restaurantSearcher,
+		interactionRepo,
 	)
 
 	return a.recommendationService, nil

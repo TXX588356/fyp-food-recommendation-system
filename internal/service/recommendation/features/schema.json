@@ -1,0 +1,146 @@
+{
+  "version": "phase2_initial_v1",
+  "observation_window_days": 7,
+  "metadata_columns": [
+    "recommendation_id",
+    "user_id",
+    "meal_source",
+    "meal_id",
+    "shown_at"
+  ],
+  "features": [
+    {
+      "name": "meal_price",
+      "type": "numeric",
+      "source": "candidate.generated_price_midpoint_or_custom_price",
+      "missing_value": 0,
+      "missing_policy": "Use 0 when no price is available; keep raw price features out of hard budget filtering.",
+      "reliable": true
+    },
+    {
+      "name": "calories",
+      "type": "numeric",
+      "source": "candidate.food.calories",
+      "missing_value": 0,
+      "missing_policy": "Use 0 only when a stored meal has no calories; recommendation matching already prefers complete nutrition.",
+      "reliable": true
+    },
+    {
+      "name": "protein",
+      "type": "numeric",
+      "source": "candidate.food.protein_g",
+      "missing_value": 0,
+      "missing_policy": "Use 0 only when protein is missing.",
+      "reliable": true
+    },
+    {
+      "name": "carbs",
+      "type": "numeric",
+      "source": "candidate.food.carbs_g",
+      "missing_value": 0,
+      "missing_policy": "Use 0 only when carbohydrates are missing.",
+      "reliable": true
+    },
+    {
+      "name": "fat",
+      "type": "numeric",
+      "source": "candidate.food.fat_g",
+      "missing_value": 0,
+      "missing_policy": "Use 0 only when fat is missing.",
+      "reliable": true
+    },
+    {
+      "name": "calorie_difference",
+      "type": "numeric",
+      "source": "candidate.food.calories_minus_user_context_target",
+      "missing_value": 0,
+      "missing_policy": "Use 0 until a reliable explicit calorie target exists; do not infer medical safety from this value.",
+      "reliable": true
+    },
+    {
+      "name": "price_difference_from_avg",
+      "type": "numeric",
+      "source": "meal_price_minus_average_meal_spending_before_shown_at",
+      "missing_value": 0,
+      "missing_policy": "Use 0 when no historical spending exists before shown_at.",
+      "reliable": true
+    },
+    {
+      "name": "times_meal_eaten",
+      "type": "numeric",
+      "source": "meal_logs_count_same_meal_before_shown_at",
+      "missing_value": 0,
+      "missing_policy": "Use 0 when the meal has never been logged before shown_at.",
+      "reliable": true
+    },
+    {
+      "name": "times_category_eaten",
+      "type": "numeric",
+      "source": "meal_logs_count_matching_candidate_categories_before_shown_at",
+      "missing_value": 0,
+      "missing_policy": "Use 0 when matching categories have never been logged before shown_at.",
+      "reliable": true
+    },
+    {
+      "name": "days_since_last_eaten",
+      "type": "numeric",
+      "source": "days_between_last_same_meal_log_and_shown_at",
+      "missing_value": 999,
+      "missing_policy": "Use 999 when the meal has never been logged before shown_at.",
+      "reliable": true
+    },
+    {
+      "name": "remaining_monthly_budget",
+      "type": "numeric",
+      "source": "monthly_budget_minus_month_to_date_spending_before_shown_at",
+      "missing_value": 0,
+      "missing_policy": "Use 0 when budget is missing or already exceeded.",
+      "reliable": true
+    },
+    {
+      "name": "average_meal_spending",
+      "type": "numeric",
+      "source": "average_logged_meal_price_before_shown_at",
+      "missing_value": 0,
+      "missing_policy": "Use 0 when no meal spending history exists before shown_at.",
+      "reliable": true
+    },
+    {
+      "name": "category_match",
+      "type": "binary",
+      "source": "candidate.food.tags_intersect_user_preferred_meal_tags",
+      "missing_value": 0,
+      "missing_policy": "Use 0 when there is no preferred-tag intersection.",
+      "reliable": true
+    },
+    {
+      "name": "meal_type",
+      "type": "categorical",
+      "source": "recommendation_request.meal_category",
+      "missing_value": "other",
+      "missing_policy": "Use other when request meal category is absent or unsupported.",
+      "allowed_values": [
+        "breakfast",
+        "lunch",
+        "dinner",
+        "snack",
+        "other"
+      ],
+      "reliable": true
+    }
+  ],
+  "deferred_features": [
+    {
+      "name": "cuisine_match",
+      "reason": "Meal categories mix cuisine and dish taxonomy without a dedicated cuisine field, so this is deferred until cuisine data is explicit."
+    }
+  ],
+  "forbidden_features": [
+    "allergy_conflict",
+    "prohibited_ingredient",
+    "hard_dietary_restriction",
+    "medical_exclusion",
+    "health_avoid_flag"
+  ],
+  "history_cutoff_policy": "All history-derived features must use only rows with event timestamps at or before shown_at."
+}

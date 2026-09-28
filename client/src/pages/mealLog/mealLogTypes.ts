@@ -4,6 +4,7 @@ export type MealLogType = 'breakfast' | 'lunch' | 'dinner' | 'other'
 export type MealLogInput = {
     source: MealLogSource
     mealId: string
+    recommendationId?: string
     price: number
     eatenAt: string
     mealType: MealLogType
@@ -47,6 +48,7 @@ export type MealLogMonthResponse = {
 export type LoggableMeal = {
     source: MealLogSource
     mealId: string
+    recommendationId?: string
     name: string
     calories: number
 }
