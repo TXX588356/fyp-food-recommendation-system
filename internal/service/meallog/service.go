@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fyp/food-rs/internal/interfaces"
 	"fyp/food-rs/types/model"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -16,15 +17,28 @@ type service struct {
 	customMealService interfaces.CustomMealService
 	catalogService    interfaces.CatalogService
 	preferenceService interfaces.PreferenceService
+	interactionRepo   interfaces.RecommendationInteractionRepository
 	now               func() time.Time
 }
 
-func NewService(mealLogRepo interfaces.MealLogRepository, customMealService interfaces.CustomMealService, catalogService interfaces.CatalogService, preferenceService interfaces.PreferenceService) interfaces.MealLogService {
+func NewService(
+	mealLogRepo interfaces.MealLogRepository,
+	customMealService interfaces.CustomMealService,
+	catalogService interfaces.CatalogService,
+	preferenceService interfaces.PreferenceService,
+	interactionRepositories ...interfaces.RecommendationInteractionRepository,
+) interfaces.MealLogService {
+	var interactionRepo interfaces.RecommendationInteractionRepository
+	if len(interactionRepositories) > 0 {
+		interactionRepo = interactionRepositories[0]
+	}
+
 	return &service{
 		mealLogRepo:       mealLogRepo,
 		customMealService: customMealService,
 		catalogService:    catalogService,
 		preferenceService: preferenceService,
+		interactionRepo:   interactionRepo,
 		now:               time.Now,
 	}
 }
@@ -59,7 +73,30 @@ func (s *service) Create(ctx context.Context, userID uuid.UUID, input interfaces
 		return nil, err
 	}
 
+	s.markRecommendationLogged(ctx, userID, input, mealID, saved.EatenAt)
+
 	return buildMealLogResponse(saved), nil
+}
+
+func (s *service) markRecommendationLogged(ctx context.Context, userID uuid.UUID, input interfaces.MealLogInput, mealID uuid.UUID, loggedAt time.Time) {
+	if s.interactionRepo == nil {
+		return
+	}
+
+	recommendationID, err := uuid.Parse(strings.TrimSpace(input.RecommendationID))
+	if err != nil {
+		return
+	}
+
+	if err := s.interactionRepo.MarkLogged(ctx, recommendationID, userID, string(input.Source), mealID, loggedAt); err != nil {
+		slog.Warn("recommendation logged outcome persistence failed",
+			"user_id", userID,
+			"recommendation_id", recommendationID,
+			"meal_source", input.Source,
+			"meal_id", mealID,
+			"error", err,
+		)
+	}
 }
 
 func (s *service) Update(ctx context.Context, userID, logID uuid.UUID, input interfaces.MealLogUpdateInput) (*interfaces.MealLogResponse, error) {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"fyp/food-rs/internal/interfaces"
 	"log"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -30,6 +31,7 @@ func (s *service) calculateCurrentMonthSpent(ctx context.Context, userID uuid.UU
 func (s *service) BuildMealDetail(ctx context.Context, userID uuid.UUID, input interfaces.MealDetailInput) (interfaces.MealDetailResult, error) {
 	now := s.now()
 	candidate := s.hydrateMealDetailCandidate(ctx, input.Candidate)
+	s.markRecommendationSelected(ctx, userID, candidate, now)
 
 	currentMonthSpent, err := s.calculateCurrentMonthSpent(ctx, userID, now)
 	if err != nil {
@@ -144,6 +146,46 @@ func (s *service) BuildMealDetail(ctx context.Context, userID uuid.UUID, input i
 		Restaurants:            restaurantResult.Restaurants,
 		RestaurantLookupStatus: restaurantResult.Status,
 	}, nil
+}
+
+func (s *service) markRecommendationSelected(ctx context.Context, userID uuid.UUID, candidate interfaces.MatchedMealCandidate, selectedAt time.Time) {
+	if s.interactionRepository == nil {
+		return
+	}
+
+	recommendationID, mealSource, mealID, ok := recommendationInteractionIdentity(candidate)
+	if !ok {
+		return
+	}
+
+	if err := s.interactionRepository.MarkSelected(ctx, recommendationID, userID, mealSource, mealID, selectedAt); err != nil {
+		slog.Warn("recommendation selection persistence failed",
+			"user_id", userID,
+			"recommendation_id", recommendationID,
+			"meal_source", mealSource,
+			"meal_id", mealID,
+			"error", err,
+		)
+	}
+}
+
+func recommendationInteractionIdentity(candidate interfaces.MatchedMealCandidate) (uuid.UUID, string, uuid.UUID, bool) {
+	recommendationID, err := uuid.Parse(strings.TrimSpace(candidate.RecommendationID))
+	if err != nil {
+		return uuid.Nil, "", uuid.Nil, false
+	}
+
+	mealID, err := uuid.Parse(strings.TrimSpace(candidate.Food.ID))
+	if err != nil {
+		return uuid.Nil, "", uuid.Nil, false
+	}
+
+	mealSource := strings.TrimSpace(candidate.Food.Source)
+	if mealSource == "" {
+		mealSource = "prebuilt"
+	}
+
+	return recommendationID, mealSource, mealID, true
 }
 
 func customMealStateMatchesLocation(mealState string, currentLocation string) bool {

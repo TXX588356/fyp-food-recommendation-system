@@ -75,6 +75,7 @@ function LogMealForm({
     const payload: MealLogInput = {
       source: meal.source,
       mealId: meal.mealId,
+      recommendationId: meal.recommendationId,
       price: Number(price),
       eatenAt: fromDateTimeLocalValue(eatenAt),
       mealType,

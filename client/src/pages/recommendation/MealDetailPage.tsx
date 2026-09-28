@@ -311,6 +311,7 @@ export default function MealDetailPage() {
 		setMealToLog({
 			source: candidate?.food.source === 'custom' ? 'custom' : 'prebuilt',
 			mealId: detail.meal.id,
+			recommendationId: candidate?.recommendation_id,
 			name: detail.meal.name,
 			calories: detail.meal.nutrition.calories,
 		})

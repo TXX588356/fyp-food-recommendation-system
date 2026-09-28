@@ -63,6 +63,45 @@ type testRestaurantSearcher struct {
 	err    error
 }
 
+type testRecommendationInteractionRepository struct {
+	interactions []model.RecommendationInteraction
+
+	selectedRecommendationID uuid.UUID
+	selectedUserID           uuid.UUID
+	selectedMealSource       string
+	selectedMealID           uuid.UUID
+	selectedAt               time.Time
+
+	err error
+}
+
+func (r *testRecommendationInteractionRepository) CreateImpressions(_ context.Context, interactions []model.RecommendationInteraction) error {
+	r.interactions = append(r.interactions, interactions...)
+	return r.err
+}
+
+func (r *testRecommendationInteractionRepository) MarkClicked(context.Context, uuid.UUID, uuid.UUID, string, uuid.UUID, time.Time) error {
+	return r.err
+}
+
+func (r *testRecommendationInteractionRepository) MarkSelected(_ context.Context, recommendationID uuid.UUID, userID uuid.UUID, mealSource string, mealID uuid.UUID, selectedAt time.Time) error {
+	r.selectedRecommendationID = recommendationID
+	r.selectedUserID = userID
+	r.selectedMealSource = mealSource
+	r.selectedMealID = mealID
+	r.selectedAt = selectedAt
+
+	return r.err
+}
+
+func (r *testRecommendationInteractionRepository) MarkLogged(context.Context, uuid.UUID, uuid.UUID, string, uuid.UUID, time.Time) error {
+	return r.err
+}
+
+func (r *testRecommendationInteractionRepository) SetRating(context.Context, uuid.UUID, uuid.UUID, string, uuid.UUID, int) error {
+	return r.err
+}
+
 func (s *testCandidateSearcher) SearchFoodCandidates(ctx context.Context, userID uuid.UUID, queries []string, limit int) ([]interfaces.FoodMatchCandidate, error) {
 	s.calls = append(s.calls, testCandidateSearchCall{
 		userID:  userID,
@@ -786,6 +825,69 @@ var _ = Describe("Recommendation candidate generation", func() {
 		Expect(result.FilteredOut[0].Reason).To(ContainSubstring("halal"))
 	})
 
+	It("should persist one impression per returned ranked recommendation", func() {
+		shownAt := time.Date(2026, time.September, 10, 9, 30, 0, 0, time.UTC)
+		svc.now = func() time.Time { return shownAt }
+		interactionRepo := &testRecommendationInteractionRepository{}
+		svc.interactionRepository = interactionRepo
+		firstMealID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
+		secondMealID := uuid.MustParse("22222222-2222-2222-2222-222222222222")
+
+		mealGenerator.EXPECT().GenerateMeals(mock.Anything, input).
+			Return(interfaces.GeminiMealsResponse{
+				Meals: []interfaces.GeneratedMeal{
+					{Name: "Chicken Rice"},
+					{Name: "Vegetable Soup"},
+				},
+			}, nil).
+			Once()
+
+		candidateSearcher.candidatesByQuery["Chicken Rice"] = []interfaces.FoodMatchCandidate{
+			serviceFoodCandidate(firstMealID.String(), "Chicken Rice", interfaces.FoodMatchExactName, "Chicken Rice", 1),
+		}
+		candidateSearcher.candidatesByQuery["Vegetable Soup"] = []interfaces.FoodMatchCandidate{
+			serviceFoodCandidateWithTags(secondMealID.String(), "Vegetable Soup", []string{"soups"}, interfaces.FoodMatchExactName, "Vegetable Soup", 1),
+		}
+
+		result, err := svc.generateRecommendationResultFromPrompt(ctx, userID, input)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result.Candidates).To(HaveLen(2))
+		Expect(interactionRepo.interactions).To(HaveLen(2))
+		Expect(result.Candidates[0].RecommendationID).To(Equal(interactionRepo.interactions[0].RecommendationID.String()))
+		Expect(result.Candidates[1].RecommendationID).To(Equal(interactionRepo.interactions[0].RecommendationID.String()))
+		Expect(interactionRepo.interactions[0].RecommendationID).NotTo(Equal(uuid.Nil))
+		Expect(interactionRepo.interactions[1].RecommendationID).To(Equal(interactionRepo.interactions[0].RecommendationID))
+		Expect(interactionRepo.interactions[0].UserID).To(Equal(userID))
+		Expect(interactionRepo.interactions[0].MealSource).To(Equal("prebuilt"))
+		Expect(interactionRepo.interactions[0].MealID).To(Equal(firstMealID))
+		Expect(interactionRepo.interactions[0].Position).To(Equal(1))
+		Expect(interactionRepo.interactions[0].ShownAt).To(Equal(shownAt))
+		Expect(interactionRepo.interactions[1].Position).To(Equal(2))
+	})
+
+	It("should still return recommendations when impression persistence fails", func() {
+		svc.interactionRepository = &testRecommendationInteractionRepository{err: errors.New("database unavailable")}
+		mealID := uuid.MustParse("33333333-3333-3333-3333-333333333333")
+
+		mealGenerator.EXPECT().GenerateMeals(mock.Anything, input).
+			Return(interfaces.GeminiMealsResponse{
+				Meals: []interfaces.GeneratedMeal{
+					{Name: "Chicken Rice"},
+				},
+			}, nil).
+			Once()
+
+		candidateSearcher.candidatesByQuery["Chicken Rice"] = []interfaces.FoodMatchCandidate{
+			serviceFoodCandidate(mealID.String(), "Chicken Rice", interfaces.FoodMatchExactName, "Chicken Rice", 1),
+		}
+
+		result, err := svc.generateRecommendationResultFromPrompt(ctx, userID, input)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result.Candidates).To(HaveLen(1))
+	})
+
 	It("should remove duplicate and blank fallback search terms", func() {
 		terms := buildSearchTerms(interfaces.GeneratedMeal{
 			Name: "Wantan Mee",
@@ -808,6 +910,9 @@ var _ = Describe("Recommendation meal detail", func() {
 		ctx := context.Background()
 		userID := uuid.New()
 		mealID := uuid.MustParse("44444444-4444-4444-4444-444444444444")
+		recommendationID := uuid.New()
+		selectedAt := time.Date(2026, time.September, 10, 10, 0, 0, 0, time.UTC)
+		interactionRepo := &testRecommendationInteractionRepository{}
 		catalogService := newTestCatalogService()
 		catalogService.mealsByID = map[uuid.UUID]interfaces.CatalogMeal{
 			mealID: {
@@ -831,11 +936,14 @@ var _ = Describe("Recommendation meal detail", func() {
 			&testPreferenceService{},
 			explainer,
 			&testRestaurantSearcher{},
+			interactionRepo,
 		).(*service)
+		svc.now = func() time.Time { return selectedAt }
 
 		result, err := svc.BuildMealDetail(ctx, userID, interfaces.MealDetailInput{
 			MealCategory: "lunch",
 			Candidate: interfaces.MatchedMealCandidate{
+				RecommendationID: recommendationID.String(),
 				GeneratedMeal: interfaces.GeneratedMeal{
 					EstimatedPriceRange: interfaces.PriceRange{Min: 8, Max: 12},
 				},
@@ -854,6 +962,11 @@ var _ = Describe("Recommendation meal detail", func() {
 		Expect(result.Meal.ServingDescription).To(Equal("1 bowl (350g)"))
 		Expect(explainer.input).NotTo(BeNil())
 		Expect(explainer.input.MealName).To(Equal("Chicken Rice"))
+		Expect(interactionRepo.selectedRecommendationID).To(Equal(recommendationID))
+		Expect(interactionRepo.selectedUserID).To(Equal(userID))
+		Expect(interactionRepo.selectedMealSource).To(Equal("prebuilt"))
+		Expect(interactionRepo.selectedMealID).To(Equal(mealID))
+		Expect(interactionRepo.selectedAt).To(Equal(selectedAt))
 	})
 
 	It("should include a custom meal restaurant when its state matches the current location state", func() {

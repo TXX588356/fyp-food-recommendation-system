@@ -45,6 +45,41 @@ type testMealLogRepository struct {
 	deleteErr     error
 }
 
+type testRecommendationInteractionRepository struct {
+	loggedRecommendationID uuid.UUID
+	loggedUserID           uuid.UUID
+	loggedMealSource       string
+	loggedMealID           uuid.UUID
+	loggedAt               time.Time
+	err                    error
+}
+
+func (r *testRecommendationInteractionRepository) CreateImpressions(context.Context, []model.RecommendationInteraction) error {
+	return r.err
+}
+
+func (r *testRecommendationInteractionRepository) MarkClicked(context.Context, uuid.UUID, uuid.UUID, string, uuid.UUID, time.Time) error {
+	return r.err
+}
+
+func (r *testRecommendationInteractionRepository) MarkSelected(context.Context, uuid.UUID, uuid.UUID, string, uuid.UUID, time.Time) error {
+	return r.err
+}
+
+func (r *testRecommendationInteractionRepository) MarkLogged(_ context.Context, recommendationID uuid.UUID, userID uuid.UUID, mealSource string, mealID uuid.UUID, loggedAt time.Time) error {
+	r.loggedRecommendationID = recommendationID
+	r.loggedUserID = userID
+	r.loggedMealSource = mealSource
+	r.loggedMealID = mealID
+	r.loggedAt = loggedAt
+
+	return r.err
+}
+
+func (r *testRecommendationInteractionRepository) SetRating(context.Context, uuid.UUID, uuid.UUID, string, uuid.UUID, int) error {
+	return r.err
+}
+
 func (r *testMealLogRepository) Create(_ context.Context, mealLog *model.MealLog) (*model.MealLog, error) {
 	if r.createErr != nil {
 		return nil, r.createErr
@@ -252,6 +287,77 @@ var _ = Describe("Meal log service", func() {
 			Expect(repo.createdLog.PrebuiltMealID).NotTo(BeNil())
 			Expect(*repo.createdLog.PrebuiltMealID).To(Equal(prebuiltMealID))
 			Expect(repo.createdLog.CustomMealItemID).To(BeNil())
+		})
+
+		It("should mark a recommendation interaction as logged after creating a meal log", func() {
+			prebuiltMealID := uuid.New()
+			recommendationID := uuid.New()
+			eatenAt := time.Date(2026, 7, 12, 19, 15, 0, 0, time.UTC)
+			catalogService := mocks.NewCatalogService(GinkgoT())
+			interactionRepo := &testRecommendationInteractionRepository{}
+
+			catalogService.EXPECT().
+				GetMeal(mock.Anything, prebuiltMealID).
+				Return(interfaces.CatalogMeal{
+					ID:         prebuiltMealID,
+					Name:       "Nasi Lemak",
+					Categories: []string{"rice_dishes", "fried_foods"},
+					SelectedNutrition: interfaces.CatalogNutrition{
+						Calories: floatPtr(720),
+						ProteinG: floatPtr(24),
+						CarbsG:   floatPtr(86),
+						FatG:     floatPtr(32),
+					},
+				}, nil)
+
+			svc = NewService(repo, nil, catalogService, nil, interactionRepo)
+
+			response, err := svc.Create(ctx, userID, interfaces.MealLogInput{
+				Source:           interfaces.MealLogSourcePrebuilt,
+				MealID:           prebuiltMealID.String(),
+				RecommendationID: recommendationID.String(),
+				Price:            12.50,
+				EatenAt:          eatenAt,
+				MealType:         "dinner",
+			})
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(response).NotTo(BeNil())
+			Expect(interactionRepo.loggedRecommendationID).To(Equal(recommendationID))
+			Expect(interactionRepo.loggedUserID).To(Equal(userID))
+			Expect(interactionRepo.loggedMealSource).To(Equal("prebuilt"))
+			Expect(interactionRepo.loggedMealID).To(Equal(prebuiltMealID))
+			Expect(interactionRepo.loggedAt).To(Equal(eatenAt))
+		})
+
+		It("should still create a meal log when recommendation outcome persistence fails", func() {
+			prebuiltMealID := uuid.New()
+			eatenAt := time.Date(2026, 7, 12, 19, 15, 0, 0, time.UTC)
+			catalogService := mocks.NewCatalogService(GinkgoT())
+
+			catalogService.EXPECT().
+				GetMeal(mock.Anything, prebuiltMealID).
+				Return(interfaces.CatalogMeal{
+					ID:   prebuiltMealID,
+					Name: "Nasi Lemak",
+					SelectedNutrition: interfaces.CatalogNutrition{
+						Calories: floatPtr(720),
+					},
+				}, nil)
+
+			svc = NewService(repo, nil, catalogService, nil, &testRecommendationInteractionRepository{err: errors.New("database unavailable")})
+
+			response, err := svc.Create(ctx, userID, interfaces.MealLogInput{
+				Source:           interfaces.MealLogSourcePrebuilt,
+				MealID:           prebuiltMealID.String(),
+				RecommendationID: uuid.New().String(),
+				Price:            12.50,
+				EatenAt:          eatenAt,
+				MealType:         "dinner",
+			})
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(response).NotTo(BeNil())
 		})
 
 		It("should reject invalid meal ID before loading meal details", func() {

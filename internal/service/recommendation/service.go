@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"fyp/food-rs/internal/interfaces"
+	"fyp/food-rs/types/model"
 	"log/slog"
 	"sort"
 	"strings"
@@ -29,6 +30,7 @@ type service struct {
 	customMealAutocompleter interfaces.CustomMealAutocompleter
 	mealLogRepository       interfaces.MealLogRepository
 	customMealRepository    interfaces.CustomMealRepository
+	interactionRepository   interfaces.RecommendationInteractionRepository
 	restaurantSearcher      interfaces.RestaurantSearcher
 	now                     func() time.Time
 
@@ -63,7 +65,13 @@ func NewService(
 	preferenceService interfaces.PreferenceService,
 	mealDetailExplainer interfaces.MealDetailExplainer,
 	restaurantSearcher interfaces.RestaurantSearcher,
+	interactionRepositories ...interfaces.RecommendationInteractionRepository,
 ) interfaces.RecommendationService {
+	var interactionRepository interfaces.RecommendationInteractionRepository
+	if len(interactionRepositories) > 0 {
+		interactionRepository = interactionRepositories[0]
+	}
+
 	return &service{
 		mealGenerator:           mealGenerator,
 		candidateSearcher:       candidateSearcher,
@@ -74,6 +82,7 @@ func NewService(
 		customMealRepository:    customMealRepository,
 		preferenceService:       preferenceService,
 		mealDetailExplainer:     mealDetailExplainer,
+		interactionRepository:   interactionRepository,
 		autoCreateLimiter:       make(chan struct{}, 2),
 		restaurantSearcher:      restaurantSearcher,
 		now:                     time.Now,
@@ -402,6 +411,9 @@ func (s *service) generateRecommendationResultFromPrompt(ctx context.Context, us
 	// rank
 	rankedCandidates := rankCandidates(filterResult.Filtered, input, input.History)
 	slog.Info("recommendation timing", "stage", "rank_candidates", "candidate_count", len(filterResult.Filtered), "duration_ms", time.Since(rankStart).Milliseconds())
+
+	s.attachRecommendationIDAndPersistImpressions(ctx, userID, rankedCandidates)
+
 	filteredOut := make([]interfaces.FilteredMealCandidate, 0, len(filterResult.Removed))
 	for _, removed := range filterResult.Removed {
 		filteredOut = append(filteredOut, interfaces.FilteredMealCandidate{
@@ -423,6 +435,63 @@ func (s *service) generateRecommendationResultFromPrompt(ctx context.Context, us
 		FilteredOut:      filteredOut,
 		FilteringApplied: true,
 	}, nil
+}
+
+func (s *service) attachRecommendationIDAndPersistImpressions(ctx context.Context, userID uuid.UUID, candidates []interfaces.MatchedMealCandidate) {
+	if len(candidates) == 0 {
+		return
+	}
+
+	recommendationID := uuid.New()
+	for index := range candidates {
+		candidates[index].RecommendationID = recommendationID.String()
+	}
+
+	if s.interactionRepository == nil {
+		return
+	}
+
+	shownAt := s.now()
+	interactions := make([]model.RecommendationInteraction, 0, len(candidates))
+
+	for position, candidate := range candidates {
+		mealID, err := uuid.Parse(strings.TrimSpace(candidate.Food.ID))
+		if err != nil {
+			slog.Warn("recommendation impression skipped: invalid meal id",
+				"user_id", userID,
+				"meal_id", candidate.Food.ID,
+				"error", err,
+			)
+			continue
+		}
+
+		mealSource := strings.TrimSpace(candidate.Food.Source)
+		if mealSource == "" {
+			mealSource = "prebuilt"
+		}
+
+		interactions = append(interactions, model.RecommendationInteraction{
+			RecommendationID: recommendationID,
+			UserID:           userID,
+			MealID:           mealID,
+			MealSource:       mealSource,
+			Position:         position + 1,
+			ShownAt:          shownAt,
+		})
+	}
+
+	if len(interactions) == 0 {
+		return
+	}
+
+	if err := s.interactionRepository.CreateImpressions(ctx, interactions); err != nil {
+		slog.Warn("recommendation impression persistence failed",
+			"user_id", userID,
+			"recommendation_id", recommendationID,
+			"interaction_count", len(interactions),
+			"error", err,
+		)
+	}
 }
 
 func (s *service) createMissingGeneratedCatalogMeal(ctx context.Context, userID uuid.UUID, meal interfaces.GeneratedMeal) (interfaces.MatchedMealCandidate, error) {

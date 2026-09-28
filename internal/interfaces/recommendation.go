@@ -7,11 +7,12 @@ import (
 )
 
 type MatchedMealCandidate struct {
-	GeneratedMeal  GeneratedMeal           `json:"generated_meal"` // Meal produced by Gemini
-	Food           FoodSearchResult        `json:"food"`           // Matched food data from catalog / custom meal
-	MatchedQuery   string                  `json:"matched_query"`  // Records of successful matched with generated meals
-	Score          float64                 `json:"score"`
-	ScoreBreakdown CandidateScoreBreakdown `json:"score_breakdown"`
+	RecommendationID string                  `json:"recommendation_id,omitempty"`
+	GeneratedMeal    GeneratedMeal           `json:"generated_meal"` // Meal produced by Gemini
+	Food             FoodSearchResult        `json:"food"`           // Matched food data from catalog / custom meal
+	MatchedQuery     string                  `json:"matched_query"`  // Records of successful matched with generated meals
+	Score            float64                 `json:"score"`
+	ScoreBreakdown   CandidateScoreBreakdown `json:"score_breakdown"`
 }
 
 type CandidateScoreBreakdown struct {

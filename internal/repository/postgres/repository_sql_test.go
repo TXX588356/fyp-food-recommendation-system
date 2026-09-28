@@ -291,6 +291,58 @@ var _ = Describe("custom meal repository SQL", func() {
 	})
 })
 
+var _ = Describe("recommendation interaction repository SQL", func() {
+	It("should create recommendation impressions in batch", func() {
+		db, recorder := newDryRunDB()
+		repository := NewRecommendationInteractionPostgresRepository(db)
+
+		err := repository.CreateImpressions(context.Background(), []model.RecommendationInteraction{
+			{
+				RecommendationID: uuid.New(),
+				UserID:           uuid.New(),
+				MealID:           uuid.New(),
+				MealSource:       "prebuilt",
+				Position:         1,
+				ShownAt:          time.Date(2026, 9, 10, 12, 0, 0, 0, time.UTC),
+			},
+			{
+				RecommendationID: uuid.New(),
+				UserID:           uuid.New(),
+				MealID:           uuid.New(),
+				MealSource:       "custom",
+				Position:         2,
+				ShownAt:          time.Date(2026, 9, 10, 12, 0, 0, 0, time.UTC),
+			},
+		})
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(recorder.statements).NotTo(BeEmpty())
+		Expect(recorder.statements[0]).To(ContainSubstring(`INSERT INTO "recommendation_interactions"`))
+		Expect(recorder.statements[0]).To(ContainSubstring(`"recommendation_id"`))
+		Expect(recorder.statements[0]).To(ContainSubstring(`"meal_source"`))
+		Expect(recorder.statements[0]).To(ContainSubstring(`"position"`))
+	})
+
+	It("should mark selected interactions by recommendation, user, source, and meal", func() {
+		db, recorder := newDryRunDB()
+		repository := NewRecommendationInteractionPostgresRepository(db)
+		recommendationID := uuid.New()
+		userID := uuid.New()
+		mealID := uuid.New()
+
+		err := repository.MarkSelected(context.Background(), recommendationID, userID, "prebuilt", mealID, time.Date(2026, 9, 10, 12, 5, 0, 0, time.UTC))
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(recorder.statements).NotTo(BeEmpty())
+		Expect(recorder.statements[0]).To(ContainSubstring(`UPDATE "recommendation_interactions"`))
+		Expect(recorder.statements[0]).To(ContainSubstring(`"selected_at"`))
+		Expect(recorder.statements[0]).To(ContainSubstring(`recommendation_id = '` + recommendationID.String() + `'`))
+		Expect(recorder.statements[0]).To(ContainSubstring(`user_id = '` + userID.String() + `'`))
+		Expect(recorder.statements[0]).To(ContainSubstring(`meal_source = 'prebuilt'`))
+		Expect(recorder.statements[0]).To(ContainSubstring(`meal_id = '` + mealID.String() + `'`))
+	})
+})
+
 func stringsJoined(values []string) string {
 	result := ""
 	for _, value := range values {
@@ -304,3 +356,4 @@ var _ interfaces.RefreshTokenRepository = (*refreshTokenRepository)(nil)
 var _ interfaces.PreferenceRepository = (*preferenceRepository)(nil)
 var _ interfaces.MealLogRepository = (*mealLogRepository)(nil)
 var _ interfaces.CustomMealRepository = (*customMealRepository)(nil)
+var _ interfaces.RecommendationInteractionRepository = (*recommendationInteractionRepository)(nil)

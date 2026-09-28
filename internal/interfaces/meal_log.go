@@ -15,11 +15,12 @@ const (
 )
 
 type MealLogInput struct {
-	Source   MealLogSource `json:"source"`
-	MealID   string        `json:"mealId"`
-	Price    float64       `json:"price"`
-	EatenAt  time.Time     `json:"eatenAt"`
-	MealType string        `json:"mealType"`
+	Source           MealLogSource `json:"source"`
+	MealID           string        `json:"mealId"`
+	RecommendationID string        `json:"recommendationId,omitempty"`
+	Price            float64       `json:"price"`
+	EatenAt          time.Time     `json:"eatenAt"`
+	MealType         string        `json:"mealType"`
 }
 
 type MealLogResponse struct {

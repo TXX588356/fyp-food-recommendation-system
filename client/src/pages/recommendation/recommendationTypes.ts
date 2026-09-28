@@ -39,6 +39,7 @@ export type CandidateScoreBreakdown = {
 }
 
 export type MatchedMealCandidate = {
+	recommendation_id?: string
 	generated_meal: GeneratedMeal
 	food: FoodSearchResult
 	matched_query: string

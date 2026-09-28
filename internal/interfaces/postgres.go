@@ -48,3 +48,11 @@ type MealLogRepository interface {
 	Update(ctx context.Context, mealLog *model.MealLog) (*model.MealLog, error)
 	Delete(ctx context.Context, id uuid.UUID, userID uuid.UUID) error
 }
+
+type RecommendationInteractionRepository interface {
+	CreateImpressions(ctx context.Context, interactions []model.RecommendationInteraction) error
+	MarkClicked(ctx context.Context, recommendationID uuid.UUID, userID uuid.UUID, mealSource string, mealID uuid.UUID, clickedAt time.Time) error
+	MarkSelected(ctx context.Context, recommendationID uuid.UUID, userID uuid.UUID, mealSource string, mealID uuid.UUID, selectedAt time.Time) error
+	MarkLogged(ctx context.Context, recommendationID uuid.UUID, userID uuid.UUID, mealSource string, mealID uuid.UUID, loggedAt time.Time) error
+	SetRating(ctx context.Context, recommendationID uuid.UUID, userID uuid.UUID, mealSource string, mealID uuid.UUID, rating int) error
+}
